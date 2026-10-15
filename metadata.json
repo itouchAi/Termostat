@@ -1,0 +1,6 @@
+{
+  "name": "Kombi Akıllı Termostat 3D",
+  "description": "Dinamik 3D morphing motoru, gece-gündüz teması, performans modu, kişiselleştirilebilir widgetlar ve AES-256 yerel şifrelenmiş güvenlik ile yeni nesil kombi termostat kontrolü.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
