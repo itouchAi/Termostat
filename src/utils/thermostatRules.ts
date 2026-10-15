@@ -109,6 +109,30 @@ export function evaluateActiveSchedule(
 }
 
 /**
+ * Determine whether system/auto theme should be dark based on hour and minute (night between 19:30 and 07:00)
+ */
+export function isSystemDarkMode(hour: number, minute = 0): boolean {
+  const totalMinutes = hour * 60 + minute;
+  // Day: 07:00 (420 min) to 19:30 (1170 min)
+  return totalMinutes < 420 || totalMinutes >= 1170;
+}
+
+/**
+ * Resolve effective visual theme ('light' or 'dark') given mode, time, and OS preference
+ */
+export function resolveEffectiveTheme(
+  mode: 'light' | 'dark' | 'system',
+  hour: number,
+  minute = 0,
+  osPrefersDark = false
+): 'light' | 'dark' {
+  if (mode === 'dark') return 'dark';
+  if (mode === 'light') return 'light';
+  // 'system' mode: prioritize time of day, with fallback to OS preference
+  return isSystemDarkMode(hour, minute) ? 'dark' : 'light';
+}
+
+/**
  * Comfort Index Assessment based on temperature and relative humidity
  */
 export function calculateComfortIndex(temp: number, humidity: number): {

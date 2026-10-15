@@ -121,41 +121,44 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
         </div>
       </div>
 
-      {/* 5-Day Weather Cards Grid (Evenly distributed, zero side clipping) */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+      {/* 5-Day Weather Cards Grid (Embossed & Tactile with warm glow) */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {weather.forecast.slice(0, 5).map((day, idx) => (
           <div
             key={day.date}
-            className={`p-3 rounded-2xl border flex flex-col items-center justify-between text-center transition-all ${
+            className={`p-3.5 rounded-2xl flex flex-col items-center justify-between text-center transition-all duration-300 transform hover:-translate-y-1 ${
               idx === 0
-                ? 'bg-blue-50/70 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/60 shadow-xs'
-                : 'bg-white/80 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/60'
+                ? 'bg-gradient-to-b from-blue-50/95 via-sky-50/80 to-slate-100/90 dark:bg-gradient-to-b dark:from-slate-800/95 dark:via-slate-850 dark:to-slate-900 border-2 border-blue-400/60 dark:border-orange-500/50 shadow-[0_8px_24px_rgba(59,130,246,0.18),inset_0_1px_0_rgba(255,255,255,0.95)] dark:shadow-[0_8px_26px_rgba(249,115,22,0.22),inset_0_1px_0_rgba(255,255,255,0.08)]'
+                : 'bg-gradient-to-b from-white via-slate-50 to-slate-100/90 dark:bg-gradient-to-b dark:from-slate-800/90 dark:via-slate-850 dark:to-slate-900 border border-slate-200/90 dark:border-orange-500/25 shadow-[0_6px_20px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_6px_22px_rgba(249,115,22,0.12),inset_0_1px_0_rgba(255,255,255,0.05)] hover:shadow-[0_10px_26px_rgba(15,23,42,0.14)] dark:hover:shadow-[0_10px_30px_rgba(249,115,22,0.22)]'
             }`}
           >
             {/* Day Title */}
-            <div className="text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-              {day.dayName}
+            <div className="flex items-center gap-1 text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1">
+              <span>{day.dayName}</span>
+              {idx === 0 && (
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-orange-500 animate-pulse"></span>
+              )}
             </div>
 
-            {/* 2D Animated Weather Icon */}
-            <div className="my-1.5 flex items-center justify-center">
+            {/* 2D Animated Weather Icon with soft ambient aura */}
+            <div className="my-1.5 p-1 rounded-xl bg-slate-50/60 dark:bg-slate-800/50 flex items-center justify-center">
               <AnimatedWeatherIcon condition={day.condition} size={36} />
             </div>
 
             {/* Condition label */}
-            <span className="text-[10px] text-slate-400 font-medium truncate max-w-[90px] mb-1">
+            <span className="text-[10px] text-slate-500 dark:text-slate-300 font-medium truncate max-w-[95px] mb-1">
               {day.conditionText}
             </span>
 
             {/* High / Low Degree */}
-            <div className="flex items-center gap-1.5 font-mono text-xs font-bold">
-              <span className="text-slate-800 dark:text-white">{day.maxTemp}°</span>
-              <span className="text-slate-400 font-normal text-[10px]">{day.minTemp}°</span>
+            <div className="flex items-center gap-1.5 font-mono text-xs font-black">
+              <span className="text-slate-900 dark:text-white">{day.maxTemp}°</span>
+              <span className="text-slate-400 dark:text-slate-400 font-semibold text-[10px]">{day.minTemp}°</span>
             </div>
 
             {/* Rain chance */}
             {day.rainChancePct > 20 && (
-              <span className="text-[9px] font-semibold text-sky-500 mt-1">
+              <span className="text-[9px] font-bold text-sky-600 dark:text-amber-400 mt-1 bg-sky-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded-md">
                 %{day.rainChancePct} yağış
               </span>
             )}

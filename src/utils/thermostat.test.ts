@@ -6,7 +6,8 @@ import {
   estimateGasConsumption,
   calculateEstimatedCost,
   evaluateActiveSchedule,
-  calculateComfortIndex
+  calculateComfortIndex,
+  resolveEffectiveTheme,
 } from './thermostatRules.ts';
 import { encryptData, decryptData } from './crypto.ts';
 
@@ -92,4 +93,16 @@ test('weather: mapWmoCodeToCondition maps rainy, sunny and snow correctly', asyn
   assert.equal(mapWmoCodeToCondition(45).condition, 'fog');
   assert.equal(formatDayName('2026-10-15', 0), 'Bugün');
   assert.equal(formatDayName('2026-10-16', 1), 'Yarın');
+});
+
+test('theme: resolveEffectiveTheme handles system day and night hours', () => {
+  // 14:00 (afternoon) in system mode -> 'light'
+  assert.equal(resolveEffectiveTheme('system', 14, 0), 'light');
+  // 21:00 (night) in system mode -> 'dark'
+  assert.equal(resolveEffectiveTheme('system', 21, 0), 'dark');
+  // 04:30 (early morning) in system mode -> 'dark'
+  assert.equal(resolveEffectiveTheme('system', 4, 30), 'dark');
+  // Explicit override
+  assert.equal(resolveEffectiveTheme('light', 22, 0), 'light');
+  assert.equal(resolveEffectiveTheme('dark', 12, 0), 'dark');
 });
