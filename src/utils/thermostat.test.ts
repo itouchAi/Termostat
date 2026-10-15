@@ -83,3 +83,13 @@ test('crypto: encryptData and decryptData roundtrip correctly', async () => {
   const decrypted = await decryptData<typeof sampleData>(encrypted, 'secretMasterKey99');
   assert.deepEqual(decrypted, sampleData);
 });
+
+test('weather: mapWmoCodeToCondition maps rainy, sunny and snow correctly', async () => {
+  const { mapWmoCodeToCondition, formatDayName } = await import('./weather.ts');
+  assert.equal(mapWmoCodeToCondition(0).condition, 'sunny');
+  assert.equal(mapWmoCodeToCondition(61).condition, 'rainy');
+  assert.equal(mapWmoCodeToCondition(73).condition, 'snowy');
+  assert.equal(mapWmoCodeToCondition(45).condition, 'fog');
+  assert.equal(formatDayName('2026-10-15', 0), 'Bugün');
+  assert.equal(formatDayName('2026-10-16', 1), 'Yarın');
+});

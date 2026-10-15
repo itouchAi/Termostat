@@ -8,14 +8,11 @@ import {
   Flame,
   LayoutGrid,
   ShieldCheck,
-  RefreshCw,
-  Eye,
-  Layers,
-  Sparkles,
 } from 'lucide-react';
 
 import type { ThemeMode, MorphMode, ScheduleItem, WidgetItem } from './types.ts';
 import { ThreeScene } from './components/ThreeCanvas/ThreeScene.tsx';
+import { ForecastSection } from './components/Weather/ForecastSection.tsx';
 import { CoreGaugeWidget } from './components/Widgets/CoreGaugeWidget.tsx';
 import { TargetControlWidget } from './components/Widgets/TargetControlWidget.tsx';
 import { ModulationWidget } from './components/Widgets/ModulationWidget.tsx';
@@ -24,7 +21,6 @@ import { WeeklyScheduleWidget } from './components/Widgets/WeeklyScheduleWidget.
 import { ConsumptionWidget } from './components/Widgets/ConsumptionWidget.tsx';
 import { TelegramConfigWidget } from './components/Widgets/TelegramConfigWidget.tsx';
 import { SecurityVaultWidget } from './components/Widgets/SecurityVaultWidget.tsx';
-import { ThreeControlsWidget } from './components/Widgets/ThreeControlsWidget.tsx';
 import { WidgetCustomizerModal } from './components/WidgetCustomizerModal.tsx';
 import { SettingsModal } from './components/SettingsModal.tsx';
 
@@ -33,19 +29,25 @@ import {
   calculateFlameModulation,
   evaluateActiveSchedule,
 } from './utils/thermostatRules.ts';
-import { SecureVault, encryptData, decryptData } from './utils/crypto.ts';
+import { SecureVault, encryptData } from './utils/crypto.ts';
+import {
+  DEFAULT_LOCATIONS,
+  type LocationItem,
+  type CurrentWeather,
+  fetchOpenMeteoWeather,
+  getFallbackForecast,
+} from './utils/weather.ts';
 
-// Initial default widgets
+// Initial default widgets (cleaned up)
 const DEFAULT_WIDGETS: WidgetItem[] = [
   { id: 'target', title: 'Hedef Sıcaklık & Modlar', description: 'Termostat hedef ayarı ve hızlı akıllı modlar', icon: '🎯', enabled: true, order: 0 },
   { id: 'gauge', title: 'Oda Sıcaklığı & Nem', description: 'Canlı sensör göstergeleri ve konfor indeksi', icon: '🌡️', enabled: true, order: 1 },
   { id: 'modulation', title: 'Kombi Telemetrisi', description: 'Alev modülasyonu, su basıncı ve pompa durumu', icon: '🔥', enabled: true, order: 2 },
   { id: 'analytics', title: '24 Saatlik Analitik', description: 'Sıcaklık ve tüketim trend grafiği', icon: '📈', enabled: true, order: 3 },
   { id: 'consumption', title: 'Gaz & Tasarruf Hesabı', description: 'Tahmini tüketim ve maliyet hesabı', icon: '💰', enabled: true, order: 4 },
-  { id: 'three_controls', title: '3D Motor Kontrolleri', description: 'Patlatılmış montaj, morphing ve kamera açıları', icon: '🧊', enabled: true, order: 5 },
-  { id: 'schedule', title: 'Zaman Programı', description: 'Haftalık otomatik sıcaklık programlayıcı', icon: '⏰', enabled: true, order: 6 },
-  { id: 'security', title: 'AES-256 Güvenlik Kasası', description: 'Sıfır bilgi yerel şifreleme ve PIN koruması', icon: '🔐', enabled: true, order: 7 },
-  { id: 'telegram', title: 'Telegram Bildirimleri', description: 'Şifreli bot tokeni ve uyarı bildirimleri', icon: '🤖', enabled: true, order: 8 },
+  { id: 'schedule', title: 'Zaman Programı', description: 'Haftalık otomatik sıcaklık programlayıcı', icon: '⏰', enabled: true, order: 5 },
+  { id: 'security', title: 'AES-256 Güvenlik Kasası', description: 'Sıfır bilgi yerel şifreleme ve PIN koruması', icon: '🔐', enabled: true, order: 6 },
+  { id: 'telegram', title: 'Telegram Bildirimleri', description: 'Şifreli bot tokeni ve uyarı bildirimleri', icon: '🤖', enabled: true, order: 7 },
 ];
 
 const DEFAULT_SCHEDULES: ScheduleItem[] = [
@@ -79,11 +81,15 @@ export default function App() {
   const [waterPressure, setWaterPressure] = useState<number>(1.6);
   const [dailyRunMinutes, setDailyRunMinutes] = useState<number>(145);
 
-  // 3D Controls
+  // 3D Morph Mode
   const [morphMode, setMorphMode] = useState<MorphMode>('heat');
-  const [explodedOffset, setExplodedOffset] = useState<number>(0);
-  const [activeCameraPreset, setActiveCameraPreset] = useState<'hero' | 'exploded' | 'face' | 'side'>('hero');
-  const [selected3DComponent, setSelected3DComponent] = useState<{ name: string; description: string } | null>(null);
+
+  // Locations & Weather
+  const [locations, setLocations] = useState<LocationItem[]>(DEFAULT_LOCATIONS);
+  const [activeLocation, setActiveLocation] = useState<LocationItem>(DEFAULT_LOCATIONS[0]);
+  const [weather, setWeather] = useState<CurrentWeather>(() =>
+    getFallbackForecast(DEFAULT_LOCATIONS[0].cityName)
+  );
 
   // Modals
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
@@ -109,7 +115,7 @@ export default function App() {
   const [isVaultLocked, setIsVaultLocked] = useState<boolean>(false);
 
   // Temperature History
-  const [history, setHistory] = useState(() => [
+  const [history] = useState(() => [
     { time: '04:00', temp: 19.2, target: 19.0, isActive: false },
     { time: '06:00', temp: 19.1, target: 19.0, isActive: false },
     { time: '07:00', temp: 22.4, target: 23.0, isActive: true },
@@ -161,10 +167,16 @@ export default function App() {
           setTelegramChatId(storedTg.chatId);
         }
 
+        const storedLocations = await SecureVault.getItem<LocationItem[]>('locations', DEFAULT_LOCATIONS);
+        if (storedLocations && storedLocations.length > 0) {
+          setLocations(storedLocations);
+          setActiveLocation(storedLocations[0]);
+        }
+
         const storedPin = await SecureVault.getItem<string>('vaultPin', '');
         if (storedPin) {
           setVaultPin(storedPin);
-          setIsVaultLocked(true); // Locked on initial load if PIN exists
+          setIsVaultLocked(true);
         }
       } catch (err) {
         console.warn('Vault load error:', err);
@@ -174,18 +186,62 @@ export default function App() {
     loadVault();
   }, []);
 
-  // Check schedules periodically against current clock time
+  // Fetch real weather data when active location changes
   useEffect(() => {
-    const checkSchedule = () => {
-      const now = new Date();
-      const activeSched = evaluateActiveSchedule(schedules, now.getHours(), now.getMinutes());
-      if (activeSched && Math.abs(targetTemp - activeSched.targetTemp) > 0.1) {
-        // Only adapt if automated
+    let isCancelled = false;
+    const loadWeather = async () => {
+      const data = await fetchOpenMeteoWeather(
+        activeLocation.latitude,
+        activeLocation.longitude,
+        activeLocation.cityName
+      );
+      if (!isCancelled) {
+        setWeather(data);
       }
     };
-    const timer = setInterval(checkSchedule, 30000);
-    return () => clearInterval(timer);
-  }, [schedules, targetTemp]);
+
+    loadWeather();
+    // Refresh weather every 15 minutes
+    const interval = setInterval(loadWeather, 15 * 60 * 1000);
+    return () => {
+      isCancelled = true;
+      clearInterval(interval);
+    };
+  }, [activeLocation]);
+
+  // Location handlers
+  const handleSelectLocation = (loc: LocationItem) => {
+    setActiveLocation(loc);
+  };
+
+  const handleAddLocation = (name: string, cityName: string) => {
+    // City coords table
+    const cityCoords: Record<string, { lat: number; lon: number }> = {
+      İstanbul: { lat: 41.0082, lon: 28.9784 },
+      Ankara: { lat: 39.9334, lon: 32.8597 },
+      İzmir: { lat: 38.4237, lon: 27.1428 },
+      Bursa: { lat: 40.1885, lon: 29.061 },
+      Antalya: { lat: 36.8969, lon: 30.7133 },
+      Eskişehir: { lat: 39.7767, lon: 30.5206 },
+      Trabzon: { lat: 41.0027, lon: 39.7168 },
+      Gaziantep: { lat: 37.0662, lon: 37.3833 },
+    };
+
+    const coords = cityCoords[cityName] || { lat: 41.0, lon: 29.0 };
+    const newLoc: LocationItem = {
+      id: `loc-${Date.now()}`,
+      name,
+      cityName,
+      district: cityName,
+      latitude: coords.lat,
+      longitude: coords.lon,
+    };
+
+    const updated = [...locations, newLoc];
+    setLocations(updated);
+    setActiveLocation(newLoc);
+    SecureVault.setItem('locations', updated);
+  };
 
   // Target Temp change handler (persists encrypted)
   const handleSetTarget = useCallback((newTarget: number) => {
@@ -225,7 +281,6 @@ export default function App() {
     const targetIdx = dir === 'up' ? idx - 1 : idx + 1;
     if (targetIdx < 0 || targetIdx >= sorted.length) return;
 
-    // Swap orders
     const tempOrder = sorted[idx].order;
     sorted[idx].order = sorted[targetIdx].order;
     sorted[targetIdx].order = tempOrder;
@@ -262,6 +317,7 @@ export default function App() {
       targetTemp,
       schedules,
       widgets,
+      locations,
       telegramToken,
       telegramChatId,
       exportedAt: new Date().toISOString(),
@@ -281,9 +337,12 @@ export default function App() {
     setIsVaultLocked(false);
     setSchedules(DEFAULT_SCHEDULES);
     setWidgets(DEFAULT_WIDGETS);
+    setLocations(DEFAULT_LOCATIONS);
+    setActiveLocation(DEFAULT_LOCATIONS[0]);
     SecureVault.removeItem('vaultPin');
     SecureVault.removeItem('schedules');
     SecureVault.removeItem('widgets');
+    SecureVault.removeItem('locations');
     SecureVault.removeItem('targetTemp');
     SecureVault.removeItem('telegram');
   };
@@ -336,24 +395,6 @@ export default function App() {
             flameLevelPercent={flameLevelPercent}
           />
         );
-      case 'three_controls':
-        return (
-          <ThreeControlsWidget
-            key={id}
-            explodedOffset={explodedOffset}
-            onSetExplodedOffset={setExplodedOffset}
-            morphMode={morphMode}
-            onSetMorphMode={setMorphMode}
-            activeCameraPreset={activeCameraPreset}
-            onSetCameraPreset={setActiveCameraPreset}
-            performanceMode={performanceMode}
-            onTogglePerformanceMode={() => setPerformanceMode((p) => !p)}
-            reducedMotion={reducedMotion}
-            onToggleReducedMotion={() => setReducedMotion((r) => !r)}
-            selectedComponent={selected3DComponent}
-            onClearSelectedComponent={() => setSelected3DComponent(null)}
-          />
-        );
       case 'schedule':
         return (
           <WeeklyScheduleWidget
@@ -399,7 +440,7 @@ export default function App() {
       return enabled.map((w) => w.id);
     }
     if (activeTab === 'ana') {
-      return ['target', 'gauge', 'modulation', 'three_controls'].filter((id) =>
+      return ['target', 'gauge', 'modulation'].filter((id) =>
         widgets.find((w) => w.id === id)?.enabled
       );
     }
@@ -417,7 +458,11 @@ export default function App() {
   }, [activeTab, widgets]);
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-800'} font-sans transition-colors duration-500 flex flex-col selection:bg-blue-500 selection:text-white`}>
+    <div
+      className={`min-h-screen ${
+        theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-800'
+      } font-sans transition-colors duration-500 flex flex-col selection:bg-blue-500 selection:text-white`}
+    >
       {/* ── TOP NAV HEADER ── */}
       <header className="sticky top-0 z-40 min-h-16 py-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-3 sm:px-6 md:px-8 flex items-center justify-between shadow-xs">
         {/* Brand */}
@@ -431,13 +476,13 @@ export default function App() {
                 Kombi Termostat 3D
               </h1>
               <span className="hidden sm:inline-block text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                UNREAL
+                SABİT KADRAN
               </span>
             </div>
             <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
               <span className="flex items-center gap-1">
                 <span className={`w-1.5 h-1.5 rounded-full ${isCloudConnected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                {isCloudConnected ? 'Bulut' : 'Yerel'}
+                {activeLocation.name} ({activeLocation.cityName})
               </span>
               <span>•</span>
               <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-0.5">
@@ -464,7 +509,7 @@ export default function App() {
           >
             <Zap className={`w-3.5 h-3.5 ${performanceMode ? 'fill-amber-500 text-amber-500' : ''}`} />
             <span className="hidden md:inline">
-              {performanceMode ? 'Performans Modu (Açık)' : 'Ultra 3D Modu'}
+              {performanceMode ? 'Performans Modu' : 'Canlı Alev Modu'}
             </span>
           </button>
 
@@ -509,124 +554,106 @@ export default function App() {
 
       {/* ── MAIN VIEWPORT & 3D STAGE ── */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 md:p-6 lg:p-8 flex flex-col gap-5">
-        {/* Top 3D Hero Section */}
+        {/* Top Section: Static Thermostat & Integrated 5-Day Weather Forecast */}
         <section
-          aria-label="3D Termostat ve Kombi Modeli"
+          aria-label="Sabit Termostat ve 5 Günlük Hava Durumu"
           className="relative w-full rounded-3xl overflow-hidden bg-gradient-to-b from-white/95 to-slate-50/90 dark:from-slate-900/95 dark:to-slate-950/90 border border-slate-200/80 dark:border-slate-800 shadow-xl"
         >
-          {/* Responsive Header Bar inside 3D Canvas */}
-          <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between gap-2 pointer-events-auto">
-            <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center gap-1.5 shrink-0">
+          {/* Status Badge in top center */}
+          <div className="pt-4 px-4 flex items-center justify-between">
+            <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700/60 shadow-xs flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${isKombiActive ? 'bg-orange-500 animate-pulse' : 'bg-slate-400'}`} />
-              <span className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-white">
-                {isKombiActive ? '🔥 Isıtıyor' : '❄️ Beklemede'}
+              <span className="text-xs font-bold text-slate-800 dark:text-white">
+                {isKombiActive ? 'Aktif Isıtma 🔥' : 'Beklemede ❄️'}
               </span>
-              <span className="text-[10px] font-mono text-slate-500 hidden sm:inline">
-                (%{flameLevelPercent} mod.)
+              <span className="text-[11px] font-mono text-slate-500">
+                (%{flameLevelPercent} modülasyon)
               </span>
             </div>
 
-            {/* Camera Switcher Pills */}
-            <div className="flex items-center gap-1 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md p-1 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm shrink-0">
-              {(['hero', 'face', 'exploded'] as const).map((cam) => (
-                <button
-                  key={cam}
-                  type="button"
-                  onClick={() => setActiveCameraPreset(cam)}
-                  className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl text-[10px] sm:text-xs font-bold transition-all ${
-                    activeCameraPreset === cam
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {cam === 'hero' ? 'İzo' : cam === 'face' ? 'Kadran' : 'Patlat'}
-                </button>
-              ))}
+            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span>Bağlı Cihaz:</span>
+              <span className="font-bold text-slate-800 dark:text-white">Kombi #1</span>
             </div>
           </div>
 
-          {/* 3D Canvas Viewport */}
-          <div className="h-[380px] md:h-[450px] w-full">
-            <ThreeScene
-              theme={theme}
-              morphMode={morphMode}
-              targetTemp={targetTemp}
-              currentTemp={currentTemp}
-              isKombiActive={isKombiActive}
-              performanceMode={performanceMode}
-              reducedMotion={reducedMotion}
-              explodedOffset={explodedOffset}
-              activeCameraPreset={activeCameraPreset}
-              onSelectComponent={(name, desc) => setSelected3DComponent({ name, description: desc })}
-            />
+          {/* Fixed Static 3D Thermostat with Authentic Dancing Flame at the bottom inside */}
+          <div className="w-full flex items-center justify-center my-1 sm:my-2">
+            <div className="w-full max-w-md">
+              <ThreeScene
+                theme={theme}
+                morphMode={morphMode}
+                targetTemp={targetTemp}
+                currentTemp={currentTemp}
+                isKombiActive={isKombiActive}
+                performanceMode={performanceMode}
+                reducedMotion={reducedMotion}
+              />
+            </div>
           </div>
 
-          {/* Bottom helper prompt */}
-          <div className="absolute bottom-3 left-0 right-0 text-center pointer-events-none">
-            <span className="text-[11px] font-medium text-slate-400 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xs px-3 py-1 rounded-full border border-slate-200/50 dark:border-slate-800">
-              🖱️ Çevirmek için 360° sürükleyin • Parçaları incelemek için tıklayın
-            </span>
-          </div>
+          {/* Integrated 5-Day Weather Forecast directly beneath the thermostat */}
+          <ForecastSection
+            weather={weather}
+            locations={locations}
+            activeLocation={activeLocation}
+            onSelectLocation={handleSelectLocation}
+            onAddLocation={handleAddLocation}
+          />
         </section>
 
-        {/* ── TABS BAR (Genel, Rapor, Program, Tümü) ── */}
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5 gap-2">
-          <div className="flex items-center gap-1 sm:gap-2 bg-slate-200/60 dark:bg-slate-900/60 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto no-scrollbar max-w-full">
+        {/* ── TABS BAR (Genel, Rapor, Program, Tümü) — Evenly Distributed Grid (NO HORIZONTAL SCROLL) ── */}
+        <div className="w-full border-b border-slate-200 dark:border-slate-800 pb-2.5">
+          <div className="grid grid-cols-4 w-full bg-slate-200/60 dark:bg-slate-900/60 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-800 gap-1 select-none">
             <button
               type="button"
               onClick={() => setActiveTab('ana')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+              className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'ana'
                   ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <span>🏠</span> Genel
+              <span className="text-sm">🏠</span>
+              <span className="truncate">Genel</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('rapor')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+              className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'rapor'
                   ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <span>📊</span> Rapor
+              <span className="text-sm">📊</span>
+              <span className="truncate">Rapor</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('program')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+              className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'program'
                   ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <span>⏰</span> Program
+              <span className="text-sm">⏰</span>
+              <span className="truncate">Program</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+              className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'all'
                   ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              Tümü
+              <span className="truncate">Tümü</span>
             </button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setIsCustomizerOpen(true)}
-            className="text-xs font-semibold text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hidden sm:flex items-center gap-1.5 transition-colors shrink-0"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            Widgetları Yönet
-          </button>
         </div>
 
         {/* ── DYNAMIC WIDGETS GRID ── */}
@@ -644,12 +671,12 @@ export default function App() {
         <div className="flex items-center gap-2">
           <Flame className="w-4 h-4 text-orange-500" />
           <span className="font-bold text-slate-700 dark:text-slate-200">Kombi Akıllı Termostat</span>
-          <span>• Unreal 3D & AES-256 Korumalı</span>
+          <span>• Sabit Kadran & 5 Günlük Hava Durumu</span>
         </div>
         <div className="flex items-center gap-4 text-[11px]">
           <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
             <ShieldCheck className="w-3.5 h-3.5" />
-            Sıfır Bilgi Güvenliği
+            AES-256 Korumalı
           </span>
           <span>|</span>
           <button
