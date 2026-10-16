@@ -1,3 +1,26 @@
 @import "tailwindcss";
 
 @variant dark (&:where(.dark), :where(.dark) &);
+
+/* Custom thin scrollbars for card contents */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
+}
+
+/* 3D stage perspective container */
+.stage-3d {
+  perspective: 1300px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+}

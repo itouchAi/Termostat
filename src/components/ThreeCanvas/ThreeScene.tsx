@@ -440,21 +440,21 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
     displayMesh.name = 'OledFace';
     thermostatGroup.add(displayMesh);
 
-    // Part D: Convex Sapphire Crystal Glass Lens
-    const glassGeo = new THREE.SphereGeometry(2.0, 48, 24, 0, Math.PI * 2, 0, Math.PI * 0.32);
-    glassGeo.scale(1, 1, 0.2);
+    // Part D: Convex Sapphire Crystal Glass Lens (Full circle, no cutoff lines)
+    const glassGeo = new THREE.CircleGeometry(1.84, 64);
     const glassMat = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
-      transmission: 0.94,
-      opacity: 1.0,
+      transmission: 0.98,
+      opacity: 0.85,
       transparent: true,
-      roughness: 0.04,
-      ior: 1.5,
-      thickness: 0.3,
+      roughness: 0.02,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.05,
+      ior: 1.45,
       depthWrite: false,
     });
     const glassMesh = new THREE.Mesh(glassGeo, glassMat);
-    glassMesh.position.z = 0.24;
+    glassMesh.position.z = 0.25;
     glassMesh.name = 'SapphireLens';
     glassMesh.renderOrder = 2;
     thermostatGroup.add(glassMesh);
