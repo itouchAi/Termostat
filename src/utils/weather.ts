@@ -10,14 +10,44 @@ export interface LocationItem {
 
 export type WeatherCondition = 'sunny' | 'partly_cloudy' | 'cloudy' | 'fog' | 'rainy' | 'snowy' | 'thunder';
 
+export interface HourlyForecast {
+  time: string; // '00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'
+  temp: number;
+  condition: WeatherCondition;
+  conditionText: string;
+  rainChancePct: number;
+  windSpeedKmH: number;
+  humidity: number;
+  kombiAdvice: string;
+}
+
 export interface DayForecast {
   date: string;
-  dayName: string;
+  dayName: string; // 'Bugün', 'Yarın', 'Cumartesi'
+  dateLabel: string; // '16 Eki', '17 Eki'
   maxTemp: number;
   minTemp: number;
   condition: WeatherCondition;
   conditionText: string;
   rainChancePct: number;
+  hourly: HourlyForecast[];
+}
+
+export interface WeatherAlertItem {
+  id: string;
+  type: 'warning' | 'info' | 'critical';
+  title: string;
+  time: string;
+  summary: string;
+  homePrecautions: string[];
+  outdoorPrecautions: string[];
+}
+
+export interface WeatherNotificationSettings {
+  isEnabled: boolean;
+  intervalHours: number; // e.g. 3
+  notifySuddenChange: boolean;
+  notifyPrecautionAlerts: boolean;
 }
 
 export interface CurrentWeather {
@@ -84,10 +114,119 @@ export function formatDayName(dateStr: string, index: number): string {
   return days[date.getDay()] || dateStr;
 }
 
+export function formatDateLabel(dateStr: string): string {
+  try {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+      const day = parseInt(parts[2], 10);
+      const mIdx = parseInt(parts[1], 10) - 1;
+      return `${day} ${months[mIdx] || ''}`.trim();
+    }
+    const d = new Date(dateStr);
+    const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+    return `${d.getDate()} ${months[d.getMonth()] || ''}`;
+  } catch {
+    return dateStr;
+  }
+}
+
+/**
+ * Generate 8 realistic 3-hour time-slot forecasts for a given day
+ */
+export function generateHourlyForecast(
+  dateStr: string,
+  minTemp: number,
+  maxTemp: number,
+  baseCondition: WeatherCondition,
+  rainChance: number
+): HourlyForecast[] {
+  const times = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
+  const tempDiff = Math.max(2, maxTemp - minTemp);
+
+  return times.map((t, idx) => {
+    let factor = 0;
+    let kombiAdvice = '';
+    let condition = baseCondition;
+    let condText = 'Parçalı Bulutlu';
+
+    switch (idx) {
+      case 0:
+        factor = 0.2;
+        kombiAdvice = 'Gece serinliği: Gece moduna (18.5°C) geçilmesi önerilir.';
+        condText = 'Açık / Gece';
+        break;
+      case 1:
+        factor = 0.05;
+        kombiAdvice = 'Günün en soğuk saati: Donma koruması & radyatör sirkülasyonu devrede.';
+        condText = 'Soğuk & Berrak';
+        break;
+      case 2:
+        factor = 0.15;
+        kombiAdvice = 'Sabah uyanışı: Konfor moduna (22.5°C) geçiş tavsiye edilir.';
+        condText = 'Sabah Sisi';
+        break;
+      case 3:
+        factor = 0.45;
+        kombiAdvice = 'Güneş etkisi başlıyor: Modülasyon %40 seviyesine çekilebilir.';
+        condText = 'Güneşli & Ilık';
+        break;
+      case 4:
+        factor = 0.85;
+        kombiAdvice = 'Öğle saatleri: Eko mod (20.0°C) dengeli tasarruf sağlar.';
+        condText = 'Güneşli';
+        break;
+      case 5:
+        factor = 1.0;
+        kombiAdvice = 'Günün en sıcak saati: Kombi bekleme moduna alınabilir.';
+        condText = 'Açık & Güneşli';
+        break;
+      case 6:
+        factor = 0.65;
+        kombiAdvice = 'Akşam serinliği: Ev dönüşü için Konfor modu aktif.';
+        condText = 'Parçalı Bulutlu';
+        break;
+      case 7:
+        factor = 0.35;
+        kombiAdvice = 'Geceye geçiş: Dengeli konfor ısıtması devrede.';
+        condText = 'Açık';
+        break;
+    }
+
+    if (rainChance > 45 && (idx === 2 || idx === 3 || idx === 6)) {
+      condition = 'rainy';
+      condText = 'Yerel Sağanak';
+      kombiAdvice = 'Yağış ve nem artışı: Ev içi hissedilen serinlik için kombi hedefi +1°C önerilir.';
+    }
+
+    const slotTemp = Math.round((minTemp + factor * tempDiff) * 10) / 10;
+    const slotRain = Math.max(5, Math.min(95, Math.round(rainChance * (0.6 + factor * 0.7))));
+    const slotWind = Math.round(10 + (idx % 3) * 4);
+    const slotHum = Math.round(75 - factor * 25);
+
+    return {
+      time: t,
+      temp: slotTemp,
+      condition,
+      conditionText: condText,
+      rainChancePct: slotRain,
+      windSpeedKmH: slotWind,
+      humidity: slotHum,
+      kombiAdvice,
+    };
+  });
+}
+
 /**
  * Fallback static 5-day weather forecast when offline or before network request
  */
 export function getFallbackForecast(cityName = 'İstanbul'): CurrentWeather {
+  const d0 = '2026-10-16';
+  const d1 = '2026-10-17';
+  const d2 = '2026-10-18';
+  const d3 = '2026-10-19';
+  const d4 = '2026-10-20';
+
   return {
     temp: 18.5,
     condition: 'partly_cloudy',
@@ -96,11 +235,61 @@ export function getFallbackForecast(cityName = 'İstanbul'): CurrentWeather {
     windSpeedKmH: 14,
     cityName,
     forecast: [
-      { date: '2026-10-15', dayName: 'Bugün', maxTemp: 19, minTemp: 12, condition: 'partly_cloudy', conditionText: 'Parçalı Bulutlu', rainChancePct: 15 },
-      { date: '2026-10-16', dayName: 'Yarın', maxTemp: 21, minTemp: 13, condition: 'sunny', conditionText: 'Güneşli', rainChancePct: 5 },
-      { date: '2026-10-17', dayName: 'Cumartesi', maxTemp: 17, minTemp: 11, condition: 'rainy', conditionText: 'Sağanak Yağış', rainChancePct: 75 },
-      { date: '2026-10-18', dayName: 'Pazar', maxTemp: 16, minTemp: 9, condition: 'cloudy', conditionText: 'Çok Bulutlu', rainChancePct: 30 },
-      { date: '2026-10-19', dayName: 'Pazartesi', maxTemp: 18, minTemp: 10, condition: 'partly_cloudy', conditionText: 'Açık & Parçalı', rainChancePct: 10 },
+      {
+        date: d0,
+        dayName: 'Bugün',
+        dateLabel: formatDateLabel(d0),
+        maxTemp: 19,
+        minTemp: 12,
+        condition: 'partly_cloudy',
+        conditionText: 'Parçalı Bulutlu',
+        rainChancePct: 15,
+        hourly: generateHourlyForecast(d0, 12, 19, 'partly_cloudy', 15),
+      },
+      {
+        date: d1,
+        dayName: 'Yarın',
+        dateLabel: formatDateLabel(d1),
+        maxTemp: 21,
+        minTemp: 13,
+        condition: 'sunny',
+        conditionText: 'Güneşli',
+        rainChancePct: 5,
+        hourly: generateHourlyForecast(d1, 13, 21, 'sunny', 5),
+      },
+      {
+        date: d2,
+        dayName: 'Cumartesi',
+        dateLabel: formatDateLabel(d2),
+        maxTemp: 17,
+        minTemp: 11,
+        condition: 'rainy',
+        conditionText: 'Sağanak Yağış',
+        rainChancePct: 75,
+        hourly: generateHourlyForecast(d2, 11, 17, 'rainy', 75),
+      },
+      {
+        date: d3,
+        dayName: 'Pazar',
+        dateLabel: formatDateLabel(d3),
+        maxTemp: 16,
+        minTemp: 9,
+        condition: 'cloudy',
+        conditionText: 'Çok Bulutlu',
+        rainChancePct: 30,
+        hourly: generateHourlyForecast(d3, 9, 16, 'cloudy', 30),
+      },
+      {
+        date: d4,
+        dayName: 'Pazartesi',
+        dateLabel: formatDateLabel(d4),
+        maxTemp: 18,
+        minTemp: 10,
+        condition: 'partly_cloudy',
+        conditionText: 'Açık & Parçalı',
+        rainChancePct: 10,
+        hourly: generateHourlyForecast(d4, 10, 18, 'partly_cloudy', 10),
+      },
     ],
   };
 }
@@ -127,14 +316,21 @@ export async function fetchOpenMeteoWeather(lat: number, lon: number, cityName: 
     for (let i = 0; i < count; i++) {
       const code = daily.weathercode?.[i] || 0;
       const mapping = mapWmoCodeToCondition(code);
+      const dateStr = dates[i];
+      const maxT = Math.round(daily.temperature_2m_max?.[i] ?? 20);
+      const minT = Math.round(daily.temperature_2m_min?.[i] ?? 12);
+      const rainPct = daily.precipitation_probability_max?.[i] ?? 10;
+
       forecast.push({
-        date: dates[i],
-        dayName: formatDayName(dates[i], i),
-        maxTemp: Math.round(daily.temperature_2m_max?.[i] ?? 20),
-        minTemp: Math.round(daily.temperature_2m_min?.[i] ?? 12),
+        date: dateStr,
+        dayName: formatDayName(dateStr, i),
+        dateLabel: formatDateLabel(dateStr),
+        maxTemp: maxT,
+        minTemp: minT,
         condition: mapping.condition,
         conditionText: mapping.text,
-        rainChancePct: daily.precipitation_probability_max?.[i] ?? 10,
+        rainChancePct: rainPct,
+        hourly: generateHourlyForecast(dateStr, minT, maxT, mapping.condition, rainPct),
       });
     }
 

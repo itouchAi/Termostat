@@ -19,6 +19,7 @@ import { CoreGaugeWidget } from './components/Widgets/CoreGaugeWidget.tsx';
 import { TargetControlWidget } from './components/Widgets/TargetControlWidget.tsx';
 import { ModulationWidget } from './components/Widgets/ModulationWidget.tsx';
 import { AnalyticsChartWidget } from './components/Widgets/AnalyticsChartWidget.tsx';
+import { ReportAnalyticsHeatmapWidget } from './components/Widgets/ReportAnalyticsHeatmapWidget.tsx';
 import { WeeklyScheduleWidget } from './components/Widgets/WeeklyScheduleWidget.tsx';
 import { ConsumptionWidget } from './components/Widgets/ConsumptionWidget.tsx';
 import { TelegramConfigWidget } from './components/Widgets/TelegramConfigWidget.tsx';
@@ -177,6 +178,20 @@ export default function App() {
     { time: '20:00', temp: 22.3, target: 22.5, isActive: true },
     { time: '22:00', temp: 22.0, target: 22.5, isActive: true },
   ]);
+
+  // Weather notification active state
+  const [isWeatherNotificationsEnabled, setIsWeatherNotificationsEnabled] = useState<boolean>(true);
+  const [weatherToast, setWeatherToast] = useState<{ title: string; message: string } | null>(null);
+
+  const handleTriggerWeatherNotification = useCallback(() => {
+    setWeatherToast({
+      title: '🌤️ 3 Saatlik Periyodik Hava Bildirimi & Tedbir',
+      message: `${activeLocation.name} (${activeLocation.cityName}): ${weather.temp}°C, ${weather.conditionText}. Yağış riski %${weather.forecast[0]?.rainChancePct || 15}. Evde kombi hedefi 21.5°C önerilir, dışarı çıkarken şemsiyenizi unutmayın.`,
+    });
+    setTimeout(() => {
+      setWeatherToast((curr) => (curr?.title.includes('3 Saatlik') ? null : curr));
+    }, 6000);
+  }, [activeLocation, weather]);
 
   // Derive relay and flame modulation
   const isKombiActive = useMemo(() => {
@@ -538,12 +553,30 @@ export default function App() {
 
   return (
     <div
-      className={`min-h-screen ${
+      className={`h-screen max-h-screen w-screen ${
         effectiveTheme === 'dark'
           ? 'dark bg-radial-[at_top] from-slate-900 via-slate-950 to-black text-slate-100'
           : 'bg-radial-[at_top] from-slate-100 via-sky-50/40 to-slate-200/80 text-slate-800'
       } font-sans transition-colors duration-500 flex flex-col selection:bg-blue-500 selection:text-white overflow-hidden`}
     >
+      {/* ── WEATHER NOTIFICATION TOAST POPUP (3 Saatlik Rapor & Önlem Bildirimi) ── */}
+      {weatherToast && (
+        <div className="fixed top-16 sm:top-20 right-3 sm:right-6 z-50 max-w-sm w-[92vw] p-3 rounded-2xl bg-slate-900/95 dark:bg-slate-800/95 text-white border border-amber-500/60 shadow-2xl backdrop-blur-xl animate-in slide-in-from-top-3 flex items-start gap-2.5">
+          <span className="text-xl shrink-0">🔔</span>
+          <div className="flex-1 min-w-0">
+            <h5 className="font-bold text-xs text-amber-400 mb-0.5">{weatherToast.title}</h5>
+            <p className="text-[11px] text-slate-200 leading-snug">{weatherToast.message}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setWeatherToast(null)}
+            className="w-5 h-5 rounded-full bg-slate-800 dark:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white shrink-0 cursor-pointer text-xs"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* ── TOP NAV HEADER ── */}
       <header className="relative z-40 h-14 sm:h-16 px-3 sm:px-6 md:px-8 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md">
         {/* Brand */}
@@ -770,11 +803,11 @@ export default function App() {
                 {/* Floating Window Content Body (Smooth internal scroll, touch friendly) */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-5 md:p-6">
                   
-                  {/* ── CARD 1: GENEL (SABİT TERMOSTAT & HEDEF AYARI) ── */}
+                  {/* ── CARD 1: GENEL (SOLDA 3D TERMOSTAT & KADRANDAN HEDEF AYARI, SAĞDA DİKEY MODLAR) ── */}
                   {tab.id === 'genel' && (
-                    <div className="h-full flex flex-col justify-between items-center gap-4">
+                    <div className="h-full flex flex-col justify-between p-1 sm:p-2">
                       {/* Top Badges */}
-                      <div className="w-full flex items-center justify-between">
+                      <div className="w-full flex items-center justify-between mb-1 sm:mb-2">
                         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700/60 shadow-xs flex items-center gap-2">
                           <span
                             className={`w-2 h-2 rounded-full ${
@@ -795,31 +828,111 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Fixed 3D Thermostat with Pin-Sharp OLED, Vivid Flame & High Contrast */}
-                      <div className="w-full max-w-sm sm:max-w-md h-[290px] sm:h-[340px] my-auto py-1 flex items-center justify-center">
-                        <ThreeScene
-                          theme={effectiveTheme}
-                          morphMode={morphMode}
-                          targetTemp={targetTemp}
-                          currentTemp={currentTemp}
-                          isKombiActive={isKombiActive}
-                          performanceMode={performanceMode}
-                          reducedMotion={reducedMotion}
-                        />
-                      </div>
+                      {/* Main Split: Left Thermostat shifted left + Right Vertical Mode Presets inside SAME frame */}
+                      <div className="flex-1 flex flex-col md:flex-row items-center justify-between gap-4 lg:gap-6 my-auto w-full">
+                        {/* Left: 3D Thermostat with Interactive Target Temperature Dial Knob */}
+                        <div className="flex-1 max-w-sm sm:max-w-md h-[270px] sm:h-[340px] flex items-center justify-center relative md:-translate-x-4 lg:-translate-x-6">
+                          <ThreeScene
+                            theme={effectiveTheme}
+                            morphMode={morphMode}
+                            targetTemp={targetTemp}
+                            currentTemp={currentTemp}
+                            isKombiActive={isKombiActive}
+                            performanceMode={performanceMode}
+                            reducedMotion={reducedMotion}
+                            onSetTarget={handleSetTarget}
+                          />
+                        </div>
 
-                      {/* Quick Target Controls & Mode Presets */}
-                      <div className="w-full">
-                        <TargetControlWidget
-                          targetTemp={targetTemp}
-                          onSetTarget={handleSetTarget}
-                          isKombiActive={isKombiActive}
-                        />
+                        {/* Right: Vertical Preset Mode Settings (Gece, Eko, Konfor, Dışarıda, Boost) + Quick Stepper */}
+                        <div className="w-full md:w-60 lg:w-64 flex flex-col gap-2 shrink-0 bg-slate-50/80 dark:bg-slate-800/70 p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-xs">
+                          {/* Target Degree Readout & Stepper */}
+                          <div className="flex items-center justify-between bg-white dark:bg-slate-750 p-2 sm:p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                            <button
+                              type="button"
+                              onClick={() => handleSetTarget(Math.max(10, Math.round((targetTemp - 0.5) * 2) / 2))}
+                              className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 font-black text-slate-700 dark:text-white flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer"
+                              title="Hedef sıcaklığı 0.5°C azalt"
+                            >
+                              -
+                            </button>
+
+                            <div className="text-center">
+                              <span className="text-[10px] text-slate-400 font-semibold block uppercase tracking-wider">
+                                Hedef Sıcaklık
+                              </span>
+                              <span className="text-xl sm:text-2xl font-black font-mono text-orange-600 dark:text-orange-400">
+                                {targetTemp.toFixed(1)}°C
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleSetTarget(Math.min(32, Math.round((targetTemp + 0.5) * 2) / 2))}
+                              className="w-8 h-8 rounded-lg bg-orange-500 hover:bg-orange-600 font-black text-white flex items-center justify-center transition-all active:scale-95 text-base shadow-xs cursor-pointer"
+                              title="Hedef sıcaklığı 0.5°C artır"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {/* 5 Vertical Preset Buttons */}
+                          <div className="space-y-1.5">
+                            {[
+                              { label: 'Gece', temp: 18.5, icon: '🌙', desc: 'Tasarruf & Uyku' },
+                              { label: 'Eko', temp: 20.0, icon: '🍃', desc: 'Dengeli Ekonomi' },
+                              { label: 'Konfor', temp: 22.5, icon: '🔥', desc: 'İdeal Oturma' },
+                              { label: 'Dışarıda', temp: 16.0, icon: '💼', desc: 'Donma Koruması' },
+                              { label: 'Boost', temp: 25.0, icon: '⚡', desc: 'Hızlı Isıtma' },
+                            ].map((preset) => {
+                              const isActive = Math.abs(targetTemp - preset.temp) < 0.25;
+                              return (
+                                <button
+                                  key={preset.label}
+                                  type="button"
+                                  onClick={() => handleSetTarget(preset.temp)}
+                                  className={`w-full flex items-center justify-between px-3 py-1.5 sm:py-2 rounded-xl text-left transition-all duration-200 cursor-pointer ${
+                                    isActive
+                                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-md shadow-orange-500/25 scale-[1.02]'
+                                      : 'bg-white dark:bg-slate-750 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-slate-700'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-base">{preset.icon}</span>
+                                    <div>
+                                      <span className="text-xs font-bold block">{preset.label}</span>
+                                      <span
+                                        className={`text-[9px] ${
+                                          isActive ? 'text-orange-100' : 'text-slate-400'
+                                        }`}
+                                      >
+                                        {preset.desc}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <span
+                                    className={`font-mono text-xs font-extrabold px-2 py-0.5 rounded-lg ${
+                                      isActive
+                                        ? 'bg-white/20 text-white'
+                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                                    }`}
+                                  >
+                                    {preset.temp}°C
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <div className="text-[10px] text-slate-400 text-center pt-1 border-t border-slate-200/50 dark:border-slate-700/50 leading-tight">
+                            💡 Kadran üzerindeki beyaz noktayı saat yönünde çevirerek de hedefi ayarlayabilirsiniz.
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* ── CARD 2: HAVA DURUMU (5 GÜNLÜK BÖLGESEL TAHMİN) ── */}
+                  {/* ── CARD 2: HAVA DURUMU (TARİHLİ KUTUCUKLAR, SAATLİK AÇILIR PENCERE & BİLDİRİMLER) ── */}
                   {tab.id === 'hava' && (
                     <div className="h-full flex flex-col justify-center">
                       <ForecastSection
@@ -828,18 +941,18 @@ export default function App() {
                         activeLocation={activeLocation}
                         onSelectLocation={handleSelectLocation}
                         onAddLocation={handleAddLocation}
+                        notificationsEnabled={isWeatherNotificationsEnabled}
+                        onToggleNotifications={setIsWeatherNotificationsEnabled}
+                        onTriggerTestNotification={handleTriggerWeatherNotification}
                       />
                     </div>
                   )}
 
-                  {/* ── CARD 3: RAPOR (24S ANALİTİK GRAFİĞİ, KOMBİ RÖLE & SENSÖRLER) ── */}
+                  {/* ── CARD 3: RAPOR (SICAKLIK ISI HARİTASI, AKTİF YANMA SAATLERİ, DOĞALGAZ M3 x FİYAT FATURA) ── */}
                   {tab.id === 'rapor' && (
                     <div className="space-y-4">
-                      {/* 24 Saatlik Sıcaklık & Tüketim Analitik Trend Grafiği */}
-                      <AnalyticsChartWidget
-                        history={history}
-                        dailyRunMinutes={dailyRunMinutes}
-                      />
+                      {/* Sıcaklık Isı Haritası, Tarih Hafızası ve Doğalgaz Fatura Tahmin Hesabı */}
+                      <ReportAnalyticsHeatmapWidget />
 
                       {/* Kombi Telemetrisi & Canlı Ortam Sensörleri */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

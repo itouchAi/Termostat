@@ -1,6 +1,22 @@
 import React, { useState } from 'react';
-import { MapPin, Plus, Wind, Droplets, Compass, ChevronDown, Check, X } from 'lucide-react';
-import type { LocationItem, CurrentWeather } from '../../utils/weather.ts';
+import {
+  MapPin,
+  Plus,
+  Wind,
+  Droplets,
+  ChevronDown,
+  Check,
+  X,
+  Bell,
+  BellOff,
+  AlertTriangle,
+  Home,
+  Footprints,
+  Clock,
+  Sparkles,
+  Info,
+} from 'lucide-react';
+import type { LocationItem, CurrentWeather, DayForecast } from '../../utils/weather.ts';
 import { AnimatedWeatherIcon } from './AnimatedWeatherIcon.tsx';
 
 interface ForecastSectionProps {
@@ -10,6 +26,9 @@ interface ForecastSectionProps {
   onSelectLocation: (loc: LocationItem) => void;
   onAddLocation: (name: string, cityName: string) => void;
   isLoading?: boolean;
+  notificationsEnabled?: boolean;
+  onToggleNotifications?: (enabled: boolean) => void;
+  onTriggerTestNotification?: () => void;
 }
 
 export const ForecastSection: React.FC<ForecastSectionProps> = ({
@@ -19,9 +38,15 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
   onSelectLocation,
   onAddLocation,
   isLoading = false,
+  notificationsEnabled = false,
+  onToggleNotifications,
+  onTriggerTestNotification,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedDayForHourly, setSelectedDayForHourly] = useState<DayForecast | null>(null);
+  const [isPrecautionModalOpen, setIsPrecautionModalOpen] = useState(false);
+
   const [newLocName, setNewLocName] = useState('');
   const [newCityName, setNewCityName] = useState('İstanbul');
 
@@ -33,23 +58,28 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
     setIsAddModalOpen(false);
   };
 
+  // Determine if there's severe weather or rain ahead
+  const hasSevereWeather = weather.forecast.some(
+    (d) => d.rainChancePct > 40 || d.condition === 'rainy' || d.condition === 'snowy' || d.condition === 'thunder'
+  );
+
   return (
-    <div className="w-full bg-slate-50/90 dark:bg-slate-900/90 rounded-2xl p-4 sm:p-5 border-t border-slate-200/80 dark:border-slate-800 transition-all">
-      {/* Top Bar: Location Switcher & Current Conditions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <div className="w-full flex flex-col justify-between h-full bg-slate-50/90 dark:bg-slate-900/90 rounded-2xl p-3 sm:p-4 border-t border-slate-200/80 dark:border-slate-800 transition-all">
+      {/* ── TOP BAR: Location Switcher & Current Conditions & Notification Toggle ── */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
         {/* Location Dropdown */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setIsDropdownOpen((prev) => !prev)}
             aria-label="Konum Seç"
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs hover:border-blue-400 transition-all text-xs font-bold text-slate-800 dark:text-white"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs hover:border-blue-400 transition-all text-xs font-bold text-slate-800 dark:text-white"
           >
-            <MapPin className="w-4 h-4 text-rose-500 shrink-0" />
-            <span className="truncate max-w-[130px] sm:max-w-[200px]">
+            <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+            <span className="truncate max-w-[120px] sm:max-w-[180px]">
               {activeLocation.name} ({activeLocation.district || activeLocation.cityName})
             </span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
+            <ChevronDown className="w-3 h-3 text-slate-400 ml-0.5" />
           </button>
 
           {/* Location Dropdown Menu */}
@@ -100,71 +130,299 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
           )}
         </div>
 
-        {/* Current Outside Weather Status Badge */}
-        <div className="flex items-center gap-3 text-xs">
-          <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-white">
-            <span className="text-sm">{weather.temp}°C</span>
-            <span className="text-slate-400 font-normal text-[11px] hidden sm:inline">
-              {weather.conditionText}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-            <span className="flex items-center gap-0.5">
-              <Droplets className="w-3 h-3 text-sky-500" />
-              %{weather.humidity}
-            </span>
-            <span className="flex items-center gap-0.5">
-              <Wind className="w-3 h-3 text-indigo-400" />
-              {weather.windSpeedKmH} km/s
-            </span>
+        {/* Right Info: Current Condition & Weather Notification Switch */}
+        <div className="flex items-center gap-2 sm:gap-3 text-xs">
+          {/* Weather Notification Toggle */}
+          <button
+            type="button"
+            onClick={() => onToggleNotifications?.(!notificationsEnabled)}
+            className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all ${
+              notificationsEnabled
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 shadow-xs'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+            }`}
+            title="3 saatlik hava durumu bildirimleri ve ani yağmur/kar önlem uyarıları"
+          >
+            {notificationsEnabled ? (
+              <>
+                <Bell className="w-3.5 h-3.5 text-amber-500 animate-bounce" />
+                <span className="hidden sm:inline">Hava Bildirimleri Açık</span>
+                <span className="sm:hidden">Bildirim Açık</span>
+              </>
+            ) : (
+              <>
+                <BellOff className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Hava Bildirimleri</span>
+                <span className="sm:hidden">Bildirim</span>
+              </>
+            )}
+          </button>
+
+          {/* Current Temperature & Humidity */}
+          <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-white">
+            <span className="text-sm font-mono">{weather.temp}°C</span>
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-normal">
+              <span className="flex items-center gap-0.5">
+                <Droplets className="w-3 h-3 text-sky-500" />
+                %{weather.humidity}
+              </span>
+              <span className="hidden md:flex items-center gap-0.5">
+                <Wind className="w-3 h-3 text-indigo-400" />
+                {weather.windSpeedKmH} km/s
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 5-Day Weather Cards Grid (Embossed & Tactile with warm glow) */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      {/* ── 5-DAY WEATHER CARDS GRID (Compact, No Vertical Scroll, Flat Dark Slate Lighter Shade, Clickable) ── */}
+      <div className="grid grid-cols-5 gap-1.5 sm:gap-2.5 my-auto">
         {weather.forecast.slice(0, 5).map((day, idx) => (
-          <div
+          <button
             key={day.date}
-            className={`p-3.5 rounded-2xl flex flex-col items-center justify-between text-center transition-all duration-300 transform hover:-translate-y-1 ${
+            type="button"
+            onClick={() => setSelectedDayForHourly(day)}
+            className={`p-2 sm:p-2.5 rounded-xl flex flex-col items-center justify-between text-center transition-all duration-200 cursor-pointer text-left w-full ${
               idx === 0
-                ? 'bg-gradient-to-b from-blue-50/95 via-sky-50/80 to-slate-100/90 dark:bg-gradient-to-b dark:from-slate-800/95 dark:via-slate-850 dark:to-slate-900 border-2 border-blue-400/60 dark:border-orange-500/50 shadow-[0_8px_24px_rgba(59,130,246,0.18),inset_0_1px_0_rgba(255,255,255,0.95)] dark:shadow-[0_8px_26px_rgba(249,115,22,0.22),inset_0_1px_0_rgba(255,255,255,0.08)]'
-                : 'bg-gradient-to-b from-white via-slate-50 to-slate-100/90 dark:bg-gradient-to-b dark:from-slate-800/90 dark:via-slate-850 dark:to-slate-900 border border-slate-200/90 dark:border-orange-500/25 shadow-[0_6px_20px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_6px_22px_rgba(249,115,22,0.12),inset_0_1px_0_rgba(255,255,255,0.05)] hover:shadow-[0_10px_26px_rgba(15,23,42,0.14)] dark:hover:shadow-[0_10px_30px_rgba(249,115,22,0.22)]'
+                ? 'bg-white dark:bg-slate-800 border-2 border-blue-400/80 dark:border-orange-500/80 shadow-md shadow-blue-500/10 dark:shadow-orange-500/15'
+                : 'bg-white/80 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-xs hover:border-blue-400 dark:hover:border-slate-600 hover:shadow-sm'
             }`}
           >
-            {/* Day Title */}
-            <div className="flex items-center gap-1 text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1">
-              <span>{day.dayName}</span>
-              {idx === 0 && (
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-orange-500 animate-pulse"></span>
-              )}
+            {/* Day Title + Date Label (e.g. Bugün • 16 Eki) */}
+            <div className="flex flex-col items-center w-full mb-0.5">
+              <div className="flex items-center gap-1 text-[11px] sm:text-xs font-bold text-slate-800 dark:text-slate-100">
+                <span className="truncate max-w-[55px] sm:max-w-none">{day.dayName}</span>
+                {idx === 0 && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-orange-500 shrink-0"></span>
+                )}
+              </div>
+              <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-400 font-medium font-mono">
+                {day.dateLabel || day.date.slice(5)}
+              </span>
             </div>
 
-            {/* 2D Animated Weather Icon with soft ambient aura */}
-            <div className="my-1.5 p-1 rounded-xl bg-slate-50/60 dark:bg-slate-800/50 flex items-center justify-center">
-              <AnimatedWeatherIcon condition={day.condition} size={36} />
+            {/* 2D Animated Weather Icon */}
+            <div className="my-1 p-0.5 rounded-lg flex items-center justify-center">
+              <AnimatedWeatherIcon condition={day.condition} size={28} />
             </div>
 
             {/* Condition label */}
-            <span className="text-[10px] text-slate-500 dark:text-slate-300 font-medium truncate max-w-[95px] mb-1">
+            <span className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-300 font-medium truncate max-w-[65px] sm:max-w-[85px] leading-tight mb-1">
               {day.conditionText}
             </span>
 
             {/* High / Low Degree */}
-            <div className="flex items-center gap-1.5 font-mono text-xs font-black">
+            <div className="flex items-center gap-1 font-mono text-[11px] sm:text-xs font-black">
               <span className="text-slate-900 dark:text-white">{day.maxTemp}°</span>
-              <span className="text-slate-400 dark:text-slate-400 font-semibold text-[10px]">{day.minTemp}°</span>
+              <span className="text-slate-400 font-normal text-[10px]">{day.minTemp}°</span>
             </div>
 
-            {/* Rain chance */}
-            {day.rainChancePct > 20 && (
-              <span className="text-[9px] font-bold text-sky-600 dark:text-amber-400 mt-1 bg-sky-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded-md">
-                %{day.rainChancePct} yağış
+            {/* Rain chance badge */}
+            {day.rainChancePct > 20 ? (
+              <span className="text-[8px] sm:text-[9px] font-bold text-sky-600 dark:text-amber-300 mt-1 bg-sky-50 dark:bg-slate-750 px-1 py-0.2 rounded-md">
+                %{day.rainChancePct}
               </span>
+            ) : (
+              <span className="text-[8px] text-slate-400 mt-1 opacity-60">Açık</span>
             )}
-          </div>
+          </button>
         ))}
       </div>
+
+      {/* ── NOTIFICATION & PRECAUTION ALERT BANNER (If Active or Severe Weather Ahead) ── */}
+      {notificationsEnabled ? (
+        <div className="mt-2.5 p-2.5 rounded-xl bg-amber-500/10 dark:bg-slate-800 border border-amber-500/30 dark:border-amber-500/40 flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+            <div className="min-w-0">
+              <span className="font-bold text-amber-700 dark:text-amber-400 block text-[11px]">
+                3 Saatlik Bildirim & Akıllı Tedbir Sistemi Devrede
+              </span>
+              <span className="text-[10px] text-slate-600 dark:text-slate-300 truncate block">
+                {hasSevereWeather
+                  ? '⚠️ Önümüzdeki günlerde yağış ve ani ısı düşüşü bekleniyor. Tedbirler hazır.'
+                  : '🌤️ Hava stabil. 3 saatte bir periyodik durum özeti ve kombi önerisi iletilir.'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsPrecautionModalOpen(true)}
+              className="px-2 py-1 rounded-lg bg-amber-500 text-white font-bold text-[10px] hover:bg-amber-600 shadow-xs transition-all cursor-pointer"
+            >
+              Önlemleri Gör
+            </button>
+            <button
+              type="button"
+              onClick={onTriggerTestNotification}
+              className="px-2 py-1 rounded-lg bg-white dark:bg-slate-750 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-semibold text-[10px] hover:bg-slate-100 transition-all cursor-pointer"
+              title="Şimdi bir 3 saatlik hava bildirimi simüle et"
+            >
+              Test Bildirimi
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-2.5 p-2 rounded-xl bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-750 flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+            <span>3 saatlik periyodik hava durumu ve ani yağış önlem bildirimlerini açabilirsiniz.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onToggleNotifications?.(true)}
+            className="px-2.5 py-0.5 rounded-lg bg-blue-600 text-white font-bold text-[10px] hover:bg-blue-700 shrink-0 cursor-pointer shadow-xs"
+          >
+            Aktif Et
+          </button>
+        </div>
+      )}
+
+      {/* ── HOURLY FORECAST POPUP WINDOW (Güne tıklandığında açılan saatlik hava durumu) ── */}
+      {selectedDayForHourly && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs animate-in fade-in"
+        >
+          <div className="bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 w-full max-w-lg shadow-2xl max-h-[85vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-750 mb-3">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-500" />
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    {selectedDayForHourly.dayName} ({selectedDayForHourly.dateLabel})
+                    <span className="text-xs text-slate-400 font-normal">Saatlik Tahmin</span>
+                  </h3>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                    {activeLocation.name} • {selectedDayForHourly.conditionText} • {selectedDayForHourly.minTemp}° / {selectedDayForHourly.maxTemp}°C
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDayForHourly(null)}
+                className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Hourly Time Slots Grid */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+              {selectedDayForHourly.hourly?.map((slot) => (
+                <div
+                  key={slot.time}
+                  className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-3 text-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-200 w-11">
+                      {slot.time}
+                    </span>
+                    <AnimatedWeatherIcon condition={slot.condition} size={22} />
+                    <div>
+                      <span className="font-semibold text-slate-700 dark:text-slate-200 block text-[11px]">
+                        {slot.conditionText}
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        {slot.kombiAdvice}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 font-mono font-bold text-right shrink-0">
+                    <span className="text-sm text-slate-900 dark:text-white">{slot.temp}°C</span>
+                    {slot.rainChancePct > 20 && (
+                      <span className="text-[10px] text-sky-600 dark:text-sky-400 font-normal">
+                        %{slot.rainChancePct}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-750 flex items-center justify-between text-[11px] text-slate-400">
+              <span>💡 Saatlik verilere göre kombiniz modülasyon tasarrufu yapar.</span>
+              <button
+                type="button"
+                onClick={() => setSelectedDayForHourly(null)}
+                className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-200"
+              >
+                Kapat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── PRECAUTION & SEVERE WEATHER ADVISORY MODAL (Ev & Dışarı Çıkış Önlemleri) ── */}
+      {isPrecautionModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs animate-in fade-in"
+        >
+          <div className="bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-750 mb-3">
+              <div className="flex items-center gap-2 text-amber-500 font-bold text-sm">
+                <AlertTriangle className="w-5 h-5" />
+                <span>Akıllı Hava Durumu & Önlem Hatırlatıcı</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPrecautionModalOpen(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              {/* Home Precautions */}
+              <div className="p-3 rounded-xl bg-blue-50/70 dark:bg-slate-800 border border-blue-100 dark:border-slate-700">
+                <h4 className="font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1.5 mb-1.5">
+                  <Home className="w-4 h-4" />
+                  🏠 Evde Alınması Gereken Önlemler:
+                </h4>
+                <ul className="space-y-1 text-slate-600 dark:text-slate-300 list-disc list-inside text-[11px]">
+                  <li>Ani hava soğumalarında kombi hedef sıcaklığını 1°C artırarak duvarların soğumasını engelleyin.</li>
+                  <li>Doğalgaz menfezlerini asla kapatmayın; havalandırmayı koruyun.</li>
+                  <li>Radyatörlerin önünü mobilya ve perdeyle kapatmayarak ısı yayılımını %15 artırın.</li>
+                  <li>Kritik donma riski saatlerinde (03:00-06:00) sirkülasyon pompasını aktif tutun.</li>
+                </ul>
+              </div>
+
+              {/* Outdoor Precautions */}
+              <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-slate-800 border border-amber-100 dark:border-slate-700">
+                <h4 className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 mb-1.5">
+                  <Footprints className="w-4 h-4" />
+                  🚪 Dışarı Çıkarken Alınması Gereken Önlemler:
+                </h4>
+                <ul className="space-y-1 text-slate-600 dark:text-slate-300 list-disc list-inside text-[11px]">
+                  <li>Sağanak yağış ve rüzgar ihtimaline karşı şemsiye ve rüzgar geçirmez mont tercih edin.</li>
+                  <li>Islak ve kaygan zeminlerde kaydırmaz tabanlı ayakkabı kullanın.</li>
+                  <li>Araçla seyahat edecekseniz fren mesafesini iki katına çıkarın, silecekleri kontrol edin.</li>
+                  <li>Evden uzun süre ayrılacaksanız termostatı "Dışarıda" moduna (16.0°C) alın.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-750 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsPrecautionModalOpen(false)}
+                className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs"
+              >
+                Anladım
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add New Location Modal */}
       {isAddModalOpen && (
@@ -173,8 +431,8 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
         >
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 w-full max-w-sm shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
+          <div className="bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-3xl p-5 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-750 mb-4">
               <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-blue-500" />
                 Yeni Konum & Cihaz Tanımla

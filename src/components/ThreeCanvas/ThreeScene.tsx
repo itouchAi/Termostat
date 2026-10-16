@@ -12,6 +12,7 @@ interface ThreeSceneProps {
   performanceMode: boolean;
   reducedMotion: boolean;
   onSelectComponent?: (name: string, description: string) => void;
+  onSetTarget?: (newTarget: number) => void;
 }
 
 export const ThreeScene: React.FC<ThreeSceneProps> = ({
@@ -23,6 +24,7 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
   performanceMode,
   reducedMotion,
   onSelectComponent,
+  onSetTarget,
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -35,6 +37,7 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
     performanceMode,
     reducedMotion,
     onSelectComponent,
+    onSetTarget,
   });
 
   useEffect(() => {
@@ -47,17 +50,9 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
       performanceMode,
       reducedMotion,
       onSelectComponent,
+      onSetTarget,
     };
-  }, [
-    theme,
-    morphMode,
-    targetTemp,
-    currentTemp,
-    isKombiActive,
-    performanceMode,
-    reducedMotion,
-    onSelectComponent,
-  ]);
+  }, [theme, morphMode, targetTemp, currentTemp, isKombiActive, performanceMode, reducedMotion, onSelectComponent, onSetTarget]);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -182,7 +177,7 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
       dialCtx.arc(cx, cy, 335, startAngle, endAngle);
       dialCtx.stroke();
 
-      // Active Target Arc
+      // Active Target Arc (Warm vibrant gradient)
       const arcGrad = dialCtx.createLinearGradient(100, 100, 900, 900);
       if (isHeating) {
         arcGrad.addColorStop(0, '#f97316');
@@ -197,16 +192,44 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
       dialCtx.arc(cx, cy, 335, startAngle, startAngle + pct * (endAngle - startAngle));
       dialCtx.stroke();
 
-      // Current Temp needle point
+      // Target Temperature WHITE KNOB (Interactive circular handle on the orange arc)
+      const targetAngle = startAngle + pct * (endAngle - startAngle);
+      const tx = cx + Math.cos(targetAngle) * 335;
+      const ty = cy + Math.sin(targetAngle) * 335;
+
+      // 1. Ambient pulsating glow halo
+      dialCtx.fillStyle = isHeating ? 'rgba(255, 255, 255, 0.45)' : 'rgba(56, 189, 248, 0.4)';
+      dialCtx.beginPath();
+      dialCtx.arc(tx, ty, 32, 0, Math.PI * 2);
+      dialCtx.fill();
+
+      // 2. Pure bright white circular knob body
+      dialCtx.fillStyle = '#ffffff';
+      dialCtx.beginPath();
+      dialCtx.arc(tx, ty, 20, 0, Math.PI * 2);
+      dialCtx.fill();
+
+      // 3. Crisp orange/cyan outer border
+      dialCtx.strokeStyle = isHeating ? '#f97316' : '#0284c7';
+      dialCtx.lineWidth = 5;
+      dialCtx.stroke();
+
+      // 4. Center finger grip dot
+      dialCtx.fillStyle = isHeating ? '#ea580c' : '#0284c7';
+      dialCtx.beginPath();
+      dialCtx.arc(tx, ty, 6, 0, Math.PI * 2);
+      dialCtx.fill();
+
+      // Current Temp needle point (distinct slim cyan badge)
       const currAngle = startAngle + currPct * (endAngle - startAngle);
       const nx = cx + Math.cos(currAngle) * 335;
       const ny = cy + Math.sin(currAngle) * 335;
-      dialCtx.fillStyle = '#ffffff';
+      dialCtx.fillStyle = '#38bdf8';
       dialCtx.beginPath();
-      dialCtx.arc(nx, ny, 16, 0, Math.PI * 2);
+      dialCtx.arc(nx, ny, 11, 0, Math.PI * 2);
       dialCtx.fill();
-      dialCtx.strokeStyle = '#0284c7';
-      dialCtx.lineWidth = 4;
+      dialCtx.strokeStyle = '#ffffff';
+      dialCtx.lineWidth = 3;
       dialCtx.stroke();
 
       // Upper Header Label: Status & Target
@@ -547,12 +570,103 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
       renderer.render(scene, camera);
     };
 
+    // ── Interactive Circular Target Temp Control via Orange Arc & White Knob ──
+    let isDraggingTarget = false;
+
+    const computeTargetFromPointer = (clientX: number, clientY: number) => {
+      if (!stateRef.current.onSetTarget || !container) return;
+      const rect = container.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = clientX - cx;
+      const dy = clientY - cy;
+
+      let angle = Math.atan2(dy, dx);
+      if (angle < 0) angle += Math.PI * 2;
+
+      // Arc: startAngle = 135 deg (0.75 * PI), endAngle = 405 deg (2.25 * PI = 45 deg)
+      const startAngle = Math.PI * 0.75;
+      const endAngle = Math.PI * 2.25;
+
+      let normAngle = angle;
+      if (normAngle < Math.PI * 0.6) {
+        normAngle += Math.PI * 2;
+      }
+
+      // Check if user clicked in the bottom 90 deg cutout
+      if (normAngle > endAngle && normAngle < startAngle + Math.PI * 2) {
+        if (normAngle < endAngle + Math.PI * 0.25) {
+          normAngle = endAngle;
+        } else {
+          normAngle = startAngle;
+        }
+      }
+
+      let pct = (normAngle - startAngle) / (endAngle - startAngle);
+      pct = Math.max(0, Math.min(1, pct));
+
+      // Range: 10°C to 32°C (step 0.5°C)
+      const rawTemp = 10 + pct * (32 - 10);
+      const rounded = Math.round(rawTemp * 2) / 2;
+      const clamped = Math.max(10, Math.min(32, rounded));
+      stateRef.current.onSetTarget(clamped);
+    };
+
+    const handlePointerDown = (e: PointerEvent) => {
+      if (!stateRef.current.onSetTarget || !container) return;
+      const rect = container.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = e.clientX - cx;
+      const dy = e.clientY - cy;
+      const dist = Math.hypot(dx, dy);
+
+      // Interactive ring around dial
+      const dialRadius = Math.min(rect.width, rect.height) * 0.42;
+
+      if (dist >= dialRadius * 0.35 && dist <= dialRadius * 1.35) {
+        isDraggingTarget = true;
+        try {
+          container.setPointerCapture(e.pointerId);
+        } catch {}
+        e.stopPropagation();
+        e.preventDefault();
+        computeTargetFromPointer(e.clientX, e.clientY);
+      }
+    };
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!isDraggingTarget) return;
+      e.stopPropagation();
+      e.preventDefault();
+      computeTargetFromPointer(e.clientX, e.clientY);
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      if (isDraggingTarget) {
+        isDraggingTarget = false;
+        try {
+          container.releasePointerCapture(e.pointerId);
+        } catch {}
+      }
+    };
+
+    container.addEventListener('pointerdown', handlePointerDown);
+    container.addEventListener('pointermove', handlePointerMove);
+    container.addEventListener('pointerup', handlePointerUp);
+    container.addEventListener('pointercancel', handlePointerUp);
+
     animId = requestAnimationFrame(animate);
 
     // Cleanup
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', onResize);
+
+      container.removeEventListener('pointerdown', handlePointerDown);
+      container.removeEventListener('pointermove', handlePointerMove);
+      container.removeEventListener('pointerup', handlePointerUp);
+      container.removeEventListener('pointercancel', handlePointerUp);
 
       dialTexture.dispose();
       chassisGeo.dispose();
@@ -579,9 +693,9 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
   return (
     <div
       ref={mountRef}
-      className="relative w-full h-[320px] sm:h-[380px] md:h-[420px] select-none flex items-center justify-center"
+      className="relative w-full h-[320px] sm:h-[380px] md:h-[420px] select-none flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
       data-testid="three-canvas-container"
-      title="Sabit Akıllı Kombi Termostat Kadranı ve Dinamik Alev"
+      title="Hedef sıcaklığı ayarlamak için beyaz noktayı saat yönünde çevirin"
     />
   );
 };
