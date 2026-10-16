@@ -396,6 +396,9 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
 
     const dialTexture = new THREE.CanvasTexture(dialCanvas);
     dialTexture.colorSpace = THREE.SRGBColorSpace;
+    dialTexture.minFilter = THREE.LinearFilter;
+    dialTexture.magFilter = THREE.LinearFilter;
+    dialTexture.generateMipmaps = false;
     dialTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
     // ── Fixed Thermostat Group (Zero rotation, perfectly static) ──
@@ -429,8 +432,8 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
     sinkMesh.name = 'HeatSinkRing';
     thermostatGroup.add(sinkMesh);
 
-    // Part C: OLED Display Face with Dial Texture
-    const displayGeo = new THREE.CircleGeometry(1.82, 64);
+    // Part C: OLED Display Face with Dial Texture (Ultra-Sharp, Vivid & Non-blurred)
+    const displayGeo = new THREE.CircleGeometry(1.83, 64);
     const displayMat = new THREE.MeshBasicMaterial({
       map: dialTexture,
       toneMapped: false,
@@ -440,17 +443,16 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
     displayMesh.name = 'OledFace';
     thermostatGroup.add(displayMesh);
 
-    // Part D: Convex Sapphire Crystal Glass Lens (Full circle, no cutoff lines)
-    const glassGeo = new THREE.CircleGeometry(1.84, 64);
+    // Part D: Subtle Crystal Bevel Specular Sheen (Zero blur on screen, high clarity)
+    const glassGeo = new THREE.RingGeometry(1.72, 1.84, 64);
     const glassMat = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
-      transmission: 0.98,
-      opacity: 0.85,
-      transparent: true,
-      roughness: 0.02,
+      metalness: 0.2,
+      roughness: 0.05,
       clearcoat: 1.0,
       clearcoatRoughness: 0.05,
-      ior: 1.45,
+      transparent: true,
+      opacity: 0.35,
       depthWrite: false,
     });
     const glassMesh = new THREE.Mesh(glassGeo, glassMat);

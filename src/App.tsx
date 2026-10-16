@@ -10,8 +10,6 @@ import {
   ShieldCheck,
   ChevronLeft,
   ChevronRight,
-  ArrowRight,
-  ArrowLeft,
 } from 'lucide-react';
 
 import type { ThemeMode, MorphMode, ScheduleItem, WidgetItem } from './types.ts';
@@ -71,9 +69,9 @@ export interface SlideDef {
 const TABS: SlideDef[] = [
   { id: 'genel', label: 'Genel', icon: '🏠', title: 'Termostat & Kombi Ana Kontrol' },
   { id: 'hava', label: 'Hava', icon: '🌤️', title: 'Bölgesel Hava Durumu & 5 Günlük Tahmin' },
-  { id: 'rapor', label: 'Rapor', icon: '📊', title: 'Kombi Röle, Basınç & Telemetri' },
+  { id: 'rapor', label: 'Rapor', icon: '📊', title: '24s Analitik & Kombi Telemetrisi' },
   { id: 'program', label: 'Program', icon: '⏰', title: 'Haftalık Zaman Planı & Tüketim' },
-  { id: 'tumu', label: 'Tümü', icon: '⊞', title: 'Analitik, Şifreli Kasa & Bildirimler' },
+  { id: 'tumu', label: 'Tümü', icon: '⊞', title: 'Şifreli Kasa, Bildirimler & Ayarlar' },
 ];
 
 export default function App() {
@@ -115,7 +113,9 @@ export default function App() {
   const [dragDeltaX, setDragDeltaX] = useState<number>(0);
 
   const dragStartXRef = useRef<number>(0);
+  const dragStartYRef = useRef<number>(0);
   const isPointerDownRef = useRef<boolean>(false);
+  const isSwipeDirectionLockedRef = useRef<boolean | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
 
   // Normalized active tab index in range [0 .. TABS.length - 1]
@@ -164,7 +164,7 @@ export default function App() {
   const [vaultPin, setVaultPin] = useState<string>('');
   const [isVaultLocked, setIsVaultLocked] = useState<boolean>(false);
 
-  // Temperature History
+  // Temperature History (24 hours)
   const [history] = useState(() => [
     { time: '04:00', temp: 19.2, target: 19.0, isActive: false },
     { time: '06:00', temp: 19.1, target: 19.0, isActive: false },
@@ -273,7 +273,7 @@ export default function App() {
     };
   }, [activeLocation]);
 
-  // ── Infinite Horizontal Sliding Logic ──
+  // ── Infinite Horizontal Sliding Navigation ──
   const navigateToTab = useCallback((targetTabIdx: number) => {
     const n = TABS.length;
     const currentTab = ((virtualIndex % n) + n) % n;
@@ -324,11 +324,56 @@ export default function App() {
     }
   };
 
-  // Pointer / Touch Drag gesture
-  const handlePointerDown = (e: React.PointerEvent) => {
+  // ── Touch Gesture Tracking (Parmakla Kaydırma & Gerçek Zamanlı 3D Deformasyon) ──
+  const handleTouchStart = (e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
-    // Don't intercept clicks on inputs, buttons, sliders, or inside scrollable form cards
-    if (target.closest('button, input, select, textarea, a, [role="button"], .no-drag')) {
+    if (target.closest('input, textarea, select, button, [role="slider"]')) {
+      return;
+    }
+    dragStartXRef.current = e.touches[0].clientX;
+    dragStartYRef.current = e.touches[0].clientY;
+    isSwipeDirectionLockedRef.current = null;
+    setIsDragging(true);
+    setDragDeltaX(0);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!dragStartXRef.current) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const dx = currentX - dragStartXRef.current;
+    const dy = currentY - dragStartYRef.current;
+
+    if (isSwipeDirectionLockedRef.current === null) {
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+        isSwipeDirectionLockedRef.current = Math.abs(dx) > Math.abs(dy);
+      }
+    }
+
+    if (isSwipeDirectionLockedRef.current === true) {
+      setDragDeltaX(dx);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (isSwipeDirectionLockedRef.current === true) {
+      if (dragDeltaX > 50) {
+        slidePrev();
+      } else if (dragDeltaX < -50) {
+        slideNext();
+      }
+    }
+    dragStartXRef.current = 0;
+    dragStartYRef.current = 0;
+    isSwipeDirectionLockedRef.current = null;
+    setIsDragging(false);
+    setDragDeltaX(0);
+  };
+
+  // ── Mouse Drag Gesture Tracking (Fareyle Parmak Gibi Kaydırma) ──
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('input, textarea, select, button, [role="slider"]')) {
       return;
     }
     isPointerDownRef.current = true;
@@ -337,20 +382,19 @@ export default function App() {
     setDragDeltaX(0);
   };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
+  const handleMouseMove = (e: React.MouseEvent) => {
     if (!isPointerDownRef.current) return;
-    const delta = e.clientX - dragStartXRef.current;
-    setDragDeltaX(delta);
+    const dx = e.clientX - dragStartXRef.current;
+    setDragDeltaX(dx);
   };
 
-  const handlePointerUp = () => {
+  const handleMouseUp = () => {
     if (!isPointerDownRef.current) return;
     isPointerDownRef.current = false;
     setIsDragging(false);
-
-    if (dragDeltaX > 65) {
+    if (dragDeltaX > 55) {
       slidePrev();
-    } else if (dragDeltaX < -65) {
+    } else if (dragDeltaX < -55) {
       slideNext();
     }
     setDragDeltaX(0);
@@ -608,15 +652,19 @@ export default function App() {
         </div>
       </header>
 
-      {/* ── 3D FLOATING CAROUSEL STAGE (Infinite Horizontal Pickup Deformation) ── */}
+      {/* ── 3D FLOATING CAROUSEL STAGE (Infinite Horizontal Pickup Deformation with Finger/Mouse Swipe) ── */}
       <main
         ref={stageRef}
         onWheel={handleWheel}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        className="relative flex-1 w-full flex items-center justify-center overflow-hidden stage-3d select-none pt-2 pb-20 sm:pb-24 px-2 sm:px-4 cursor-grab active:cursor-grabbing"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        className="relative flex-1 w-full flex items-center justify-center overflow-hidden stage-3d select-none pt-2 pb-20 sm:pb-24 px-2 sm:px-4 cursor-grab active:cursor-grabbing touch-pan-y"
       >
         {/* Subtle Ambient Glow Behind Floating Windows */}
         <div
@@ -659,14 +707,15 @@ export default function App() {
             if (diff > n / 2) diff -= n;
             if (diff < -n / 2) diff += n;
 
-            // Compute effective 3D pickup deformation
-            const dragFraction = isDragging ? dragDeltaX / 550 : 0;
+            // Compute effective 3D pickup deformation during finger/mouse drag
+            const containerWidth = stageRef.current?.clientWidth || 550;
+            const dragFraction = isDragging ? dragDeltaX / (containerWidth * 0.85) : 0;
             const effectiveOffset = diff + dragFraction;
             const absOffset = Math.abs(effectiveOffset);
 
             // Pickup 3D rotation:
-            // When moving to the right, right edge recedes and left edge projects forward (and vice versa)
-            const rotateY = Math.max(-38, Math.min(38, -effectiveOffset * 24));
+            // When swiping, one side recedes into the screen depth and the leading side projects forward
+            const rotateY = Math.max(-38, Math.min(38, -effectiveOffset * 25));
             const rotateZ = Math.max(-4, Math.min(4, effectiveOffset * -1.5));
             const translateZ = -Math.min(320, absOffset * 150);
             const translateX = effectiveOffset * 105; // in %
@@ -697,7 +746,7 @@ export default function App() {
                     : 'bg-white/90 border border-white/80 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.18),0_0_0_1px_rgba(255,255,255,0.9),inset_0_1px_0_rgba(255,255,255,0.95)]'
                 } backdrop-blur-2xl`}
               >
-                {/* Floating Window Top Header Bar */}
+                {/* Floating Window Top Header Bar (No "İleri" button, natural finger swipe mode) */}
                 <div className="px-4 sm:px-6 py-3 border-b border-slate-200/70 dark:border-slate-800/80 flex items-center justify-between shrink-0 bg-white/40 dark:bg-slate-800/40">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{tab.icon}</span>
@@ -707,31 +756,19 @@ export default function App() {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-medium text-slate-400 dark:text-slate-400 flex items-center gap-1">
+                      <span>👈</span>
+                      <span className="hidden sm:inline">Parmakla Kaydırın</span>
+                      <span>👉</span>
+                    </span>
                     <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                       {idx + 1} / {TABS.length}
                     </span>
-                    {idx < TABS.length - 1 ? (
-                      <button
-                        type="button"
-                        onClick={slideNext}
-                        className="text-[11px] text-blue-500 hover:text-blue-600 font-semibold flex items-center gap-0.5 cursor-pointer"
-                      >
-                        İleri <ArrowRight className="w-3 h-3" />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => navigateToTab(0)}
-                        className="text-[11px] text-blue-500 hover:text-blue-600 font-semibold flex items-center gap-0.5 cursor-pointer"
-                      >
-                        Başa Dön <ArrowLeft className="w-3 h-3" />
-                      </button>
-                    )}
                   </div>
                 </div>
 
-                {/* Floating Window Content Body (Smooth internal scroll) */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-5 md:p-6 no-drag">
+                {/* Floating Window Content Body (Smooth internal scroll, touch friendly) */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-5 md:p-6">
                   
                   {/* ── CARD 1: GENEL (SABİT TERMOSTAT & HEDEF AYARI) ── */}
                   {tab.id === 'genel' && (
@@ -758,8 +795,8 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Fixed 3D Thermostat with Authentic Dancing Flame & Sapphire Lens */}
-                      <div className="w-full max-w-sm sm:max-w-md my-auto py-1">
+                      {/* Fixed 3D Thermostat with Pin-Sharp OLED, Vivid Flame & High Contrast */}
+                      <div className="w-full max-w-sm sm:max-w-md h-[290px] sm:h-[340px] my-auto py-1 flex items-center justify-center">
                         <ThreeScene
                           theme={effectiveTheme}
                           morphMode={morphMode}
@@ -795,9 +832,16 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* ── CARD 3: RAPOR (KOMBİ RÖLE, SU BASINCI & SENSÖRLER) ── */}
+                  {/* ── CARD 3: RAPOR (24S ANALİTİK GRAFİĞİ, KOMBİ RÖLE & SENSÖRLER) ── */}
                   {tab.id === 'rapor' && (
                     <div className="space-y-4">
+                      {/* 24 Saatlik Sıcaklık & Tüketim Analitik Trend Grafiği */}
+                      <AnalyticsChartWidget
+                        history={history}
+                        dailyRunMinutes={dailyRunMinutes}
+                      />
+
+                      {/* Kombi Telemetrisi & Canlı Ortam Sensörleri */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <ModulationWidget
                           isKombiActive={isKombiActive}
@@ -815,7 +859,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* ── CARD 4: PROGRAM (HAFTALIK ZAMAN PLANI & TÜKETİM) ── */}
+                  {/* ── CARD 4: PROGRAM (HAFTALIK ZAMAN PLANI & TÜKETİM HESABI) ── */}
                   {tab.id === 'program' && (
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -832,13 +876,9 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* ── CARD 5: TÜMÜ (24S ANALİTİK, GÜVENLİK KASASI & TELEGRAM) ── */}
+                  {/* ── CARD 5: TÜMÜ (ŞİFRELİ KASA, TELEGRAM & GÜVENLİK) ── */}
                   {tab.id === 'tumu' && (
                     <div className="space-y-4">
-                      <AnalyticsChartWidget
-                        history={history}
-                        dailyRunMinutes={dailyRunMinutes}
-                      />
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <SecurityVaultWidget
                           isLocked={isVaultLocked}
@@ -855,6 +895,24 @@ export default function App() {
                           onSaveConfig={handleSaveTelegram}
                           isEncrypted={true}
                         />
+                      </div>
+
+                      <div className="p-4 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 flex items-center justify-between">
+                        <div>
+                          <div className="text-xs font-bold text-slate-800 dark:text-white">
+                            Widget Düzeni & Görünürlük
+                          </div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                            Panellerin sırasını ve görünürlüğünü özelleştirin
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsCustomizerOpen(true)}
+                          className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                        >
+                          Düzenle
+                        </button>
                       </div>
                     </div>
                   )}
