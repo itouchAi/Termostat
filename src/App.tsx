@@ -579,10 +579,10 @@ export default function App() {
         </div>
       )}
 
-      {/* ── TOP NAV HEADER ── */}
-      <header className="relative z-40 h-14 sm:h-16 px-3 sm:px-6 md:px-8 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md">
+      {/* ── TOP NAV HEADER (Her Zaman Sabit ve Görünür) ── */}
+      <header className="shrink-0 z-50 w-full h-14 sm:h-16 px-2.5 sm:px-6 md:px-8 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xs">
         {/* Brand */}
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 pr-2">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-gradient-to-tr from-orange-500 via-amber-500 to-yellow-400 flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
             <Flame className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
@@ -591,17 +591,17 @@ export default function App() {
               <h1 className="font-extrabold text-xs sm:text-sm md:text-base tracking-tight text-slate-900 dark:text-white truncate">
                 Kombi Termostat 3D
               </h1>
-              <span className="hidden sm:inline-block text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                3D MORPH DOCK
+              <span className="hidden md:inline-block text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                3D DOCK
               </span>
             </div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-              <span className="flex items-center gap-1">
-                <span className={`w-1.5 h-1.5 rounded-full ${isCloudConnected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                {activeLocation.name} ({activeLocation.cityName})
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 truncate">
+              <span className="flex items-center gap-1 truncate">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isCloudConnected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                <span className="truncate">{activeLocation.name} ({activeLocation.cityName})</span>
               </span>
               <span>•</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-0.5">
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-0.5 shrink-0">
                 <ShieldCheck className="w-3 h-3" />
                 AES-256
               </span>
@@ -699,7 +699,7 @@ export default function App() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        className="relative flex-1 w-full flex items-center justify-center overflow-hidden stage-3d select-none pt-2 pb-20 sm:pb-24 px-2 sm:px-4 cursor-grab active:cursor-grabbing touch-pan-y"
+        className="relative flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden stage-3d select-none pt-1 pb-16 sm:pb-20 px-2 sm:px-4 cursor-grab active:cursor-grabbing touch-pan-y"
       >
         {/* Subtle Ambient Glow Behind Floating Windows */}
         <div
@@ -734,7 +734,7 @@ export default function App() {
         </button>
 
         {/* ── 3D FLOATING CARDS ── */}
-        <div className="relative w-full max-w-4xl h-[72vh] sm:h-[75vh] max-h-[820px] flex items-center justify-center">
+        <div className="relative w-full max-w-4xl h-[66vh] sm:h-[70vh] max-h-[720px] flex items-center justify-center">
           {TABS.map((tab, idx) => {
             const n = TABS.length;
             const currentTab = ((virtualIndex % n) + n) % n;

@@ -117,8 +117,8 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
       className="relative w-full h-full flex flex-col justify-between overflow-hidden select-none"
     >
       {/* ── TOP LAYER SWITCHER PILLS ── */}
-      <div className="shrink-0 flex items-center justify-between gap-2 mb-2 px-1">
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80">
+      <div className="shrink-0 flex items-center justify-center mb-2 px-1">
+        <div className="flex items-center gap-1 p-1 rounded-2xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
           <button
             type="button"
             onClick={() => setActiveLayer(0)}
@@ -143,29 +143,6 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
             <span>💰</span>
             <span>Günlük Tüketim & Tasarruf</span>
           </button>
-        </div>
-
-        {/* Swipe Hint */}
-        <div className="text-[10px] font-medium text-slate-400 dark:text-slate-400 flex items-center gap-1">
-          {activeLayer === 0 ? (
-            <button
-              type="button"
-              onClick={() => setActiveLayer(1)}
-              className="flex items-center gap-0.5 hover:text-orange-500 transition-colors cursor-pointer"
-            >
-              <span>Yukarı Kaydır</span>
-              <ChevronUp className="w-3.5 h-3.5 animate-bounce" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setActiveLayer(0)}
-              className="flex items-center gap-0.5 hover:text-blue-500 transition-colors cursor-pointer"
-            >
-              <span>Aşağı Kaydır</span>
-              <ChevronDown className="w-3.5 h-3.5 animate-bounce" />
-            </button>
-          )}
         </div>
       </div>
 
@@ -292,15 +269,6 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
                 </>
               )}
             </button>
-
-            {/* Bottom floating prompt */}
-            <button
-              type="button"
-              onClick={() => setActiveLayer(1)}
-              className="text-[10px] text-slate-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors flex items-center justify-center gap-1 cursor-pointer"
-            >
-              <span>▲ Günlük Tüketim & Tasarruf Analizi İçin Yukarı Kaydırın ▲</span>
-            </button>
           </div>
         </div>
 
@@ -387,17 +355,6 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
                 Kombi oda sıcaklığına yaklaştıkça modülasyonu kısarak gaz harcamasını %20 - %28 oranında azaltır. Şu anki alev gücü: <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">%{flameLevelPercent}</span>.
               </p>
             </div>
-          </div>
-
-          {/* Footer Back Prompt */}
-          <div className="shrink-0 pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-center">
-            <button
-              type="button"
-              onClick={() => setActiveLayer(0)}
-              className="text-[10px] text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex items-center justify-center gap-1 cursor-pointer"
-            >
-              <span>▼ Akıllı Zamanlama Programına Geri Dön (Aşağı Kaydırın) ▼</span>
-            </button>
           </div>
         </div>
 
