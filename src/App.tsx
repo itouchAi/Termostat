@@ -22,6 +22,7 @@ import { AnalyticsChartWidget } from './components/Widgets/AnalyticsChartWidget.
 import { ReportAnalyticsHeatmapWidget } from './components/Widgets/ReportAnalyticsHeatmapWidget.tsx';
 import { WeeklyScheduleWidget } from './components/Widgets/WeeklyScheduleWidget.tsx';
 import { ConsumptionWidget } from './components/Widgets/ConsumptionWidget.tsx';
+import { ProgramDeckView } from './components/Program/ProgramDeckView.tsx';
 import { TelegramConfigWidget } from './components/Widgets/TelegramConfigWidget.tsx';
 import { SecurityVaultWidget } from './components/Widgets/SecurityVaultWidget.tsx';
 import { WidgetCustomizerModal } from './components/WidgetCustomizerModal.tsx';
@@ -795,14 +796,11 @@ export default function App() {
                       <span className="hidden sm:inline">Parmakla Kaydırın</span>
                       <span>👉</span>
                     </span>
-                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                      {idx + 1} / {TABS.length}
-                    </span>
                   </div>
                 </div>
 
                 {/* Floating Window Content Body */}
-                <div className={`flex-1 ${tab.id === 'genel' ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'} p-2.5 sm:p-5 md:p-6 flex flex-col`}>
+                <div className={`flex-1 ${tab.id === 'genel' || tab.id === 'program' ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'} p-2.5 sm:p-5 md:p-6 flex flex-col`}>
                   
                   {/* ── CARD 1: GENEL (ÜSTTE STATÜ, ORTADA KÜÇÜLTÜLMÜŞ TERMOSTAT, ALTTA YATAY MOD BUTONLARI & STEPPER) ── */}
                   {tab.id === 'genel' && (
@@ -960,20 +958,16 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* ── CARD 4: PROGRAM (HAFTALIK ZAMAN PLANI & TÜKETİM HESABI) ── */}
+                  {/* ── CARD 4: PROGRAM (AKILLI ZAMANLAMA & GÜNLÜK TÜKETİM 3D FLOATING BLUR DECK) ── */}
                   {tab.id === 'program' && (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <WeeklyScheduleWidget
-                          schedules={schedules}
-                          onSaveSchedules={handleSaveSchedules}
-                          isEncrypted={true}
-                        />
-                        <ConsumptionWidget
-                          dailyRunMinutes={dailyRunMinutes}
-                          flameLevelPercent={flameLevelPercent}
-                        />
-                      </div>
+                    <div className="h-full w-full overflow-hidden select-none">
+                      <ProgramDeckView
+                        schedules={schedules}
+                        onSaveSchedules={handleSaveSchedules}
+                        isEncrypted={true}
+                        dailyRunMinutes={dailyRunMinutes}
+                        flameLevelPercent={flameLevelPercent}
+                      />
                     </div>
                   )}
 
