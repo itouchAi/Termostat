@@ -21,8 +21,8 @@ import { ModulationWidget } from './components/Widgets/ModulationWidget.tsx';
 import { AnalyticsChartWidget } from './components/Widgets/AnalyticsChartWidget.tsx';
 import { ReportAnalyticsHeatmapWidget } from './components/Widgets/ReportAnalyticsHeatmapWidget.tsx';
 import { WeeklyScheduleWidget } from './components/Widgets/WeeklyScheduleWidget.tsx';
-import { ConsumptionWidget } from './components/Widgets/ConsumptionWidget.tsx';
 import { ProgramDeckView } from './components/Program/ProgramDeckView.tsx';
+import { ReportDeckView } from './components/Report/ReportDeckView.tsx';
 import { TelegramConfigWidget } from './components/Widgets/TelegramConfigWidget.tsx';
 import { SecurityVaultWidget } from './components/Widgets/SecurityVaultWidget.tsx';
 import { WidgetCustomizerModal } from './components/WidgetCustomizerModal.tsx';
@@ -579,10 +579,10 @@ export default function App() {
         </div>
       )}
 
-      {/* ── TOP NAV HEADER (Her Zaman Sabit ve Görünür) ── */}
-      <header className="shrink-0 z-50 w-full h-14 sm:h-16 px-2.5 sm:px-6 md:px-8 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xs">
+      {/* ── TOP NAV HEADER ── */}
+      <header className="relative z-40 h-14 sm:h-16 px-3 sm:px-6 md:px-8 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md">
         {/* Brand */}
-        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 pr-2">
+        <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-gradient-to-tr from-orange-500 via-amber-500 to-yellow-400 flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
             <Flame className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
@@ -591,17 +591,17 @@ export default function App() {
               <h1 className="font-extrabold text-xs sm:text-sm md:text-base tracking-tight text-slate-900 dark:text-white truncate">
                 Kombi Termostat 3D
               </h1>
-              <span className="hidden md:inline-block text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                3D DOCK
+              <span className="hidden sm:inline-block text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                3D MORPH DOCK
               </span>
             </div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 truncate">
-              <span className="flex items-center gap-1 truncate">
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isCloudConnected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                <span className="truncate">{activeLocation.name} ({activeLocation.cityName})</span>
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span className="flex items-center gap-1">
+                <span className={`w-1.5 h-1.5 rounded-full ${isCloudConnected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                {activeLocation.name} ({activeLocation.cityName})
               </span>
               <span>•</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-0.5 shrink-0">
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-0.5">
                 <ShieldCheck className="w-3 h-3" />
                 AES-256
               </span>
@@ -699,7 +699,7 @@ export default function App() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        className="relative flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden stage-3d select-none pt-1 pb-16 sm:pb-20 px-2 sm:px-4 cursor-grab active:cursor-grabbing touch-pan-y"
+        className="relative flex-1 w-full flex items-center justify-center overflow-hidden stage-3d select-none pt-1 sm:pt-1.5 pb-[56px] sm:pb-[64px] px-1.5 sm:px-3 cursor-grab active:cursor-grabbing touch-pan-y"
       >
         {/* Subtle Ambient Glow Behind Floating Windows */}
         <div
@@ -733,8 +733,8 @@ export default function App() {
           <ChevronRight className="w-6 h-6" />
         </button>
 
-        {/* ── 3D FLOATING CARDS ── */}
-        <div className="relative w-full max-w-4xl h-[66vh] sm:h-[70vh] max-h-[720px] flex items-center justify-center">
+        {/* ── 3D FLOATING CARDS (Üst bar ve alt dock'a çok ince boşluk kalacak şekilde genişletilmiş) ── */}
+        <div className="relative w-full max-w-5xl h-full max-h-[890px] flex items-center justify-center">
           {TABS.map((tab, idx) => {
             const n = TABS.length;
             const currentTab = ((virtualIndex % n) + n) % n;
@@ -800,7 +800,7 @@ export default function App() {
                 </div>
 
                 {/* Floating Window Content Body */}
-                <div className={`flex-1 ${tab.id === 'genel' || tab.id === 'program' ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'} p-2.5 sm:p-5 md:p-6 flex flex-col`}>
+                <div className={`flex-1 ${tab.id === 'genel' || tab.id === 'program' || tab.id === 'rapor' ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'} p-2.5 sm:p-5 md:p-6 flex flex-col`}>
                   
                   {/* ── CARD 1: GENEL (ÜSTTE STATÜ, ORTADA KÜÇÜLTÜLMÜŞ TERMOSTAT, ALTTA YATAY MOD BUTONLARI & STEPPER) ── */}
                   {tab.id === 'genel' && (
@@ -828,8 +828,8 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Center: Scaled 3D Thermostat (Compact to prevent any vertical/horizontal scrolling on mobile) */}
-                      <div className="flex-1 w-full max-w-[260px] xs:max-w-[280px] sm:max-w-[320px] h-[190px] xs:h-[210px] sm:h-[240px] md:h-[260px] mx-auto flex items-center justify-center relative my-auto">
+                      {/* Center: Scaled 3D Thermostat (Proportionally sized to fill the expanded frame with zero scroll) */}
+                      <div className="flex-1 w-full max-w-[340px] xs:max-w-[380px] sm:max-w-[440px] md:max-w-[480px] h-[220px] xs:h-[250px] sm:h-[300px] md:h-[350px] mx-auto flex items-center justify-center relative my-auto">
                         <ThreeScene
                           theme={effectiveTheme}
                           morphMode={morphMode}
@@ -843,23 +843,23 @@ export default function App() {
                       </div>
 
                       {/* Bottom: Target Stepper + Horizontal Preset Buttons (Gece, Eko, Konfor, Dışarıda, Boost) */}
-                      <div className="w-full shrink-0 flex flex-col gap-1 sm:gap-1.5 mt-auto">
+                      <div className="w-full shrink-0 flex flex-col gap-1.5 sm:gap-2 mt-auto">
                         {/* Target Stepper Strip (Compact Horizontal) */}
-                        <div className="w-full flex items-center justify-between bg-slate-50/90 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200/80 dark:border-slate-700/70 shadow-2xs">
+                        <div className="w-full flex items-center justify-between bg-slate-50/90 dark:bg-slate-800/80 px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-700/70 shadow-2xs">
                           <button
                             type="button"
                             onClick={() => handleSetTarget(Math.max(10, Math.round((targetTemp - 0.5) * 2) / 2))}
-                            className="w-7 h-7 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 font-black text-slate-700 dark:text-white flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer shadow-2xs"
+                            className="w-8 h-8 rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 font-black text-slate-700 dark:text-white flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer shadow-2xs"
                             title="Hedef sıcaklığı 0.5°C azalt"
                           >
                             -
                           </button>
 
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider hidden xs:inline">
+                            <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider hidden xs:inline">
                               Hedef Sıcaklık:
                             </span>
-                            <span className="text-base sm:text-lg font-black font-mono text-orange-600 dark:text-orange-400">
+                            <span className="text-lg sm:text-xl font-black font-mono text-orange-600 dark:text-orange-400">
                               {targetTemp.toFixed(1)}°C
                             </span>
                           </div>
@@ -867,7 +867,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => handleSetTarget(Math.min(32, Math.round((targetTemp + 0.5) * 2) / 2))}
-                            className="w-7 h-7 rounded-lg bg-orange-500 hover:bg-orange-600 font-black text-white flex items-center justify-center transition-all active:scale-95 text-base shadow-2xs cursor-pointer"
+                            className="w-8 h-8 rounded-xl bg-orange-500 hover:bg-orange-600 font-black text-white flex items-center justify-center transition-all active:scale-95 text-base shadow-2xs cursor-pointer"
                             title="Hedef sıcaklığı 0.5°C artır"
                           >
                             +
@@ -875,7 +875,7 @@ export default function App() {
                         </div>
 
                         {/* 5 Preset Mode Buttons (Yatay Olarak Ekrana Tam Sığacak Şekilde) */}
-                        <div className="grid grid-cols-5 gap-1 sm:gap-1.5 w-full">
+                        <div className="grid grid-cols-5 gap-1.5 sm:gap-2 w-full">
                           {[
                             { label: 'Gece', temp: 18.5, icon: '🌙' },
                             { label: 'Eko', temp: 20.0, icon: '🍃' },
@@ -889,18 +889,18 @@ export default function App() {
                                 key={preset.label}
                                 type="button"
                                 onClick={() => handleSetTarget(preset.temp)}
-                                className={`flex flex-col items-center justify-center py-1 sm:py-1.5 px-0.5 sm:px-1 rounded-xl text-center transition-all duration-200 cursor-pointer w-full min-w-0 ${
+                                className={`flex flex-col items-center justify-center py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-xl sm:rounded-2xl text-center transition-all duration-200 cursor-pointer w-full min-w-0 ${
                                   isActive
                                     ? 'bg-gradient-to-b from-orange-500 to-amber-500 text-white font-bold shadow-md shadow-orange-500/25 scale-[1.02]'
                                     : 'bg-white/90 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 hover:border-orange-400'
                                 }`}
                               >
-                                <span className="text-xs sm:text-sm leading-none mb-0.5">{preset.icon}</span>
-                                <span className="text-[10px] sm:text-xs font-bold leading-tight truncate w-full">
+                                <span className="text-sm sm:text-base leading-none mb-0.5">{preset.icon}</span>
+                                <span className="text-[11px] sm:text-xs font-bold leading-tight truncate w-full">
                                   {preset.label}
                                 </span>
                                 <span
-                                  className={`text-[9px] sm:text-[10px] font-mono font-extrabold ${
+                                  className={`text-[10px] sm:text-xs font-mono font-extrabold ${
                                     isActive ? 'text-white' : 'text-slate-400 dark:text-slate-400'
                                   }`}
                                 >
@@ -911,7 +911,7 @@ export default function App() {
                           })}
                         </div>
 
-                        <div className="text-[9px] text-slate-400 dark:text-slate-400 text-center leading-tight">
+                        <div className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-400 text-center leading-tight">
                           💡 Kadran üzerindeki turuncu bar çizgisine dokunarak hedefi ayarlayabilirsiniz.
                         </div>
                       </div>
@@ -934,27 +934,18 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* ── CARD 3: RAPOR (SICAKLIK ISI HARİTASI, AKTİF YANMA SAATLERİ, DOĞALGAZ M3 x FİYAT FATURA) ── */}
+                  {/* ── CARD 3: RAPOR (SICAKLIK HARİTASI, DOĞALGAZ FATURASI & KOMBİ TELEMETRİSİ 3D FLOATING DECK) ── */}
                   {tab.id === 'rapor' && (
-                    <div className="space-y-4">
-                      {/* Sıcaklık Isı Haritası, Tarih Hafızası ve Doğalgaz Fatura Tahmin Hesabı */}
-                      <ReportAnalyticsHeatmapWidget />
-
-                      {/* Kombi Telemetrisi & Canlı Ortam Sensörleri */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <ModulationWidget
-                          isKombiActive={isKombiActive}
-                          flameLevelPercent={flameLevelPercent}
-                          waterPressureBar={waterPressure}
-                          pumpRpm={1420}
-                        />
-                        <CoreGaugeWidget
-                          currentTemp={currentTemp}
-                          humidity={humidity}
-                          targetTemp={targetTemp}
-                          isKombiActive={isKombiActive}
-                        />
-                      </div>
+                    <div className="h-full w-full overflow-hidden select-none">
+                      <ReportDeckView
+                        isKombiActive={isKombiActive}
+                        flameLevelPercent={flameLevelPercent}
+                        waterPressure={waterPressure}
+                        pumpRpm={1420}
+                        currentTemp={currentTemp}
+                        humidity={humidity}
+                        targetTemp={targetTemp}
+                      />
                     </div>
                   )}
 
