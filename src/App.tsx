@@ -127,11 +127,13 @@ export default function App() {
   }, [virtualIndex]);
 
   // Thermostat vitals
-  const [currentTemp] = useState<number>(21.8);
-  const [humidity] = useState<number>(48);
+  const [currentTemp, setCurrentTemp] = useState<number>(21.8);
+  const [humidity, setHumidity] = useState<number>(48);
   const [targetTemp, setTargetTemp] = useState<number>(22.5);
   const [waterPressure] = useState<number>(1.6);
-  const [dailyRunMinutes] = useState<number>(145);
+  const [dailyRunMinutes, setDailyRunMinutes] = useState<number>(145);
+  const isUserInteractingRef = useRef<boolean>(false);
+  const userInteractTimerRef = useRef<any>(null);
 
   // 3D Morph Mode
   const [morphMode] = useState<MorphMode>('heat');
@@ -204,6 +206,47 @@ export default function App() {
     return calculateFlameModulation(currentTemp, targetTemp, isKombiActive);
   }, [currentTemp, targetTemp, isKombiActive]);
 
+  // 🔥 Canlı Firebase Realtime Database Senkronizasyonu (Kombiden Canlı Veri Çekme)
+  useEffect(() => {
+    if (!firebaseUrl) return;
+    const cleanUrl = firebaseUrl.replace(/\/+$/, '');
+    const endpoint = cleanUrl.endsWith('.json') ? cleanUrl : `${cleanUrl}/kombi.json`;
+
+    let active = true;
+    const syncFromCloud = async () => {
+      try {
+        const res = await fetch(endpoint);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data && active) {
+          if (typeof data.sicaklik === 'number') {
+            setCurrentTemp(Number(data.sicaklik.toFixed(1)));
+          }
+          if (typeof data.nem === 'number') {
+            setHumidity(Math.round(data.nem));
+          }
+          if (typeof data.hedefSicaklik === 'number' && !isUserInteractingRef.current) {
+            setTargetTemp(Number(data.hedefSicaklik.toFixed(1)));
+          }
+          if (typeof data.calismaDakika === 'number') {
+            setDailyRunMinutes(data.calismaDakika);
+          }
+          setIsCloudConnected(true);
+        }
+      } catch (err) {
+        console.warn('Firebase senkronizasyon hatası:', err);
+        if (active) setIsCloudConnected(false);
+      }
+    };
+
+    syncFromCloud();
+    const interval = setInterval(syncFromCloud, 2500); // 2.5 saniyede bir canlı çek
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [firebaseUrl]);
+
   // Sync DOM dark class with effectiveTheme
   useEffect(() => {
     const root = document.documentElement;
@@ -260,6 +303,11 @@ export default function App() {
           setVaultPin(storedPin);
           setIsVaultLocked(true);
         }
+
+        const storedFbUrl = await SecureVault.getItem<string>('firebaseUrl', 'https://kombi-kontrol-babd5-default-rtdb.firebaseio.com');
+        if (storedFbUrl) setFirebaseUrl(storedFbUrl);
+        const storedFbKey = await SecureVault.getItem<string>('firebaseKey', 'AIzaSyDMULZx8TS0HuDMlxKzQ6BixW6jXJzJ55c');
+        if (storedFbKey) setFirebaseKey(storedFbKey);
       } catch (err) {
         console.warn('Vault load error:', err);
       }
@@ -454,7 +502,24 @@ export default function App() {
   const handleSetTarget = useCallback((newTarget: number) => {
     setTargetTemp(newTarget);
     SecureVault.setItem('targetTemp', newTarget);
-  }, []);
+
+    isUserInteractingRef.current = true;
+    if (userInteractTimerRef.current) clearTimeout(userInteractTimerRef.current);
+    userInteractTimerRef.current = setTimeout(() => {
+      isUserInteractingRef.current = false;
+    }, 3500);
+
+    // Buluta anında ilet
+    if (firebaseUrl) {
+      const cleanUrl = firebaseUrl.replace(/\/+$/, '');
+      const endpoint = cleanUrl.endsWith('.json') ? cleanUrl : `${cleanUrl}/kombi.json`;
+      fetch(endpoint, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hedefSicaklik: newTarget }),
+      }).catch((e) => console.error('Hedef Firebase iletim hatası:', e));
+    }
+  }, [firebaseUrl]);
 
   // Save schedules
   const handleSaveSchedules = useCallback((newSchedules: ScheduleItem[]) => {
@@ -1018,6 +1083,8 @@ export default function App() {
           setFirebaseUrl(url);
           setFirebaseKey(key);
           setIsCloudConnected(true);
+          SecureVault.setItem('firebaseUrl', url);
+          SecureVault.setItem('firebaseKey', key);
         }}
         isConnected={isCloudConnected}
         onOpenVaultModal={() => setIsVaultModalOpen(true)}
