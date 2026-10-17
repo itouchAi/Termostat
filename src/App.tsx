@@ -26,6 +26,7 @@ import { TelegramConfigWidget } from './components/Widgets/TelegramConfigWidget.
 import { SecurityVaultWidget } from './components/Widgets/SecurityVaultWidget.tsx';
 import { WidgetCustomizerModal } from './components/WidgetCustomizerModal.tsx';
 import { SettingsModal } from './components/SettingsModal.tsx';
+import { VaultNotificationsModal } from './components/VaultNotificationsModal.tsx';
 
 import {
   calculateRelayStatus,
@@ -68,11 +69,10 @@ export interface SlideDef {
 }
 
 const TABS: SlideDef[] = [
-  { id: 'genel', label: 'Genel', icon: '🏠', title: 'Termostat & Kombi Ana Kontrol' },
+  { id: 'genel', label: 'Termostat', icon: '🏠', title: 'Termostat & Kombi Ana Kontrol' },
   { id: 'hava', label: 'Hava', icon: '🌤️', title: 'Bölgesel Hava Durumu & 5 Günlük Tahmin' },
-  { id: 'rapor', label: 'Rapor', icon: '📊', title: '24s Analitik & Kombi Telemetrisi' },
+  { id: 'rapor', label: 'Rapor', icon: '📊', title: '24s Sıcaklık & Tüketim Analitiği' },
   { id: 'program', label: 'Program', icon: '⏰', title: 'Haftalık Zaman Planı & Tüketim' },
-  { id: 'tumu', label: 'Tümü', icon: '⊞', title: 'Şifreli Kasa, Bildirimler & Ayarlar' },
 ];
 
 export default function App() {
@@ -145,6 +145,7 @@ export default function App() {
   // Modals
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
 
   // Widgets configuration
   const [widgets, setWidgets] = useState<WidgetItem[]>(DEFAULT_WIDGETS);
@@ -800,15 +801,15 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Floating Window Content Body (Smooth internal scroll, touch friendly) */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-5 md:p-6">
+                {/* Floating Window Content Body */}
+                <div className={`flex-1 ${tab.id === 'genel' ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'} p-2.5 sm:p-5 md:p-6 flex flex-col`}>
                   
-                  {/* ── CARD 1: GENEL (SOLDA 3D TERMOSTAT & KADRANDAN HEDEF AYARI, SAĞDA DİKEY MODLAR) ── */}
+                  {/* ── CARD 1: GENEL (ÜSTTE STATÜ, ORTADA KÜÇÜLTÜLMÜŞ TERMOSTAT, ALTTA YATAY MOD BUTONLARI & STEPPER) ── */}
                   {tab.id === 'genel' && (
-                    <div className="h-full flex flex-col justify-between p-1 sm:p-2">
-                      {/* Top Badges */}
-                      <div className="w-full flex items-center justify-between mb-1 sm:mb-2">
-                        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700/60 shadow-xs flex items-center gap-2">
+                    <div className="h-full w-full flex flex-col justify-between overflow-hidden select-none">
+                      {/* Top Badges (Compact) */}
+                      <div className="w-full flex items-center justify-between mb-1 shrink-0">
+                        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700/60 shadow-xs flex items-center gap-1.5 sm:gap-2">
                           <span
                             className={`w-2 h-2 rounded-full ${
                               isKombiActive ? 'bg-orange-500 animate-pulse' : 'bg-slate-400'
@@ -822,111 +823,98 @@ export default function App() {
                           </span>
                         </div>
 
-                        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 bg-white/70 dark:bg-slate-800/60 px-3 py-1 rounded-full border border-slate-200/60 dark:border-slate-700/60">
-                          <span className="text-slate-400">Bağlı:</span>
-                          <span className="text-slate-800 dark:text-white font-bold">Kombi #1</span>
+                        <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 bg-white/70 dark:bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-200/60 dark:border-slate-700/60">
+                          <span className="text-slate-400">Canlı Oda:</span>
+                          <span className="text-slate-800 dark:text-white font-mono font-bold">{currentTemp}°C</span>
+                          <span className="text-slate-400">• %{humidity}</span>
                         </div>
                       </div>
 
-                      {/* Main Split: Left Thermostat shifted left + Right Vertical Mode Presets inside SAME frame */}
-                      <div className="flex-1 flex flex-col md:flex-row items-center justify-between gap-4 lg:gap-6 my-auto w-full">
-                        {/* Left: 3D Thermostat with Interactive Target Temperature Dial Knob */}
-                        <div className="flex-1 max-w-sm sm:max-w-md h-[270px] sm:h-[340px] flex items-center justify-center relative md:-translate-x-4 lg:-translate-x-6">
-                          <ThreeScene
-                            theme={effectiveTheme}
-                            morphMode={morphMode}
-                            targetTemp={targetTemp}
-                            currentTemp={currentTemp}
-                            isKombiActive={isKombiActive}
-                            performanceMode={performanceMode}
-                            reducedMotion={reducedMotion}
-                            onSetTarget={handleSetTarget}
-                          />
+                      {/* Center: Scaled 3D Thermostat (Compact to prevent any vertical/horizontal scrolling on mobile) */}
+                      <div className="flex-1 w-full max-w-[260px] xs:max-w-[280px] sm:max-w-[320px] h-[190px] xs:h-[210px] sm:h-[240px] md:h-[260px] mx-auto flex items-center justify-center relative my-auto">
+                        <ThreeScene
+                          theme={effectiveTheme}
+                          morphMode={morphMode}
+                          targetTemp={targetTemp}
+                          currentTemp={currentTemp}
+                          isKombiActive={isKombiActive}
+                          performanceMode={performanceMode}
+                          reducedMotion={reducedMotion}
+                          onSetTarget={handleSetTarget}
+                        />
+                      </div>
+
+                      {/* Bottom: Target Stepper + Horizontal Preset Buttons (Gece, Eko, Konfor, Dışarıda, Boost) */}
+                      <div className="w-full shrink-0 flex flex-col gap-1 sm:gap-1.5 mt-auto">
+                        {/* Target Stepper Strip (Compact Horizontal) */}
+                        <div className="w-full flex items-center justify-between bg-slate-50/90 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200/80 dark:border-slate-700/70 shadow-2xs">
+                          <button
+                            type="button"
+                            onClick={() => handleSetTarget(Math.max(10, Math.round((targetTemp - 0.5) * 2) / 2))}
+                            className="w-7 h-7 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 font-black text-slate-700 dark:text-white flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer shadow-2xs"
+                            title="Hedef sıcaklığı 0.5°C azalt"
+                          >
+                            -
+                          </button>
+
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider hidden xs:inline">
+                              Hedef Sıcaklık:
+                            </span>
+                            <span className="text-base sm:text-lg font-black font-mono text-orange-600 dark:text-orange-400">
+                              {targetTemp.toFixed(1)}°C
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleSetTarget(Math.min(32, Math.round((targetTemp + 0.5) * 2) / 2))}
+                            className="w-7 h-7 rounded-lg bg-orange-500 hover:bg-orange-600 font-black text-white flex items-center justify-center transition-all active:scale-95 text-base shadow-2xs cursor-pointer"
+                            title="Hedef sıcaklığı 0.5°C artır"
+                          >
+                            +
+                          </button>
                         </div>
 
-                        {/* Right: Vertical Preset Mode Settings (Gece, Eko, Konfor, Dışarıda, Boost) + Quick Stepper */}
-                        <div className="w-full md:w-60 lg:w-64 flex flex-col gap-2 shrink-0 bg-slate-50/80 dark:bg-slate-800/70 p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-xs">
-                          {/* Target Degree Readout & Stepper */}
-                          <div className="flex items-center justify-between bg-white dark:bg-slate-750 p-2 sm:p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700">
-                            <button
-                              type="button"
-                              onClick={() => handleSetTarget(Math.max(10, Math.round((targetTemp - 0.5) * 2) / 2))}
-                              className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 font-black text-slate-700 dark:text-white flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer"
-                              title="Hedef sıcaklığı 0.5°C azalt"
-                            >
-                              -
-                            </button>
-
-                            <div className="text-center">
-                              <span className="text-[10px] text-slate-400 font-semibold block uppercase tracking-wider">
-                                Hedef Sıcaklık
-                              </span>
-                              <span className="text-xl sm:text-2xl font-black font-mono text-orange-600 dark:text-orange-400">
-                                {targetTemp.toFixed(1)}°C
-                              </span>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => handleSetTarget(Math.min(32, Math.round((targetTemp + 0.5) * 2) / 2))}
-                              className="w-8 h-8 rounded-lg bg-orange-500 hover:bg-orange-600 font-black text-white flex items-center justify-center transition-all active:scale-95 text-base shadow-xs cursor-pointer"
-                              title="Hedef sıcaklığı 0.5°C artır"
-                            >
-                              +
-                            </button>
-                          </div>
-
-                          {/* 5 Vertical Preset Buttons */}
-                          <div className="space-y-1.5">
-                            {[
-                              { label: 'Gece', temp: 18.5, icon: '🌙', desc: 'Tasarruf & Uyku' },
-                              { label: 'Eko', temp: 20.0, icon: '🍃', desc: 'Dengeli Ekonomi' },
-                              { label: 'Konfor', temp: 22.5, icon: '🔥', desc: 'İdeal Oturma' },
-                              { label: 'Dışarıda', temp: 16.0, icon: '💼', desc: 'Donma Koruması' },
-                              { label: 'Boost', temp: 25.0, icon: '⚡', desc: 'Hızlı Isıtma' },
-                            ].map((preset) => {
-                              const isActive = Math.abs(targetTemp - preset.temp) < 0.25;
-                              return (
-                                <button
-                                  key={preset.label}
-                                  type="button"
-                                  onClick={() => handleSetTarget(preset.temp)}
-                                  className={`w-full flex items-center justify-between px-3 py-1.5 sm:py-2 rounded-xl text-left transition-all duration-200 cursor-pointer ${
-                                    isActive
-                                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-md shadow-orange-500/25 scale-[1.02]'
-                                      : 'bg-white dark:bg-slate-750 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-slate-700'
+                        {/* 5 Preset Mode Buttons (Yatay Olarak Ekrana Tam Sığacak Şekilde) */}
+                        <div className="grid grid-cols-5 gap-1 sm:gap-1.5 w-full">
+                          {[
+                            { label: 'Gece', temp: 18.5, icon: '🌙' },
+                            { label: 'Eko', temp: 20.0, icon: '🍃' },
+                            { label: 'Konfor', temp: 22.5, icon: '🔥' },
+                            { label: 'Dışarı', temp: 16.0, icon: '💼' },
+                            { label: 'Boost', temp: 25.0, icon: '⚡' },
+                          ].map((preset) => {
+                            const isActive = Math.abs(targetTemp - preset.temp) < 0.25;
+                            return (
+                              <button
+                                key={preset.label}
+                                type="button"
+                                onClick={() => handleSetTarget(preset.temp)}
+                                className={`flex flex-col items-center justify-center py-1 sm:py-1.5 px-0.5 sm:px-1 rounded-xl text-center transition-all duration-200 cursor-pointer w-full min-w-0 ${
+                                  isActive
+                                    ? 'bg-gradient-to-b from-orange-500 to-amber-500 text-white font-bold shadow-md shadow-orange-500/25 scale-[1.02]'
+                                    : 'bg-white/90 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 hover:border-orange-400'
+                                }`}
+                              >
+                                <span className="text-xs sm:text-sm leading-none mb-0.5">{preset.icon}</span>
+                                <span className="text-[10px] sm:text-xs font-bold leading-tight truncate w-full">
+                                  {preset.label}
+                                </span>
+                                <span
+                                  className={`text-[9px] sm:text-[10px] font-mono font-extrabold ${
+                                    isActive ? 'text-white' : 'text-slate-400 dark:text-slate-400'
                                   }`}
                                 >
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-base">{preset.icon}</span>
-                                    <div>
-                                      <span className="text-xs font-bold block">{preset.label}</span>
-                                      <span
-                                        className={`text-[9px] ${
-                                          isActive ? 'text-orange-100' : 'text-slate-400'
-                                        }`}
-                                      >
-                                        {preset.desc}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <span
-                                    className={`font-mono text-xs font-extrabold px-2 py-0.5 rounded-lg ${
-                                      isActive
-                                        ? 'bg-white/20 text-white'
-                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                                    }`}
-                                  >
-                                    {preset.temp}°C
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
+                                  {preset.temp}°
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
 
-                          <div className="text-[10px] text-slate-400 text-center pt-1 border-t border-slate-200/50 dark:border-slate-700/50 leading-tight">
-                            💡 Kadran üzerindeki beyaz noktayı saat yönünde çevirerek de hedefi ayarlayabilirsiniz.
-                          </div>
+                        <div className="text-[9px] text-slate-400 dark:text-slate-400 text-center leading-tight">
+                          💡 Kadran üzerindeki turuncu bar çizgisine dokunarak hedefi ayarlayabilirsiniz.
                         </div>
                       </div>
                     </div>
@@ -989,47 +977,6 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* ── CARD 5: TÜMÜ (ŞİFRELİ KASA, TELEGRAM & GÜVENLİK) ── */}
-                  {tab.id === 'tumu' && (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <SecurityVaultWidget
-                          isLocked={isVaultLocked}
-                          hasCustomPin={!!vaultPin}
-                          onSetPin={handleSetPin}
-                          onUnlockVault={handleUnlockVault}
-                          onLockVault={handleLockVault}
-                          onExportEncryptedBackup={handleExportBackup}
-                          onResetVault={handleResetVault}
-                        />
-                        <TelegramConfigWidget
-                          token={telegramToken}
-                          chatId={telegramChatId}
-                          onSaveConfig={handleSaveTelegram}
-                          isEncrypted={true}
-                        />
-                      </div>
-
-                      <div className="p-4 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 flex items-center justify-between">
-                        <div>
-                          <div className="text-xs font-bold text-slate-800 dark:text-white">
-                            Widget Düzeni & Görünürlük
-                          </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                            Panellerin sırasını ve görünürlüğünü özelleştirin
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setIsCustomizerOpen(true)}
-                          className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
-                        >
-                          Düzenle
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
                 </div>
               </div>
             );
@@ -1037,12 +984,12 @@ export default function App() {
         </div>
       </main>
 
-      {/* ── FIXED BOTTOM AESTHETIC FLOATING TAB DOCK ── */}
+      {/* ── FIXED BOTTOM AESTHETIC FLOATING TAB DOCK (Sadece 4 Buton: Termostat, Hava, Rapor, Program) ── */}
       <nav
         aria-label="Sabit Alt Gezinme Barı"
         className="fixed bottom-2.5 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 w-[96vw] sm:w-auto max-w-max select-none"
       >
-        <div className="flex items-center justify-between sm:justify-start gap-0.5 xs:gap-1 sm:gap-2 p-1 sm:p-2 rounded-2xl sm:rounded-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.25)]">
+        <div className="flex items-center justify-between sm:justify-start gap-1 xs:gap-1.5 sm:gap-2.5 p-1 sm:p-2 rounded-2xl sm:rounded-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.25)]">
           {TABS.map((tab, idx) => {
             const isActive = activeTabIndex === idx;
             return (
@@ -1050,7 +997,7 @@ export default function App() {
                 key={tab.id}
                 type="button"
                 onClick={() => navigateToTab(idx)}
-                className={`relative px-2 xs:px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-bold transition-all duration-300 flex items-center gap-1 sm:gap-1.5 cursor-pointer shrink-0 ${
+                className={`relative px-2.5 xs:px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-bold transition-all duration-300 flex items-center gap-1 sm:gap-1.5 cursor-pointer shrink-0 ${
                   isActive
                     ? 'bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-orange-500 text-white shadow-md shadow-blue-500/30 dark:shadow-orange-500/30 scale-105'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'
@@ -1088,6 +1035,22 @@ export default function App() {
           setIsCloudConnected(true);
         }}
         isConnected={isCloudConnected}
+        onOpenVaultModal={() => setIsVaultModalOpen(true)}
+      />
+
+      <VaultNotificationsModal
+        isOpen={isVaultModalOpen}
+        onClose={() => setIsVaultModalOpen(false)}
+        isVaultLocked={isVaultLocked}
+        vaultPin={vaultPin}
+        onSetPin={handleSetPin}
+        onUnlockVault={handleUnlockVault}
+        onLockVault={handleLockVault}
+        onExportBackup={handleExportBackup}
+        onResetVault={handleResetVault}
+        telegramToken={telegramToken}
+        telegramChatId={telegramChatId}
+        onSaveTelegram={handleSaveTelegram}
       />
     </div>
   );

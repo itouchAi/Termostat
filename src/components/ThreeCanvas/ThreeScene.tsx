@@ -573,14 +573,58 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
     // ── Interactive Circular Target Temp Control via Orange Arc & White Knob ──
     let isDraggingTarget = false;
 
-    const computeTargetFromPointer = (clientX: number, clientY: number) => {
-      if (!stateRef.current.onSetTarget || !container) return;
+    const getArcProjection = (clientX: number, clientY: number) => {
+      if (!container || !camera) return null;
       const rect = container.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
+
+      // Project dial center (0, 0, 0.24) to container screen pixels
+      const center3D = new THREE.Vector3(0, 0, 0.24);
+      center3D.project(camera);
+      const cx = rect.left + (center3D.x * 0.5 + 0.5) * rect.width;
+      const cy = rect.top + (-center3D.y * 0.5 + 0.5) * rect.height;
+
+      // Dial face radius = 1.83. Arc radius on dialCanvas (1024x1024) is 335.
+      // Arc 3D radius = 1.83 * (335 / 512) = 1.1974.
+      const arcPt3D = new THREE.Vector3(1.1974, 0, 0.24);
+      arcPt3D.project(camera);
+      const px = rect.left + (arcPt3D.x * 0.5 + 0.5) * rect.width;
+      const arcRadiusPx = Math.abs(px - cx);
+
       const dx = clientX - cx;
       const dy = clientY - cy;
+      const dist = Math.hypot(dx, dy);
 
+      // Strict bounding: ONLY allow touch within the thermostat's adjustable bar line!
+      // In screen pixels, tolerance for touch finger is ±22px or ±22% of arcRadiusPx
+      const tolerance = Math.max(18, Math.min(30, arcRadiusPx * 0.22));
+      const isWithinBar = dist >= arcRadiusPx - tolerance && dist <= arcRadiusPx + tolerance;
+
+      let angle = Math.atan2(dy, dx);
+      if (angle < 0) angle += Math.PI * 2;
+
+      // Arc range: 135° (0.75π) to 405° (2.25π).
+      // Bottom cutout where no arc exists: ~48° (0.27π) to ~132° (0.73π).
+      const isBottomCutout = angle > Math.PI * 0.27 && angle < Math.PI * 0.73;
+
+      return {
+        rect,
+        cx,
+        cy,
+        dx,
+        dy,
+        dist,
+        arcRadiusPx,
+        isHit: isWithinBar && !isBottomCutout,
+        angle,
+      };
+    };
+
+    const computeTargetFromPointer = (clientX: number, clientY: number) => {
+      if (!stateRef.current.onSetTarget || !container) return;
+      const proj = getArcProjection(clientX, clientY);
+      if (!proj) return;
+
+      const { dx, dy } = proj;
       let angle = Math.atan2(dy, dx);
       if (angle < 0) angle += Math.PI * 2;
 
@@ -614,29 +658,32 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
 
     const handlePointerDown = (e: PointerEvent) => {
       if (!stateRef.current.onSetTarget || !container) return;
-      const rect = container.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dx = e.clientX - cx;
-      const dy = e.clientY - cy;
-      const dist = Math.hypot(dx, dy);
-
-      // Interactive ring around dial
-      const dialRadius = Math.min(rect.width, rect.height) * 0.42;
-
-      if (dist >= dialRadius * 0.35 && dist <= dialRadius * 1.35) {
-        isDraggingTarget = true;
-        try {
-          container.setPointerCapture(e.pointerId);
-        } catch {}
-        e.stopPropagation();
-        e.preventDefault();
-        computeTargetFromPointer(e.clientX, e.clientY);
+      const proj = getArcProjection(e.clientX, e.clientY);
+      // STRICT REQUIREMENT: Only activate if pointer touches within the thermostat's adjustable arc bar!
+      if (!proj || !proj.isHit) {
+        return;
       }
+
+      isDraggingTarget = true;
+      try {
+        container.setPointerCapture(e.pointerId);
+      } catch {}
+      container.style.cursor = 'grabbing';
+      e.stopPropagation();
+      e.preventDefault();
+      computeTargetFromPointer(e.clientX, e.clientY);
     };
 
     const handlePointerMove = (e: PointerEvent) => {
-      if (!isDraggingTarget) return;
+      if (!isDraggingTarget) {
+        const proj = getArcProjection(e.clientX, e.clientY);
+        if (proj?.isHit) {
+          container.style.cursor = 'pointer';
+        } else {
+          container.style.cursor = 'default';
+        }
+        return;
+      }
       e.stopPropagation();
       e.preventDefault();
       computeTargetFromPointer(e.clientX, e.clientY);
@@ -645,6 +692,7 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
     const handlePointerUp = (e: PointerEvent) => {
       if (isDraggingTarget) {
         isDraggingTarget = false;
+        container.style.cursor = 'default';
         try {
           container.releasePointerCapture(e.pointerId);
         } catch {}
@@ -693,9 +741,9 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
   return (
     <div
       ref={mountRef}
-      className="relative w-full h-[320px] sm:h-[380px] md:h-[420px] select-none flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
+      className="relative w-full h-[220px] xs:h-[240px] sm:h-[280px] md:h-[300px] max-w-[340px] select-none flex items-center justify-center touch-none"
       data-testid="three-canvas-container"
-      title="Hedef sıcaklığı ayarlamak için beyaz noktayı saat yönünde çevirin"
+      title="Hedef sıcaklığı ayarlamak için turuncu bar çizgisine dokunup çevirin"
     />
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   MapPin,
   Plus,
@@ -281,23 +282,25 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
       )}
 
       {/* ── HOURLY FORECAST POPUP WINDOW (Güne tıklandığında açılan saatlik hava durumu) ── */}
-      {selectedDayForHourly && (
+      {selectedDayForHourly && typeof document !== 'undefined' && createPortal(
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs animate-in fade-in"
+          className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in"
         >
-          <div className="bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 w-full max-w-lg shadow-2xl max-h-[85vh] flex flex-col">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 w-full max-w-lg shadow-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95">
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-750 mb-3">
+            <div className="shrink-0 flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-2">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-500" />
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <div className="p-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-500">
+                  <Clock className="w-4 h-4 shrink-0" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5 truncate">
                     {selectedDayForHourly.dayName} ({selectedDayForHourly.dateLabel})
-                    <span className="text-xs text-slate-400 font-normal">Saatlik Tahmin</span>
+                    <span className="text-xs text-slate-400 font-normal">Saatlik</span>
                   </h3>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate">
                     {activeLocation.name} • {selectedDayForHourly.conditionText} • {selectedDayForHourly.minTemp}° / {selectedDayForHourly.maxTemp}°C
                   </span>
                 </div>
@@ -305,29 +308,30 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedDayForHourly(null)}
-                className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                aria-label="Pencereyi Kapat"
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shrink-0 border border-slate-200 dark:border-slate-700 cursor-pointer shadow-sm active:scale-95 transition-all"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Hourly Time Slots Grid */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1 my-1">
               {selectedDayForHourly.hourly?.map((slot) => (
                 <div
                   key={slot.time}
-                  className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-3 text-xs"
+                  className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-3 text-xs"
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-200 w-11">
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-200 w-11 shrink-0">
                       {slot.time}
                     </span>
                     <AnimatedWeatherIcon condition={slot.condition} size={22} />
-                    <div>
-                      <span className="font-semibold text-slate-700 dark:text-slate-200 block text-[11px]">
+                    <div className="min-w-0">
+                      <span className="font-semibold text-slate-700 dark:text-slate-200 block text-[11px] truncate">
                         {slot.conditionText}
                       </span>
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-[10px] text-slate-400 line-clamp-1">
                         {slot.kombiAdvice}
                       </span>
                     </div>
@@ -345,43 +349,45 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
               ))}
             </div>
 
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-750 flex items-center justify-between text-[11px] text-slate-400">
-              <span>💡 Saatlik verilere göre kombiniz modülasyon tasarrufu yapar.</span>
+            <div className="shrink-0 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+              <span className="truncate pr-2">💡 Saatlik verilere göre modülasyon tasarrufu.</span>
               <button
                 type="button"
                 onClick={() => setSelectedDayForHourly(null)}
-                className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-200"
+                className="px-4 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs cursor-pointer active:scale-95 transition-all"
               >
                 Kapat
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── PRECAUTION & SEVERE WEATHER ADVISORY MODAL (Ev & Dışarı Çıkış Önlemleri) ── */}
-      {isPrecautionModalOpen && (
+      {isPrecautionModalOpen && typeof document !== 'undefined' && createPortal(
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs animate-in fade-in"
+          className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in"
         >
-          <div className="bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-750 mb-3">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 w-full max-w-md shadow-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95">
+            <div className="shrink-0 flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-3">
               <div className="flex items-center gap-2 text-amber-500 font-bold text-sm">
-                <AlertTriangle className="w-5 h-5" />
+                <AlertTriangle className="w-5 h-5 shrink-0" />
                 <span>Akıllı Hava Durumu & Önlem Hatırlatıcı</span>
               </div>
               <button
                 type="button"
                 onClick={() => setIsPrecautionModalOpen(false)}
-                className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                aria-label="Pencereyi Kapat"
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shrink-0 border border-slate-200 dark:border-slate-700 cursor-pointer shadow-sm active:scale-95 transition-all"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-3.5 text-xs">
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3.5 text-xs pr-1">
               {/* Home Precautions */}
               <div className="p-3 rounded-xl bg-blue-50/70 dark:bg-slate-800 border border-blue-100 dark:border-slate-700">
                 <h4 className="font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1.5 mb-1.5">
@@ -411,28 +417,29 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
               </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-750 flex justify-end">
+            <div className="shrink-0 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
               <button
                 type="button"
                 onClick={() => setIsPrecautionModalOpen(false)}
-                className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs"
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all"
               >
-                Anladım
+                Anladım & Kapat
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Add New Location Modal */}
-      {isAddModalOpen && (
+      {isAddModalOpen && typeof document !== 'undefined' && createPortal(
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+          className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in"
         >
-          <div className="bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-3xl p-5 w-full max-w-sm shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-750 mb-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 w-full max-w-sm shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
               <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-blue-500" />
                 Yeni Konum & Cihaz Tanımla
@@ -440,9 +447,9 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400"
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95 transition-all"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -485,20 +492,21 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm"
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm cursor-pointer active:scale-95 transition-all"
                 >
                   Konumu Ekle & Bağla
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
