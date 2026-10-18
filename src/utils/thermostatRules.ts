@@ -1,4 +1,5 @@
-import type { ScheduleItem } from '../types.ts';
+import type { ScheduleItem, ThemeMode } from '../types.ts';
+
 
 /**
  * Determine if kombi relay should be ON or OFF based on temperature difference and hysteresis
@@ -118,19 +119,25 @@ export function isSystemDarkMode(hour: number, minute = 0): boolean {
 }
 
 /**
- * Resolve effective visual theme ('light' or 'dark') given mode, time, and OS preference
+ * Resolve effective visual theme ('light' | 'dark') given mode, time, and OS preference
  */
 export function resolveEffectiveTheme(
-  mode: 'light' | 'dark' | 'system',
+  mode: ThemeMode,
   hour: number,
   minute = 0,
   osPrefersDark = false
 ): 'light' | 'dark' {
   if (mode === 'dark') return 'dark';
   if (mode === 'light') return 'light';
+  if (mode === 'glass') {
+    // Glass mode uses translucent dark/contrast palette for maximum Apple visionOS clarity
+    // or dark during evening/night hours
+    return isSystemDarkMode(hour, minute) ? 'dark' : 'dark';
+  }
   // 'system' mode: prioritize time of day, with fallback to OS preference
   return isSystemDarkMode(hour, minute) ? 'dark' : 'light';
 }
+
 
 /**
  * Comfort Index Assessment based on temperature and relative humidity

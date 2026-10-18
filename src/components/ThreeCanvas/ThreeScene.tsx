@@ -484,44 +484,6 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
     glassMesh.renderOrder = 2;
     thermostatGroup.add(glassMesh);
 
-    // Part E: Dual Copper Conduction Pipes (Rear)
-    const pipeGeo = new THREE.CylinderGeometry(0.12, 0.12, 1.4, 24);
-    const pipeMat = new THREE.MeshStandardMaterial({
-      color: 0xb45309,
-      metalness: 0.9,
-      roughness: 0.25,
-    });
-    const pipeLeft = new THREE.Mesh(pipeGeo, pipeMat);
-    pipeLeft.position.set(-1.0, -1.4, -0.4);
-    const pipeRight = new THREE.Mesh(pipeGeo, pipeMat);
-    pipeRight.position.set(1.0, -1.4, -0.4);
-    thermostatGroup.add(pipeLeft);
-    thermostatGroup.add(pipeRight);
-
-    // Part F: Soft Ground Contact Shadow
-    const shadowCanvas = document.createElement('canvas');
-    shadowCanvas.width = 256;
-    shadowCanvas.height = 256;
-    const sCtx = shadowCanvas.getContext('2d')!;
-    const sGrad = sCtx.createRadialGradient(128, 128, 0, 128, 128, 120);
-    sGrad.addColorStop(0, 'rgba(0, 0, 0, 0.45)');
-    sGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0.12)');
-    sGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    sCtx.fillStyle = sGrad;
-    sCtx.fillRect(0, 0, 256, 256);
-    const shadowTex = new THREE.CanvasTexture(shadowCanvas);
-
-    const contactShadowGeo = new THREE.PlaneGeometry(5.5, 5.5);
-    const contactShadowMat = new THREE.MeshBasicMaterial({
-      map: shadowTex,
-      transparent: true,
-      depthWrite: false,
-    });
-    const contactShadow = new THREE.Mesh(contactShadowGeo, contactShadowMat);
-    contactShadow.position.set(0, -2.4, 0);
-    contactShadow.rotation.x = -Math.PI / 2;
-    scene.add(contactShadow);
-
     // Resize listener
     const onResize = () => {
       if (!container) return;
@@ -725,11 +687,6 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
       displayMat.dispose();
       glassGeo.dispose();
       glassMat.dispose();
-      pipeGeo.dispose();
-      pipeMat.dispose();
-      contactShadowGeo.dispose();
-      contactShadowMat.dispose();
-      shadowTex.dispose();
 
       renderer.dispose();
       if (renderer.domElement.parentNode) {

@@ -17,6 +17,8 @@ import {
   Sparkles,
   Info,
 } from 'lucide-react';
+import type { ThemeMode } from '../../types.ts';
+import { translations, type Language } from '../../utils/i18n.ts';
 import type { LocationItem, CurrentWeather, DayForecast } from '../../utils/weather.ts';
 import { AnimatedWeatherIcon } from './AnimatedWeatherIcon.tsx';
 
@@ -30,6 +32,8 @@ interface ForecastSectionProps {
   notificationsEnabled?: boolean;
   onToggleNotifications?: (enabled: boolean) => void;
   onTriggerTestNotification?: () => void;
+  themeMode?: ThemeMode;
+  lang?: Language;
 }
 
 export const ForecastSection: React.FC<ForecastSectionProps> = ({
@@ -42,7 +46,11 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
   notificationsEnabled = false,
   onToggleNotifications,
   onTriggerTestNotification,
+  themeMode = 'glass',
+  lang = 'tr',
 }) => {
+  const t = translations[lang] || translations.tr;
+  const isGlass = themeMode === 'glass';
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedDayForHourly, setSelectedDayForHourly] = useState<DayForecast | null>(null);
@@ -65,7 +73,11 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
   );
 
   return (
-    <div className="w-full flex flex-col justify-between h-full bg-slate-50/90 dark:bg-slate-900/90 rounded-2xl p-3 sm:p-4 border-t border-slate-200/80 dark:border-slate-800 transition-all">
+    <div className={`w-full flex flex-col justify-between h-full rounded-2xl p-3 sm:p-4 transition-all ${
+      isGlass
+        ? 'bg-slate-950/35 border border-white/20 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.25),0_20px_45px_rgba(0,0,0,0.35)] backdrop-blur-lg text-slate-100'
+        : 'bg-slate-50/90 dark:bg-slate-900/90 border-t border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100'
+    }`}>
       {/* ── TOP BAR: Location Switcher & Current Conditions & Notification Toggle ── */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
         {/* Location Dropdown */}

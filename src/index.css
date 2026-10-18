@@ -13,20 +13,52 @@ body,
   overscroll-behavior: none;
 }
 
-/* Custom thin scrollbars for card contents */
+/* Theme-matching sleek glass scrollbars for all scrollable containers */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+::-webkit-scrollbar,
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
+
+::-webkit-scrollbar-track,
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
+::-webkit-scrollbar-thumb,
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.4);
+  background: rgba(255, 255, 255, 0.22);
   border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  transition: background-color 0.2s ease;
 }
+
+::-webkit-scrollbar-thumb:hover,
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.7);
+  background: rgba(249, 115, 22, 0.75); /* Warm ambient glass glow */
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
+}
+
+/* Light mode fallback adjustments */
+html:not(.dark) * {
+  scrollbar-color: rgba(100, 116, 139, 0.35) transparent;
+}
+
+html:not(.dark) ::-webkit-scrollbar-thumb,
+html:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+html:not(.dark) ::-webkit-scrollbar-thumb:hover,
+html:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(249, 115, 22, 0.85);
 }
 
 /* 3D stage perspective container */

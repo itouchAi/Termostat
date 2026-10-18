@@ -34,5 +34,7 @@ export interface WidgetItem {
   order: number;
 }
 
-export type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = 'glass' | 'dark' | 'light' | 'system';
+export type PerformanceMode = 'ultra' | 'eco';
 export type MorphMode = 'heat' | 'eco' | 'night' | 'boost' | 'standby';
+

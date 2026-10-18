@@ -12,8 +12,9 @@ import {
   Gauge,
   Activity,
 } from 'lucide-react';
-import type { ScheduleItem } from '../../types.ts';
+import type { ScheduleItem, ThemeMode } from '../../types.ts';
 import { estimateGasConsumption, calculateEstimatedCost } from '../../utils/thermostatRules.ts';
+import { translations, type Language } from '../../utils/i18n.ts';
 
 interface ProgramDeckViewProps {
   schedules: ScheduleItem[];
@@ -21,6 +22,8 @@ interface ProgramDeckViewProps {
   isEncrypted: boolean;
   dailyRunMinutes: number;
   flameLevelPercent: number;
+  themeMode?: ThemeMode;
+  lang?: Language;
 }
 
 export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
@@ -29,7 +32,12 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
   isEncrypted,
   dailyRunMinutes,
   flameLevelPercent,
+  themeMode = 'glass',
+  lang = 'tr',
 }) => {
+  const t = translations[lang] || translations.tr;
+  const isGlass = themeMode === 'glass';
+
   // 0: Akıllı Zamanlama & Haftalık Program (Front layer)
   // 1: Günlük Tüketim & Akıllı Modülasyon Tasarrufu (Back/Stacked layer)
   const [activeLayer, setActiveLayer] = useState<0 | 1>(0);
@@ -40,13 +48,13 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
 
   // Consumption calculations
   const m3Gas = estimateGasConsumption(dailyRunMinutes, Math.max(30, flameLevelPercent));
-  const estimatedCostTL = calculateEstimatedCost(m3Gas, 8.5);
-  const unmodulatedCost = calculateEstimatedCost(m3Gas * 1.28, 8.5);
+  const estimatedCostTL = calculateEstimatedCost(m3Gas, 10.25);
+  const unmodulatedCost = calculateEstimatedCost(m3Gas * 1.28, 10.25);
   const savedTL = Math.max(0, Math.round((unmodulatedCost - estimatedCostTL) * 10) / 10);
   const hours = Math.floor(dailyRunMinutes / 60);
   const minutes = dailyRunMinutes % 60;
 
-  // Touch swipe gesture handling (Yukarı kaydır -> Tüketim, Aşağı kaydır -> Zamanlama)
+  // Touch swipe gesture handling
   const touchStartY = useRef<number | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -58,19 +66,14 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
     const touchEndY = e.changedTouches[0].clientY;
     const deltaY = touchEndY - touchStartY.current;
 
-    // Swipe UP (parmak yukarı kaydı) -> 2. pencereye geç (Tüketim)
     if (deltaY < -24 && activeLayer === 0) {
       setActiveLayer(1);
-    }
-    // Swipe DOWN (parmak aşağı kaydı) -> 1. pencereye dön (Zamanlama)
-    else if (deltaY > 24 && activeLayer === 1) {
+    } else if (deltaY > 24 && activeLayer === 1) {
       setActiveLayer(0);
     }
-
     touchStartY.current = null;
   };
 
-  // Mouse wheel handling
   const lastWheelTime = useRef<number>(0);
   const handleWheel = (e: React.WheelEvent) => {
     const now = Date.now();
@@ -109,6 +112,15 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
     setTimeout(() => setSaveSuccess(false), 2200);
   };
 
+  // Glass 2nd layer styles
+  const windowBaseClass = isGlass
+    ? 'bg-slate-950/35 border border-white/20 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.25),0_20px_45px_rgba(0,0,0,0.35)] backdrop-blur-lg text-slate-100'
+    : 'bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-slate-100 shadow-sm';
+
+  const subBoxClass = isGlass
+    ? 'bg-white/[0.08] border border-white/12 text-slate-100 backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]'
+    : 'bg-slate-50 dark:bg-slate-800/70 border border-slate-200/90 dark:border-slate-700/80 text-slate-800 dark:text-slate-200';
+
   return (
     <div
       onWheel={handleWheel}
@@ -116,20 +128,26 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
       onTouchEnd={handleTouchEnd}
       className="relative w-full h-full flex flex-col justify-between overflow-hidden select-none p-1 sm:p-2"
     >
-      {/* ── TOP LAYER SWITCHER PILLS (Tertemiz, yazı olmaksızın tıklanabilir & kaydırılabilir) ── */}
+      {/* ── TOP LAYER SWITCHER PILLS ── */}
       <div className="shrink-0 flex items-center justify-center mb-2.5">
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
+        <div className={`flex items-center gap-1.5 p-1 rounded-2xl border transition-all ${
+          isGlass
+            ? 'bg-white/[0.10] border-white/20 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3)]'
+            : 'bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs'
+        }`}>
           <button
             type="button"
             onClick={() => setActiveLayer(0)}
             className={`px-3.5 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeLayer === 0
                 ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
+                : isGlass
+                ? 'text-slate-300 hover:text-white'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <span>⏰</span>
-            <span>Akıllı Zamanlama</span>
+            <span>{t.progTabSchedule}</span>
           </button>
           <button
             type="button"
@@ -137,16 +155,18 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
             className={`px-3.5 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeLayer === 1
                 ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25 scale-[1.02]'
+                : isGlass
+                ? 'text-slate-300 hover:text-white'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <span>💰</span>
-            <span>Günlük Tüketim & Tasarruf</span>
+            <span>{t.progTabConsumption}</span>
           </button>
         </div>
       </div>
 
-      {/* ── STACKED 3D FLOAT & BLUR CONTAINER (Genişletilmiş, çerçeveyle tam eşleşen yükseklik) ── */}
+      {/* ── STACKED 3D FLOAT & BLUR CONTAINER ── */}
       <div className="relative flex-1 w-full overflow-hidden">
         
         {/* ── PENCERE 1: AKILLI ZAMANLAMA & HAFTALIK PROGRAM (Öndeki Pencere) ── */}
@@ -163,33 +183,31 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
             transition:
               'transform 0.48s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, filter 0.4s ease',
           }}
-          className="absolute inset-0 w-full h-full flex flex-col justify-between bg-white/90 dark:bg-slate-900/90 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden"
+          className={`absolute inset-0 w-full h-full flex flex-col justify-between rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 overflow-hidden ${windowBaseClass}`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between shrink-0 mb-2">
+          <div className="flex items-center justify-between shrink-0 mb-2 pb-1.5 border-b border-white/10">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
-              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                Akıllı Zamanlama & Haftalık Program
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-100">
+                {t.progTabSchedule}
               </h3>
             </div>
             {isEncrypted && (
-              <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-1">
+              <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-400 bg-emerald-500/20 px-2.5 py-0.5 rounded-md border border-emerald-400/30 flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                AES-GCM Şifreli
+                {t.encryptedGcm}
               </span>
             )}
           </div>
 
-          {/* 4 Proportionally Scaled Schedule Items (Gece, Sabah, Dışarıda, Akşam) */}
+          {/* 4 Proportionally Scaled Schedule Items */}
           <div className="flex-1 flex flex-col justify-around gap-2 my-auto overflow-hidden py-1">
             {localList.map((item) => (
               <div
                 key={item.id}
                 className={`flex items-center justify-between gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl border transition-all ${
-                  item.enabled
-                    ? 'bg-slate-50 dark:bg-slate-800/70 border-slate-200/90 dark:border-slate-700/80 shadow-2xs'
-                    : 'bg-slate-100/50 dark:bg-slate-800/25 border-slate-200/50 dark:border-slate-800 opacity-60'
+                  item.enabled ? subBoxClass : 'bg-white/[0.03] border-white/5 opacity-50'
                 }`}
               >
                 {/* Switch & Name */}
@@ -197,9 +215,9 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
                   <button
                     type="button"
                     onClick={() => toggleItem(item.id)}
-                    aria-label={`${item.name} zamanlamasını ${item.enabled ? 'kapat' : 'aç'}`}
+                    aria-label={`${item.name} status`}
                     className={`w-10 h-6 rounded-full transition-colors relative flex items-center p-0.5 shrink-0 cursor-pointer ${
-                      item.enabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
+                      item.enabled ? 'bg-emerald-500' : 'bg-slate-600'
                     }`}
                   >
                     <span
@@ -208,7 +226,7 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
                       }`}
                     />
                   </button>
-                  <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+                  <span className="text-xs sm:text-sm font-bold text-slate-100 truncate">
                     {item.name}
                   </span>
                 </div>
@@ -216,19 +234,19 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
                 {/* Controls: Time & Temp */}
                 <div className="flex items-center gap-2.5 shrink-0">
                   {/* Time Input */}
-                  <div className="flex items-center gap-1.5 bg-white dark:bg-slate-700 px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-600 shadow-2xs">
+                  <div className="flex items-center gap-1.5 bg-black/30 px-2 py-1 rounded-xl border border-white/15 shadow-2xs">
                     <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <input
                       type="time"
                       value={item.time}
                       onChange={(e) => updateTime(item.id, e.target.value)}
-                      aria-label={`${item.name} saati`}
-                      className="bg-transparent text-slate-800 dark:text-white text-xs sm:text-sm font-mono font-bold focus:outline-none w-[65px]"
+                      aria-label={`${item.name} time`}
+                      className="bg-transparent text-white text-xs sm:text-sm font-mono font-bold focus:outline-none w-[65px]"
                     />
                   </div>
 
                   {/* Target Temp Input */}
-                  <div className="flex items-center gap-1 bg-white dark:bg-slate-700 px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-600 shadow-2xs">
+                  <div className="flex items-center gap-1 bg-black/30 px-2 py-1 rounded-xl border border-white/15 shadow-2xs">
                     <input
                       type="number"
                       min="10"
@@ -236,8 +254,8 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
                       step="0.5"
                       value={item.targetTemp}
                       onChange={(e) => updateTemp(item.id, parseFloat(e.target.value) || 20)}
-                      aria-label={`${item.name} hedef sıcaklığı`}
-                      className="w-11 bg-transparent text-slate-800 dark:text-white text-xs sm:text-sm font-mono font-bold text-center focus:outline-none"
+                      aria-label={`${item.name} target`}
+                      className="w-11 bg-transparent text-white text-xs sm:text-sm font-mono font-bold text-center focus:outline-none"
                     />
                     <span className="text-xs font-bold text-slate-400">°C</span>
                   </div>
@@ -246,8 +264,8 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
             ))}
           </div>
 
-          {/* Footer Save Button (Yazısız, tertemiz ve ergonomik) */}
-          <div className="shrink-0 pt-2 border-t border-slate-100 dark:border-slate-800">
+          {/* Footer Save Button */}
+          <div className="shrink-0 pt-2 border-t border-white/10">
             <button
               type="button"
               onClick={handleSave}
@@ -260,19 +278,19 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
               {saveSuccess ? (
                 <>
                   <Check className="w-4 h-4" />
-                  <span>Program Yerel Olarak Şifrelendi & Kaydedildi!</span>
+                  <span>{t.scheduleSaved}</span>
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4" />
-                  <span>Haftalık Programı Şifreli Kaydet</span>
+                  <span>{t.saveSchedule}</span>
                 </>
               )}
             </button>
           </div>
         </div>
 
-        {/* ── PENCERE 2: GÜNLÜK TÜKETİM & AKILLI MODÜLASYON TASARRUFU (Alttaki/İkinci Pencere) ── */}
+        {/* ── PENCERE 2: GÜNLÜK TÜKETİM & AKILLI MODÜLASYON TASARRUFU (Alttaki Pencere) ── */}
         <div
           style={{
             transform:
@@ -286,58 +304,58 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
             transition:
               'transform 0.48s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, filter 0.4s ease',
           }}
-          className="absolute inset-0 w-full h-full flex flex-col justify-between bg-white/90 dark:bg-slate-900/90 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden"
+          className={`absolute inset-0 w-full h-full flex flex-col justify-between rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 overflow-hidden ${windowBaseClass}`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between shrink-0 mb-2">
+          <div className="flex items-center justify-between shrink-0 mb-2 pb-1.5 border-b border-white/10">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />
-              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                Günlük Tüketim & Tasarruf Hesabı
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-100">
+                {t.progTabConsumption}
               </h3>
             </div>
-            <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/60">
+            <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-400 flex items-center gap-1 bg-emerald-500/20 px-2.5 py-0.5 rounded-md border border-emerald-400/30">
               <Sparkles className="w-3.5 h-3.5" />
               A++ Verimlilik
             </span>
           </div>
 
-          {/* 3 Large Proportionally Scaled Metric Cards (Süresi, Gaz, Tutar) */}
-          <div className="grid grid-cols-3 gap-2.5 sm:gap-3 my-auto shrink-0">
+          {/* 3 Large Proportionally Scaled Metric Cards */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 my-auto shrink-0">
             {/* Runtime */}
-            <div className="bg-slate-50 dark:bg-slate-800/60 p-3 sm:p-4 rounded-2xl border border-slate-100 dark:border-slate-700/60 text-center shadow-2xs">
-              <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-1">
-                <Clock className="w-3.5 h-3.5 text-blue-500" />
-                <span>Çalışma</span>
+            <div className={`p-3 rounded-2xl text-center ${subBoxClass}`}>
+              <div className="flex items-center justify-center gap-1.5 text-xs text-slate-300 mb-1">
+                <Clock className="w-3.5 h-3.5 text-blue-400" />
+                <span>{t.dailyRuntime}</span>
               </div>
-              <div className="text-base sm:text-xl md:text-2xl font-black text-slate-800 dark:text-white font-mono">
+              <div className="text-base sm:text-xl font-black text-white font-mono">
                 {hours > 0 ? `${hours}s ${minutes}d` : `${minutes} dk`}
               </div>
               <div className="text-[10px] text-slate-400 mt-1 truncate">Bugün yanma</div>
             </div>
 
             {/* Gas M3 */}
-            <div className="bg-slate-50 dark:bg-slate-800/60 p-3 sm:p-4 rounded-2xl border border-slate-100 dark:border-slate-700/60 text-center shadow-2xs">
-              <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-1">
-                <Flame className="w-3.5 h-3.5 text-orange-500" />
-                <span>Tahmini Gaz</span>
+            <div className={`p-3 rounded-2xl text-center ${subBoxClass}`}>
+              <div className="flex items-center justify-center gap-1.5 text-xs text-slate-300 mb-1">
+                <Flame className="w-3.5 h-3.5 text-orange-400" />
+                <span>{t.totalGasUsed}</span>
               </div>
-              <div className="text-base sm:text-xl md:text-2xl font-black text-orange-600 dark:text-orange-400 font-mono">
-                ~{m3Gas.toFixed(2)} <span className="text-xs font-normal text-slate-400">m³</span>
+              <div className="text-base sm:text-xl font-black text-orange-400 font-mono">
+                ~{m3Gas.toFixed(2)} <span className="text-xs font-normal text-slate-300">m³</span>
               </div>
               <div className="text-[10px] text-slate-400 mt-1 truncate">24 kW brülör</div>
             </div>
 
             {/* Cost TL */}
-            <div className="bg-slate-50 dark:bg-slate-800/60 p-3 sm:p-4 rounded-2xl border border-slate-100 dark:border-slate-700/60 text-center shadow-2xs">
-              <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-1">
-                <Coins className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Tahmini Tutar</span>
+            <div className={`p-3 rounded-2xl text-center ${subBoxClass}`}>
+              <div className="flex items-center justify-center gap-1.5 text-xs text-slate-300 mb-1">
+                <Coins className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{t.estimatedCost}</span>
               </div>
-              <div className="text-base sm:text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                ~{estimatedCostTL.toFixed(1)} <span className="text-xs font-normal text-slate-400">TL</span>
+              <div className="text-base sm:text-xl font-black text-emerald-400 font-mono">
+                ~{estimatedCostTL.toFixed(1)} <span className="text-xs font-normal text-slate-300">TL</span>
               </div>
-              <div className="text-[10px] text-emerald-500 font-semibold truncate flex items-center justify-center gap-0.5 mt-1">
+              <div className="text-[10px] text-emerald-300 font-semibold truncate flex items-center justify-center gap-0.5 mt-1">
                 <ArrowDownRight className="w-3 h-3" />
                 ~{savedTL} TL tasarruf
               </div>
@@ -345,47 +363,47 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
           </div>
 
           {/* Akıllı Modülasyon Tasarrufu & Canlı Güç Barı */}
-          <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/50 p-3 sm:p-4 rounded-2xl text-xs text-emerald-800 dark:text-emerald-300 flex flex-col gap-2 shrink-0 shadow-2xs">
+          <div className="bg-emerald-500/15 border border-emerald-400/30 p-3 sm:p-4 rounded-2xl text-xs text-emerald-200 flex flex-col gap-2 shrink-0 backdrop-blur-sm shadow-2xs">
             <div className="flex items-start gap-2.5">
-              <Zap className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+              <Zap className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
               <div className="min-w-0">
-                <span className="font-bold block text-xs sm:text-sm text-emerald-800 dark:text-emerald-300">
-                  Akıllı Alev Modülasyonu Tasarrufu:
+                <span className="font-bold block text-xs sm:text-sm text-emerald-200">
+                  {t.modulationEfficiency}:
                 </span>
-                <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
+                <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed mt-0.5">
                   Kombi oda sıcaklığına yaklaştıkça modülasyonu otomatik kısarak doğalgaz sarfiyatını %20 ila %28 oranında azaltır.
                 </p>
               </div>
             </div>
 
             {/* Live modulation progress bar */}
-            <div className="mt-1 pt-2 border-t border-emerald-200/50 dark:border-emerald-800/40 flex items-center justify-between text-[11px] font-mono">
-              <span className="text-slate-500 dark:text-slate-400">Alev Gücü:</span>
-              <div className="flex-1 mx-3 bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+            <div className="mt-1 pt-2 border-t border-emerald-400/20 flex items-center justify-between text-[11px] font-mono">
+              <span className="text-slate-300">Alev Gücü:</span>
+              <div className="flex-1 mx-3 bg-black/40 h-2.5 rounded-full overflow-hidden border border-white/10">
                 <div
                   style={{ width: `${Math.max(15, flameLevelPercent)}%` }}
                   className="bg-gradient-to-r from-emerald-500 to-amber-500 h-full rounded-full transition-all duration-500"
                 />
               </div>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">%{flameLevelPercent}</span>
+              <span className="font-bold text-emerald-300">%{flameLevelPercent}</span>
             </div>
           </div>
 
           {/* Quick Telemetry Indicators */}
           <div className="grid grid-cols-2 gap-2 shrink-0 text-[11px]">
-            <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
-              <span className="text-slate-400 flex items-center gap-1">
-                <Gauge className="w-3.5 h-3.5 text-blue-500" />
-                Sistem Basıncı:
+            <div className={`p-2 rounded-xl flex items-center justify-between ${subBoxClass}`}>
+              <span className="text-slate-300 flex items-center gap-1">
+                <Gauge className="w-3.5 h-3.5 text-blue-400" />
+                {t.waterPressure}:
               </span>
-              <span className="font-bold font-mono text-slate-700 dark:text-slate-200">1.6 Bar</span>
+              <span className="font-bold font-mono text-white">1.6 Bar</span>
             </div>
-            <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
-              <span className="text-slate-400 flex items-center gap-1">
-                <Activity className="w-3.5 h-3.5 text-emerald-500" />
-                Sirkülasyon:
+            <div className={`p-2 rounded-xl flex items-center justify-between ${subBoxClass}`}>
+              <span className="text-slate-300 flex items-center gap-1">
+                <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                {t.circulationPump}:
               </span>
-              <span className="font-bold font-mono text-slate-700 dark:text-slate-200">1420 RPM</span>
+              <span className="font-bold font-mono text-white">1420 RPM</span>
             </div>
           </div>
         </div>
