@@ -4,9 +4,6 @@ import {
   Moon,
   Laptop,
   Zap,
-  BatteryCharging,
-  Layers,
-  Sparkles,
   Settings,
   SlidersHorizontal,
   Flame,
@@ -15,11 +12,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-import type { ThemeMode, PerformanceMode, MorphMode, ScheduleItem, WidgetItem } from './types.ts';
-import { translations, type Language } from './utils/i18n.ts';
+import type { ThemeMode, MorphMode, ScheduleItem, WidgetItem } from './types.ts';
 import { ThreeScene } from './components/ThreeCanvas/ThreeScene.tsx';
-import { AtmosphericWeatherBackground } from './components/Weather/AtmosphericWeatherBackground.tsx';
-import { ThemeSelectorModal } from './components/Theme/ThemeSelectorModal.tsx';
 import { ForecastSection } from './components/Weather/ForecastSection.tsx';
 import { CoreGaugeWidget } from './components/Widgets/CoreGaugeWidget.tsx';
 import { TargetControlWidget } from './components/Widgets/TargetControlWidget.tsx';
@@ -35,7 +29,6 @@ import { WidgetCustomizerModal } from './components/WidgetCustomizerModal.tsx';
 import { SettingsModal } from './components/SettingsModal.tsx';
 import { VaultNotificationsModal } from './components/VaultNotificationsModal.tsx';
 
-
 import {
   calculateRelayStatus,
   calculateFlameModulation,
@@ -46,7 +39,6 @@ import {
   DEFAULT_LOCATIONS,
   type LocationItem,
   type CurrentWeather,
-  type WeatherCondition,
   fetchOpenMeteoWeather,
   getFallbackForecast,
 } from './utils/weather.ts';
@@ -85,42 +77,14 @@ const TABS: SlideDef[] = [
 ];
 
 export default function App() {
-  // ── Language State: 'tr' | 'en' ──
-  const [lang, setLang] = useState<Language>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('app_language') as Language;
-      if (saved === 'tr' || saved === 'en') return saved;
-    }
-    return 'tr';
-  });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('app_language', lang);
-    }
-  }, [lang]);
-
-  const t = translations[lang] || translations.tr;
-
-  // Dynamic tabs based on active language
-  const tabs: SlideDef[] = useMemo(() => [
-    { id: 'genel', label: t.tabThermostat, icon: '🏠', title: lang === 'tr' ? 'Termostat & Kombi Ana Kontrol' : 'Thermostat & Boiler Main Control' },
-    { id: 'hava', label: t.tabWeather, icon: '🌤️', title: lang === 'tr' ? 'Bölgesel Hava Durumu & 5 Günlük Tahmin' : 'Regional Weather & 5-Day Forecast' },
-    { id: 'rapor', label: t.tabReport, icon: '📊', title: lang === 'tr' ? '24s Sıcaklık & Tüketim Analitiği' : '24h Temperature & Usage Analytics' },
-    { id: 'program', label: t.tabProgram, icon: '⏰', title: lang === 'tr' ? 'Haftalık Zaman Planı & Tüketim' : 'Weekly Schedule & Consumption' },
-  ], [lang, t]);
-
-  // ── Theme State: 'glass' | 'dark' | 'light' | 'system' ──
+  // ── Theme State: 'light' | 'dark' | 'system' ──
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('theme_preference') as ThemeMode;
-      if (saved === 'glass' || saved === 'light' || saved === 'dark' || saved === 'system') return saved;
+      if (saved === 'light' || saved === 'dark' || saved === 'system') return saved;
     }
-    return 'glass';
+    return 'system';
   });
-
-  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
-  const [weatherConditionOverride, setWeatherConditionOverride] = useState<WeatherCondition | null>(null);
 
   const [nowTime, setNowTime] = useState<Date>(() => new Date());
 
@@ -130,17 +94,7 @@ export default function App() {
     return () => clearInterval(t);
   }, []);
 
-  // Compute if it's night time (before 06:30 or after 19:30), respecting active weather condition overrides
-  const isNightTime = useMemo(() => {
-    if (weatherConditionOverride === 'sunny' || weatherConditionOverride === 'partly_cloudy') {
-      return false;
-    }
-    const h = nowTime.getHours();
-    return h < 6 || h >= 19;
-  }, [nowTime, weatherConditionOverride]);
-
-
-  // Compute effective 'light' or 'dark' for DOM styling
+  // Compute effective 'light' or 'dark'
   const effectiveTheme = useMemo<'light' | 'dark'>(() => {
     const h = nowTime.getHours();
     const m = nowTime.getMinutes();
@@ -151,23 +105,8 @@ export default function App() {
     return resolveEffectiveTheme(themeMode, h, m, osDark);
   }, [themeMode, nowTime]);
 
-  // Dual Performance Mode: 'ultra' (60 FPS, full particles) vs 'eco' (low GPU/battery saving)
-  const [performanceMode, setPerformanceMode] = useState<PerformanceMode>(() => {
-    if (typeof localStorage !== 'undefined') {
-      const saved = localStorage.getItem('performance_mode') as PerformanceMode;
-      if (saved === 'ultra' || saved === 'eco') return saved;
-    }
-    return 'ultra';
-  });
-
-  useEffect(() => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('performance_mode', performanceMode);
-    }
-  }, [performanceMode]);
-
+  const [performanceMode, setPerformanceMode] = useState<boolean>(false);
   const [reducedMotion] = useState<boolean>(false);
-
 
   // ── Carousel Infinite Sliding State ──
   // virtualIndex can grow arbitrarily positive or negative for infinite loop
@@ -188,11 +127,13 @@ export default function App() {
   }, [virtualIndex]);
 
   // Thermostat vitals
-  const [currentTemp] = useState<number>(21.8);
-  const [humidity] = useState<number>(48);
+  const [currentTemp, setCurrentTemp] = useState<number>(21.8);
+  const [humidity, setHumidity] = useState<number>(48);
   const [targetTemp, setTargetTemp] = useState<number>(22.5);
   const [waterPressure] = useState<number>(1.6);
-  const [dailyRunMinutes] = useState<number>(145);
+  const [dailyRunMinutes, setDailyRunMinutes] = useState<number>(145);
+  const isUserInteractingRef = useRef<boolean>(false);
+  const userInteractTimerRef = useRef<any>(null);
 
   // 3D Morph Mode
   const [morphMode] = useState<MorphMode>('heat');
@@ -203,11 +144,6 @@ export default function App() {
   const [weather, setWeather] = useState<CurrentWeather>(() =>
     getFallbackForecast(DEFAULT_LOCATIONS[0].cityName)
   );
-
-  const effectiveWeatherCondition: WeatherCondition = useMemo(() => {
-    return weatherConditionOverride || weather.condition || 'partly_cloudy';
-  }, [weatherConditionOverride, weather.condition]);
-
 
   // Modals
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
@@ -270,6 +206,47 @@ export default function App() {
     return calculateFlameModulation(currentTemp, targetTemp, isKombiActive);
   }, [currentTemp, targetTemp, isKombiActive]);
 
+  // 🔥 Canlı Firebase Realtime Database Senkronizasyonu (Kombiden Canlı Veri Çekme)
+  useEffect(() => {
+    if (!firebaseUrl) return;
+    const cleanUrl = firebaseUrl.replace(/\/+$/, '');
+    const endpoint = cleanUrl.endsWith('.json') ? cleanUrl : `${cleanUrl}/kombi.json`;
+
+    let active = true;
+    const syncFromCloud = async () => {
+      try {
+        const res = await fetch(endpoint);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data && active) {
+          if (typeof data.sicaklik === 'number') {
+            setCurrentTemp(Number(data.sicaklik.toFixed(1)));
+          }
+          if (typeof data.nem === 'number') {
+            setHumidity(Math.round(data.nem));
+          }
+          if (typeof data.hedefSicaklik === 'number' && !isUserInteractingRef.current) {
+            setTargetTemp(Number(data.hedefSicaklik.toFixed(1)));
+          }
+          if (typeof data.calismaDakika === 'number') {
+            setDailyRunMinutes(data.calismaDakika);
+          }
+          setIsCloudConnected(true);
+        }
+      } catch (err) {
+        console.warn('Firebase senkronizasyon hatası:', err);
+        if (active) setIsCloudConnected(false);
+      }
+    };
+
+    syncFromCloud();
+    const interval = setInterval(syncFromCloud, 2500); // 2.5 saniyede bir canlı çek
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [firebaseUrl]);
+
   // Sync DOM dark class with effectiveTheme
   useEffect(() => {
     const root = document.documentElement;
@@ -326,6 +303,11 @@ export default function App() {
           setVaultPin(storedPin);
           setIsVaultLocked(true);
         }
+
+        const storedFbUrl = await SecureVault.getItem<string>('firebaseUrl', 'https://kombi-kontrol-babd5-default-rtdb.firebaseio.com');
+        if (storedFbUrl) setFirebaseUrl(storedFbUrl);
+        const storedFbKey = await SecureVault.getItem<string>('firebaseKey', 'AIzaSyDMULZx8TS0HuDMlxKzQ6BixW6jXJzJ55c');
+        if (storedFbKey) setFirebaseKey(storedFbKey);
       } catch (err) {
         console.warn('Vault load error:', err);
       }
@@ -358,13 +340,13 @@ export default function App() {
 
   // ── Infinite Horizontal Sliding Navigation ──
   const navigateToTab = useCallback((targetTabIdx: number) => {
-    const n = tabs.length;
+    const n = TABS.length;
     const currentTab = ((virtualIndex % n) + n) % n;
     let diff = targetTabIdx - currentTab;
     if (diff > n / 2) diff -= n;
     if (diff < -n / 2) diff += n;
     setVirtualIndex((v) => v + diff);
-  }, [virtualIndex, tabs.length]);
+  }, [virtualIndex]);
 
   const slidePrev = useCallback(() => {
     setVirtualIndex((v) => v - 1);
@@ -453,57 +435,6 @@ export default function App() {
     setDragDeltaX(0);
   };
 
-  // ── Bottom Nav Dock Mouse Wheel & Touch Swipe Handlers ──
-  const lastDockWheelTimeRef = useRef<number>(0);
-  const handleDockWheel = (e: React.WheelEvent) => {
-    e.stopPropagation();
-    const now = Date.now();
-    if (now - lastDockWheelTimeRef.current < 280) return;
-    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    if (Math.abs(delta) > 10) {
-      if (delta > 0) {
-        slideNext();
-      } else {
-        slidePrev();
-      }
-      lastDockWheelTimeRef.current = now;
-    }
-  };
-
-  const dockTouchStartXRef = useRef<number>(0);
-  const dockTouchStartYRef = useRef<number>(0);
-  const dockSwipeLockedRef = useRef<boolean | null>(null);
-
-  const handleDockTouchStart = (e: React.TouchEvent) => {
-    dockTouchStartXRef.current = e.touches[0].clientX;
-    dockTouchStartYRef.current = e.touches[0].clientY;
-    dockSwipeLockedRef.current = null;
-  };
-
-  const handleDockTouchMove = (e: React.TouchEvent) => {
-    if (!dockTouchStartXRef.current) return;
-    const dx = e.touches[0].clientX - dockTouchStartXRef.current;
-    const dy = e.touches[0].clientY - dockTouchStartYRef.current;
-    if (dockSwipeLockedRef.current === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
-      dockSwipeLockedRef.current = Math.abs(dx) > Math.abs(dy);
-    }
-  };
-
-  const handleDockTouchEnd = (e: React.TouchEvent) => {
-    if (dockSwipeLockedRef.current === true && e.changedTouches && e.changedTouches.length > 0) {
-      const touchEndX = e.changedTouches[0].clientX;
-      const dx = touchEndX - dockTouchStartXRef.current;
-      if (dx < -25) {
-        slideNext(); // Swiped right-to-left -> Next tab
-      } else if (dx > 25) {
-        slidePrev(); // Swiped left-to-right -> Prev tab
-      }
-    }
-    dockTouchStartXRef.current = 0;
-    dockTouchStartYRef.current = 0;
-    dockSwipeLockedRef.current = null;
-  };
-
   // ── Mouse Drag Gesture Tracking (Fareyle Parmak Gibi Kaydırma) ──
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -571,7 +502,24 @@ export default function App() {
   const handleSetTarget = useCallback((newTarget: number) => {
     setTargetTemp(newTarget);
     SecureVault.setItem('targetTemp', newTarget);
-  }, []);
+
+    isUserInteractingRef.current = true;
+    if (userInteractTimerRef.current) clearTimeout(userInteractTimerRef.current);
+    userInteractTimerRef.current = setTimeout(() => {
+      isUserInteractingRef.current = false;
+    }, 3500);
+
+    // Buluta anında ilet
+    if (firebaseUrl) {
+      const cleanUrl = firebaseUrl.replace(/\/+$/, '');
+      const endpoint = cleanUrl.endsWith('.json') ? cleanUrl : `${cleanUrl}/kombi.json`;
+      fetch(endpoint, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hedefSicaklik: newTarget }),
+      }).catch((e) => console.error('Hedef Firebase iletim hatası:', e));
+    }
+  }, [firebaseUrl]);
 
   // Save schedules
   const handleSaveSchedules = useCallback((newSchedules: ScheduleItem[]) => {
@@ -672,25 +620,12 @@ export default function App() {
 
   return (
     <div
-      className={`h-screen max-h-screen w-screen relative ${
-        themeMode === 'glass'
-          ? 'bg-transparent text-slate-100'
-          : effectiveTheme === 'dark'
+      className={`h-screen max-h-screen w-screen ${
+        effectiveTheme === 'dark'
           ? 'dark bg-radial-[at_top] from-slate-900 via-slate-950 to-black text-slate-100'
           : 'bg-radial-[at_top] from-slate-100 via-sky-50/40 to-slate-200/80 text-slate-800'
       } font-sans transition-colors duration-500 flex flex-col selection:bg-blue-500 selection:text-white overflow-hidden`}
     >
-      {/* ── ATMOSPHERIC LIVE WEATHER CANVAS (Hareketli Bulut, Yağmur, Kar, Sis & Güneş Arka Planı) ── */}
-      {(themeMode === 'glass' || themeMode === 'system') && (
-        <AtmosphericWeatherBackground
-          condition={effectiveWeatherCondition}
-          isNight={isNightTime}
-          performanceMode={performanceMode}
-          ambientTemp={weather.temp}
-          cityName={activeLocation.cityName}
-        />
-      )}
-
       {/* ── WEATHER NOTIFICATION TOAST POPUP (3 Saatlik Rapor & Önlem Bildirimi) ── */}
       {weatherToast && (
         <div className="fixed top-16 sm:top-20 right-3 sm:right-6 z-50 max-w-sm w-[92vw] p-3 rounded-2xl bg-slate-900/95 dark:bg-slate-800/95 text-white border border-amber-500/60 shadow-2xl backdrop-blur-xl animate-in slide-in-from-top-3 flex items-start gap-2.5">
@@ -710,13 +645,7 @@ export default function App() {
       )}
 
       {/* ── TOP NAV HEADER ── */}
-      <header
-        className={`relative z-40 h-14 sm:h-16 px-3 sm:px-6 md:px-8 flex items-center justify-between border-b transition-all ${
-          themeMode === 'glass'
-            ? 'border-white/15 bg-slate-950/30 text-white backdrop-blur-2xl shadow-sm'
-            : 'border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md'
-        }`}
-      >
+      <header className="relative z-40 h-14 sm:h-16 px-3 sm:px-6 md:px-8 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md">
         {/* Brand */}
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-gradient-to-tr from-orange-500 via-amber-500 to-yellow-400 flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
@@ -747,108 +676,76 @@ export default function App() {
 
         {/* Action Controls */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          {/* Language Switcher Flag Button (Placed in front of the 4 buttons) */}
+          {/* Performance Mode Switch */}
           <button
             type="button"
-            onClick={() => setLang((prev) => (prev === 'tr' ? 'en' : 'tr'))}
-            className={`h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl border flex items-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer ${
-              themeMode === 'glass'
-                ? 'bg-white/10 hover:bg-white/20 border-white/25 text-white backdrop-blur-md shadow-white/5'
-                : 'bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+            onClick={() => setPerformanceMode((p) => !p)}
+            className={`p-1.5 sm:px-2.5 sm:py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border ${
+              performanceMode
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 shadow-sm'
+                : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
             }`}
-            aria-label="Dil Değiştir / Switch Language"
-            title={lang === 'tr' ? 'Türkçe (English için tıklayın)' : 'English (Click for Turkish)'}
-          >
-            <span className="text-sm leading-none drop-shadow-xs">{lang === 'tr' ? '🇹🇷' : '🇬🇧'}</span>
-            <span className="text-[11px] font-black tracking-tight">{lang === 'tr' ? 'TR' : 'EN'}</span>
-          </button>
-
-          {/* 1. Performance Mode Switch (Ultra 60FPS vs Eco Low-Power) */}
-          <button
-            type="button"
-            onClick={() => setPerformanceMode((p) => (p === 'ultra' ? 'eco' : 'ultra'))}
-            className={`p-1.5 sm:px-2.5 sm:py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border cursor-pointer ${
-              performanceMode === 'ultra'
-                ? 'bg-amber-500/15 border-amber-500/40 text-amber-500 dark:text-amber-400 shadow-sm'
-                : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-sm'
-            }`}
-            title={performanceMode === 'ultra' ? t.perfUltraTitle : t.perfEcoTitle}
+            title="Düşük donanımlı cihazlarda yüksek FPS modu"
             aria-label="Performans modunu değiştir"
           >
-            {performanceMode === 'ultra' ? (
-              <>
-                <Zap className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                <span className="hidden md:inline text-[11px]">{t.perfUltra}</span>
-              </>
-            ) : (
-              <>
-                <BatteryCharging className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="hidden md:inline text-[11px]">{t.perfEco}</span>
-              </>
-            )}
+            <Zap className={`w-3.5 h-3.5 ${performanceMode ? 'fill-amber-500 text-amber-500' : ''}`} />
+            <span className="hidden md:inline text-[11px]">
+              {performanceMode ? 'Performans Modu' : 'Canlı Alev'}
+            </span>
           </button>
 
-          {/* 2. Theme & Visual Effects Modal Trigger Button (Opens Pop-up Modal) */}
+          {/* 3-State Theme Toggle (Gündüz / Gece / Sistem Otomatik) */}
           <button
             type="button"
-            onClick={() => setIsThemeModalOpen(true)}
-            className={`h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl border flex items-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer ${
-              themeMode === 'glass'
-                ? 'bg-blue-600/30 hover:bg-blue-600/45 border-blue-400/50 text-white backdrop-blur-md shadow-blue-500/10'
-                : 'bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
-            }`}
-            aria-label="Tema ve görsel efekt ayarları"
-            title={`${t.themeMenuTitle}: ${
-              themeMode === 'glass'
-                ? t.themeGlass
-                : themeMode === 'system'
-                ? t.themeAuto
+            onClick={handleCycleTheme}
+            className="h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
+            aria-label={`Tema modunu değiştir (Şu an: ${
+              themeMode === 'system' ? 'Sistem Otomatik' : themeMode === 'dark' ? 'Gece' : 'Gündüz'
+            })`}
+            title={`Tema: ${
+              themeMode === 'system'
+                ? `Sistem (Saat bazlı: ${effectiveTheme === 'dark' ? 'Gece' : 'Gündüz'})`
                 : themeMode === 'dark'
-                ? t.themeDark
-                : t.themeLight
+                ? 'Gece Modu'
+                : 'Gündüz Modu'
             }`}
           >
-            {themeMode === 'glass' ? (
-              <>
-                <Layers className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
-                <span className="text-[10px] font-bold hidden sm:inline">{t.themeGlass}</span>
-              </>
-            ) : themeMode === 'system' ? (
+            {themeMode === 'system' ? (
               <>
                 <Laptop className="w-3.5 h-3.5 text-blue-500" />
-                <span className="text-[10px] font-bold hidden sm:inline">{t.themeAuto}</span>
+                <span className="text-[10px] font-bold hidden sm:inline">Oto</span>
               </>
             ) : themeMode === 'dark' ? (
               <>
                 <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                <span className="text-[10px] font-bold hidden sm:inline">{t.themeDark}</span>
+                <span className="text-[10px] font-bold hidden sm:inline">Gece</span>
               </>
             ) : (
               <>
                 <Sun className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-[10px] font-bold hidden sm:inline">{t.themeLight}</span>
+                <span className="text-[10px] font-bold hidden sm:inline">Gündüz</span>
               </>
             )}
           </button>
 
-          {/* 3. Customize Widgets Button */}
+          {/* Customize Widgets Button */}
           <button
             type="button"
             onClick={() => setIsCustomizerOpen(true)}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer"
-            aria-label={t.customizeWidgets}
-            title={t.customizeWidgets}
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all active:scale-95 shadow-xs"
+            aria-label="Widget'ları Kişiselleştir"
+            title="Widget'ları Kişiselleştir"
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
           </button>
 
-          {/* 4. Cloud Settings */}
+          {/* Cloud Settings */}
           <button
             type="button"
             onClick={() => setIsSettingsOpen(true)}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer"
-            aria-label={t.settingsTitle}
-            title={t.settingsTitle}
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all active:scale-95 shadow-xs"
+            aria-label="Ayarlar"
+            title="Ayarlar & Firebase"
           >
             <Settings className="w-3.5 h-3.5" />
           </button>
@@ -903,8 +800,8 @@ export default function App() {
 
         {/* ── 3D FLOATING CARDS (Üst bar ve alt dock'a çok ince boşluk kalacak şekilde genişletilmiş) ── */}
         <div className="relative w-full max-w-5xl h-full max-h-[890px] flex items-center justify-center">
-          {tabs.map((tab, idx) => {
-            const n = tabs.length;
+          {TABS.map((tab, idx) => {
+            const n = TABS.length;
             const currentTab = ((virtualIndex % n) + n) % n;
             let diff = idx - currentTab;
             if (diff > n / 2) diff -= n;
@@ -917,6 +814,7 @@ export default function App() {
             const absOffset = Math.abs(effectiveOffset);
 
             // Pickup 3D rotation:
+            // When swiping, one side recedes into the screen depth and the leading side projects forward
             const rotateY = Math.max(-38, Math.min(38, -effectiveOffset * 25));
             const rotateZ = Math.max(-4, Math.min(4, effectiveOffset * -1.5));
             const translateZ = -Math.min(320, absOffset * 150);
@@ -942,25 +840,14 @@ export default function App() {
                   transformOrigin: '50% 50%',
                   pointerEvents: isCenter ? 'auto' : 'none',
                 }}
-                className={`absolute inset-0 w-full h-full rounded-[30px] sm:rounded-[36px] overflow-hidden flex flex-col transition-all duration-500 ${
-                  themeMode === 'glass'
-                    ? 'bg-slate-950/20 border border-white/30 shadow-[0_25px_60px_rgba(0,0,0,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.45),inset_0_-1.5px_2px_rgba(255,255,255,0.15)] backdrop-blur-md backdrop-saturate-150 text-white'
-                    : effectiveTheme === 'dark'
-                    ? 'bg-slate-900/90 border border-slate-700/70 shadow-[0_25px_65px_-15px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.06),0_12px_36px_-10px_rgba(249,115,22,0.18)] backdrop-blur-2xl'
-                    : 'bg-white/90 border border-white/80 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.18),0_0_0_1px_rgba(255,255,255,0.9),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-2xl'
-                }`}
+                className={`absolute inset-0 w-full h-full rounded-[30px] sm:rounded-[36px] overflow-hidden flex flex-col transition-shadow duration-500 ${
+                  effectiveTheme === 'dark'
+                    ? 'bg-slate-900/90 border border-slate-700/70 shadow-[0_25px_65px_-15px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.06),0_12px_36px_-10px_rgba(249,115,22,0.18)]'
+                    : 'bg-white/90 border border-white/80 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.18),0_0_0_1px_rgba(255,255,255,0.9),inset_0_1px_0_rgba(255,255,255,0.95)]'
+                } backdrop-blur-2xl`}
               >
-                {/* Frosted Glass Top Sheen & Curved Bevel Glare */}
-                {themeMode === 'glass' && (
-                  <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-white/[0.14] via-white/[0.03] to-transparent pointer-events-none rounded-t-[30px] sm:rounded-t-[36px]" />
-                )}
-
-                {/* Floating Window Top Header Bar */}
-                <div className={`px-4 sm:px-6 py-3 border-b flex items-center justify-between shrink-0 relative z-10 ${
-                  themeMode === 'glass'
-                    ? 'border-white/15 bg-white/[0.08] backdrop-blur-md'
-                    : 'border-slate-200/70 dark:border-slate-800/80 bg-white/40 dark:bg-slate-800/40'
-                }`}>
+                {/* Floating Window Top Header Bar (No "İleri" button, natural finger swipe mode) */}
+                <div className="px-4 sm:px-6 py-3 border-b border-slate-200/70 dark:border-slate-800/80 flex items-center justify-between shrink-0 bg-white/40 dark:bg-slate-800/40">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{tab.icon}</span>
                     <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-white">
@@ -971,50 +858,42 @@ export default function App() {
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-medium text-slate-400 dark:text-slate-400 flex items-center gap-1">
                       <span>👈</span>
-                      <span className="hidden sm:inline">{t.swipeHint}</span>
+                      <span className="hidden sm:inline">Parmakla Kaydırın</span>
                       <span>👉</span>
                     </span>
                   </div>
                 </div>
 
                 {/* Floating Window Content Body */}
-                <div className={`flex-1 ${tab.id === 'genel' || tab.id === 'program' || tab.id === 'rapor' ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'} p-2.5 sm:p-5 md:p-6 flex flex-col relative z-10`}>
+                <div className={`flex-1 ${tab.id === 'genel' || tab.id === 'program' || tab.id === 'rapor' ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'} p-2.5 sm:p-5 md:p-6 flex flex-col`}>
                   
                   {/* ── CARD 1: GENEL (ÜSTTE STATÜ, ORTADA KÜÇÜLTÜLMÜŞ TERMOSTAT, ALTTA YATAY MOD BUTONLARI & STEPPER) ── */}
                   {tab.id === 'genel' && (
                     <div className="h-full w-full flex flex-col justify-between overflow-hidden select-none">
-                      {/* Top Badges (Compact Frosted Glass) */}
+                      {/* Top Badges (Compact) */}
                       <div className="w-full flex items-center justify-between mb-1 shrink-0">
-                        <div className={`px-2.5 py-1 rounded-full border shadow-xs flex items-center gap-1.5 sm:gap-2 backdrop-blur-md ${
-                          themeMode === 'glass'
-                            ? 'bg-white/[0.12] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35)] text-white'
-                            : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60'
-                        }`}>
+                        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700/60 shadow-xs flex items-center gap-1.5 sm:gap-2">
                           <span
                             className={`w-2 h-2 rounded-full ${
                               isKombiActive ? 'bg-orange-500 animate-pulse' : 'bg-slate-400'
                             }`}
                           />
-                          <span className={`text-xs font-bold ${themeMode === 'glass' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>
-                            {isKombiActive ? t.activeHeating : t.standby}
+                          <span className="text-xs font-bold text-slate-800 dark:text-white">
+                            {isKombiActive ? 'Aktif Isıtma 🔥' : 'Beklemede ❄️'}
                           </span>
-                          <span className={`text-[10px] font-mono ${themeMode === 'glass' ? 'text-slate-300' : 'text-slate-500'}`}>
-                            (%{flameLevelPercent} {t.modulation})
+                          <span className="text-[10px] font-mono text-slate-500">
+                            (%{flameLevelPercent} modülasyon)
                           </span>
                         </div>
 
-                        <div className={`text-[11px] font-semibold flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md ${
-                          themeMode === 'glass'
-                            ? 'bg-white/[0.12] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35)] text-white'
-                            : 'bg-white/70 dark:bg-slate-800/60 border-slate-200/60 dark:border-slate-700/60 text-slate-500 dark:text-slate-400'
-                        }`}>
-                          <span className={themeMode === 'glass' ? 'text-slate-300' : 'text-slate-400'}>{t.liveRoom}</span>
-                          <span className={`font-mono font-bold ${themeMode === 'glass' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>{currentTemp}°C</span>
-                          <span className={themeMode === 'glass' ? 'text-slate-300' : 'text-slate-400'}>• %{humidity}</span>
+                        <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 bg-white/70 dark:bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-200/60 dark:border-slate-700/60">
+                          <span className="text-slate-400">Canlı Oda:</span>
+                          <span className="text-slate-800 dark:text-white font-mono font-bold">{currentTemp}°C</span>
+                          <span className="text-slate-400">• %{humidity}</span>
                         </div>
                       </div>
 
-                      {/* Center: Scaled 3D Thermostat */}
+                      {/* Center: Scaled 3D Thermostat (Proportionally sized to fill the expanded frame with zero scroll) */}
                       <div className="flex-1 w-full max-w-[340px] xs:max-w-[380px] sm:max-w-[440px] md:max-w-[480px] h-[220px] xs:h-[250px] sm:h-[300px] md:h-[350px] mx-auto flex items-center justify-center relative my-auto">
                         <ThreeScene
                           theme={effectiveTheme}
@@ -1022,40 +901,30 @@ export default function App() {
                           targetTemp={targetTemp}
                           currentTemp={currentTemp}
                           isKombiActive={isKombiActive}
-                          performanceMode={performanceMode === 'eco'}
+                          performanceMode={performanceMode}
                           reducedMotion={reducedMotion}
                           onSetTarget={handleSetTarget}
                         />
                       </div>
 
-                      {/* Bottom: Target Stepper + Horizontal Preset Buttons */}
+                      {/* Bottom: Target Stepper + Horizontal Preset Buttons (Gece, Eko, Konfor, Dışarıda, Boost) */}
                       <div className="w-full shrink-0 flex flex-col gap-1.5 sm:gap-2 mt-auto">
-                        {/* Target Stepper Strip (Compact Horizontal Frosted Glass) */}
-                        <div className={`w-full flex items-center justify-between px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border backdrop-blur-md shadow-2xs ${
-                          themeMode === 'glass'
-                            ? 'bg-white/[0.10] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35),0_8px_24px_rgba(0,0,0,0.3)] text-white'
-                            : 'bg-slate-50/90 dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700/70'
-                        }`}>
+                        {/* Target Stepper Strip (Compact Horizontal) */}
+                        <div className="w-full flex items-center justify-between bg-slate-50/90 dark:bg-slate-800/80 px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-700/70 shadow-2xs">
                           <button
                             type="button"
                             onClick={() => handleSetTarget(Math.max(10, Math.round((targetTemp - 0.5) * 2) / 2))}
-                            className={`w-8 h-8 rounded-xl font-black flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer shadow-2xs ${
-                              themeMode === 'glass'
-                                ? 'bg-white/20 hover:bg-white/30 text-white border border-white/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'
-                                : 'bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-white'
-                            }`}
+                            className="w-8 h-8 rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 font-black text-slate-700 dark:text-white flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer shadow-2xs"
                             title="Hedef sıcaklığı 0.5°C azalt"
                           >
                             -
                           </button>
 
                           <div className="flex items-center gap-2">
-                            <span className={`text-[11px] font-semibold uppercase tracking-wider hidden xs:inline ${
-                              themeMode === 'glass' ? 'text-slate-300' : 'text-slate-400'
-                            }`}>
-                              {t.targetTemp}
+                            <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider hidden xs:inline">
+                              Hedef Sıcaklık:
                             </span>
-                            <span className="text-lg sm:text-xl font-black font-mono text-orange-500 drop-shadow-sm">
+                            <span className="text-lg sm:text-xl font-black font-mono text-orange-600 dark:text-orange-400">
                               {targetTemp.toFixed(1)}°C
                             </span>
                           </div>
@@ -1063,21 +932,21 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => handleSetTarget(Math.min(32, Math.round((targetTemp + 0.5) * 2) / 2))}
-                            className="w-8 h-8 rounded-xl bg-orange-500 hover:bg-orange-600 font-black text-white flex items-center justify-center transition-all active:scale-95 text-base shadow-md shadow-orange-500/30 cursor-pointer border border-orange-400/50"
+                            className="w-8 h-8 rounded-xl bg-orange-500 hover:bg-orange-600 font-black text-white flex items-center justify-center transition-all active:scale-95 text-base shadow-2xs cursor-pointer"
                             title="Hedef sıcaklığı 0.5°C artır"
                           >
                             +
                           </button>
                         </div>
 
-                        {/* 5 Preset Mode Buttons */}
+                        {/* 5 Preset Mode Buttons (Yatay Olarak Ekrana Tam Sığacak Şekilde) */}
                         <div className="grid grid-cols-5 gap-1.5 sm:gap-2 w-full">
                           {[
-                            { label: t.presetNight, temp: 18.5, icon: '🌙' },
-                            { label: t.presetEco, temp: 20.0, icon: '🍃' },
-                            { label: t.presetComfort, temp: 22.5, icon: '🔥' },
-                            { label: t.presetAway, temp: 16.0, icon: '💼' },
-                            { label: t.presetBoost, temp: 25.0, icon: '⚡' },
+                            { label: 'Gece', temp: 18.5, icon: '🌙' },
+                            { label: 'Eko', temp: 20.0, icon: '🍃' },
+                            { label: 'Konfor', temp: 22.5, icon: '🔥' },
+                            { label: 'Dışarı', temp: 16.0, icon: '💼' },
+                            { label: 'Boost', temp: 25.0, icon: '⚡' },
                           ].map((preset) => {
                             const isActive = Math.abs(targetTemp - preset.temp) < 0.25;
                             return (
@@ -1085,21 +954,19 @@ export default function App() {
                                 key={preset.label}
                                 type="button"
                                 onClick={() => handleSetTarget(preset.temp)}
-                                className={`flex flex-col items-center justify-center py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-xl sm:rounded-2xl text-center transition-all duration-200 cursor-pointer w-full min-w-0 border ${
+                                className={`flex flex-col items-center justify-center py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-xl sm:rounded-2xl text-center transition-all duration-200 cursor-pointer w-full min-w-0 ${
                                   isActive
-                                    ? 'bg-gradient-to-tr from-orange-500 to-amber-500 text-white font-extrabold shadow-lg shadow-orange-500/35 border-orange-400/80 scale-[1.03]'
-                                    : themeMode === 'glass'
-                                    ? 'bg-white/[0.09] hover:bg-white/[0.18] text-white border-white/20 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35)]'
+                                    ? 'bg-gradient-to-b from-orange-500 to-amber-500 text-white font-bold shadow-md shadow-orange-500/25 scale-[1.02]'
                                     : 'bg-white/90 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 hover:border-orange-400'
                                 }`}
                               >
-                                <span className="text-sm sm:text-base leading-none mb-0.5 drop-shadow-xs">{preset.icon}</span>
+                                <span className="text-sm sm:text-base leading-none mb-0.5">{preset.icon}</span>
                                 <span className="text-[11px] sm:text-xs font-bold leading-tight truncate w-full">
                                   {preset.label}
                                 </span>
                                 <span
                                   className={`text-[10px] sm:text-xs font-mono font-extrabold ${
-                                    isActive ? 'text-white' : themeMode === 'glass' ? 'text-slate-300' : 'text-slate-400 dark:text-slate-400'
+                                    isActive ? 'text-white' : 'text-slate-400 dark:text-slate-400'
                                   }`}
                                 >
                                   {preset.temp}°
@@ -1110,13 +977,13 @@ export default function App() {
                         </div>
 
                         <div className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-400 text-center leading-tight">
-                          {t.dialAdjustHint}
+                          💡 Kadran üzerindeki turuncu bar çizgisine dokunarak hedefi ayarlayabilirsiniz.
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* ── CARD 2: HAVA DURUMU ── */}
+                  {/* ── CARD 2: HAVA DURUMU (TARİHLİ KUTUCUKLAR, SAATLİK AÇILIR PENCERE & BİLDİRİMLER) ── */}
                   {tab.id === 'hava' && (
                     <div className="h-full flex flex-col justify-center">
                       <ForecastSection
@@ -1128,13 +995,11 @@ export default function App() {
                         notificationsEnabled={isWeatherNotificationsEnabled}
                         onToggleNotifications={setIsWeatherNotificationsEnabled}
                         onTriggerTestNotification={handleTriggerWeatherNotification}
-                        themeMode={themeMode}
-                        lang={lang}
                       />
                     </div>
                   )}
 
-                  {/* ── CARD 3: RAPOR ── */}
+                  {/* ── CARD 3: RAPOR (SICAKLIK HARİTASI, DOĞALGAZ FATURASI & KOMBİ TELEMETRİSİ 3D FLOATING DECK) ── */}
                   {tab.id === 'rapor' && (
                     <div className="h-full w-full overflow-hidden select-none">
                       <ReportDeckView
@@ -1145,13 +1010,11 @@ export default function App() {
                         currentTemp={currentTemp}
                         humidity={humidity}
                         targetTemp={targetTemp}
-                        themeMode={themeMode}
-                        lang={lang}
                       />
                     </div>
                   )}
 
-                  {/* ── CARD 4: PROGRAM ── */}
+                  {/* ── CARD 4: PROGRAM (AKILLI ZAMANLAMA & GÜNLÜK TÜKETİM 3D FLOATING BLUR DECK) ── */}
                   {tab.id === 'program' && (
                     <div className="h-full w-full overflow-hidden select-none">
                       <ProgramDeckView
@@ -1160,8 +1023,6 @@ export default function App() {
                         isEncrypted={true}
                         dailyRunMinutes={dailyRunMinutes}
                         flameLevelPercent={flameLevelPercent}
-                        themeMode={themeMode}
-                        lang={lang}
                       />
                     </div>
                   )}
@@ -1173,38 +1034,29 @@ export default function App() {
         </div>
       </main>
 
-      {/* ── FIXED BOTTOM AESTHETIC FLOATING TAB DOCK (Mouse Wheel & Touch Swipe Yetkisi ile Donatılmış) ── */}
+      {/* ── FIXED BOTTOM AESTHETIC FLOATING TAB DOCK (Sadece 4 Buton: Termostat, Hava, Rapor, Program) ── */}
       <nav
         aria-label="Sabit Alt Gezinme Barı"
-        onWheel={handleDockWheel}
-        onTouchStart={handleDockTouchStart}
-        onTouchMove={handleDockTouchMove}
-        onTouchEnd={handleDockTouchEnd}
-        onTouchCancel={handleDockTouchEnd}
-        className="fixed bottom-2 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[96vw] select-none touch-pan-x"
+        className="fixed bottom-2.5 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 w-[96vw] sm:w-auto max-w-max select-none"
       >
-        <div className={`flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2.5 p-1 sm:p-2 rounded-2xl sm:rounded-full backdrop-blur-2xl transition-all ${
-          themeMode === 'glass'
-            ? 'bg-slate-950/40 border border-white/20 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]'
-            : 'bg-white/85 dark:bg-slate-900/85 border border-slate-200/90 dark:border-slate-700/80 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.25)]'
-        }`}>
-          {tabs.map((tab, idx) => {
+        <div className="flex items-center justify-between sm:justify-start gap-1 xs:gap-1.5 sm:gap-2.5 p-1 sm:p-2 rounded-2xl sm:rounded-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.25)]">
+          {TABS.map((tab, idx) => {
             const isActive = activeTabIndex === idx;
             return (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => navigateToTab(idx)}
-                className={`relative px-2 xs:px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full text-[10px] xs:text-[11px] sm:text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer min-w-0 whitespace-nowrap ${
+                className={`relative px-2.5 xs:px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-bold transition-all duration-300 flex items-center gap-1 sm:gap-1.5 cursor-pointer shrink-0 ${
                   isActive
                     ? 'bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-orange-500 text-white shadow-md shadow-blue-500/30 dark:shadow-orange-500/30 scale-105'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'
                 }`}
               >
-                <span className="text-xs sm:text-sm shrink-0">{tab.icon}</span>
+                <span className="text-xs sm:text-sm">{tab.icon}</span>
                 <span className="truncate">{tab.label}</span>
                 {isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse hidden sm:inline-block shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse hidden sm:inline-block" />
                 )}
               </button>
             );
@@ -1213,20 +1065,6 @@ export default function App() {
       </nav>
 
       {/* ── MODALS ── */}
-      <ThemeSelectorModal
-        isOpen={isThemeModalOpen}
-        onClose={() => setIsThemeModalOpen(false)}
-        currentTheme={themeMode}
-        onSelectTheme={(newTheme) => setThemeMode(newTheme)}
-        performanceMode={performanceMode}
-        onSelectPerformanceMode={(perf) => setPerformanceMode(perf)}
-        activeWeatherCondition={effectiveWeatherCondition}
-        onSelectWeatherConditionOverride={setWeatherConditionOverride}
-        weatherConditionOverride={weatherConditionOverride}
-        cityName={activeLocation.cityName}
-        lang={lang}
-      />
-
       <WidgetCustomizerModal
         isOpen={isCustomizerOpen}
         onClose={() => setIsCustomizerOpen(false)}
@@ -1245,17 +1083,11 @@ export default function App() {
           setFirebaseUrl(url);
           setFirebaseKey(key);
           setIsCloudConnected(true);
+          SecureVault.setItem('firebaseUrl', url);
+          SecureVault.setItem('firebaseKey', key);
         }}
         isConnected={isCloudConnected}
         onOpenVaultModal={() => setIsVaultModalOpen(true)}
-        lang={lang}
-        isWeatherNotificationsEnabled={isWeatherNotificationsEnabled}
-        onToggleWeatherNotifications={setIsWeatherNotificationsEnabled}
-        onTriggerTestNotification={handleTriggerWeatherNotification}
-        onResetHistoricalData={() => {
-          // Immediately notify all listeners
-          window.dispatchEvent(new Event('thermostat_history_reset'));
-        }}
       />
 
       <VaultNotificationsModal
