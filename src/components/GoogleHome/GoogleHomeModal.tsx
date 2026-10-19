@@ -92,7 +92,22 @@ app.onExecute(async (body) => {
   return { requestId: body.requestId, payload: { commands: [{ ids: ['kombi_termostat_01'], status: 'SUCCESS' }] } };
 });
 
-exports.smarthome = functions.https.onRequest(app);`;
+exports.smarthome = functions.https.onRequest(app);
+
+// 4. OAuth Uç Noktaları (Google Home Hesap Eşleme için)
+exports.fakeauth = functions.https.onRequest((req, res) => {
+  const redirectUri = String(req.query.redirect_uri) + '?code=kombi_code_123&state=' + String(req.query.state);
+  res.redirect(redirectUri);
+});
+
+exports.faketoken = functions.https.onRequest((req, res) => {
+  res.status(200).json({
+    token_type: 'bearer',
+    access_token: 'kombi_access_token',
+    refresh_token: 'kombi_refresh_token',
+    expires_in: 3600
+  });
+});`;
 
   const handleCopyCode = () => {
     if (typeof navigator !== 'undefined') {
@@ -254,7 +269,7 @@ exports.smarthome = functions.https.onRequest(app);`;
                 <strong className="text-slate-800 dark:text-slate-200">Google Actions Console:</strong> console.actions.google.com adresinden yeni bir "Smart Home" projesi oluşturun.
               </li>
               <li>
-                <strong className="text-slate-800 dark:text-slate-200">Fulfillment Webhook:</strong> Firebase projenizdeki hazır Cloud Function URL'sini Google Actions alanına yapıştırın.
+                <strong className="text-slate-800 dark:text-slate-200">Fulfillment Webhook (Haberleşme Köprüsü):</strong> Google Asistan'ın duyduğu sesli komutları Firebase'inize ileteceği internet adresidir. Aşağıdaki hazır Cloud Function kodunu Firebase'e yüklediğinizde oluşan linki bu kutuya yapıştırırsınız.
               </li>
               <li>
                 <strong className="text-slate-800 dark:text-slate-200">Google Home Uygulaması:</strong> Telefonunuzda Google Home uygulamasını açın, <em>"Cihaz Ekle &gt; Google ile Çalışır"</em> menüsünden projenizi seçin.
