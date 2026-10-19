@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   ChevronLeft,
   ChevronRight,
+  Mic,
 } from 'lucide-react';
 
 import type { ThemeMode, PerformanceMode, MorphMode, ScheduleItem, WidgetItem } from './types.ts';
@@ -35,6 +36,8 @@ import { SecurityVaultWidget } from './components/Widgets/SecurityVaultWidget.ts
 import { WidgetCustomizerModal } from './components/WidgetCustomizerModal.tsx';
 import { SettingsModal } from './components/SettingsModal.tsx';
 import { VaultNotificationsModal } from './components/VaultNotificationsModal.tsx';
+import { VoiceAssistantModal } from './components/VoiceAssistant/VoiceAssistantModal.tsx';
+import { GoogleHomeModal } from './components/GoogleHome/GoogleHomeModal.tsx';
 
 
 import {
@@ -79,10 +82,10 @@ export interface SlideDef {
 }
 
 const TABS: SlideDef[] = [
-  { id: 'genel', label: 'Termostat', icon: '🏠', title: 'Termostat & Kombi Ana Kontrol' },
+  { id: 'genel', label: 'Termo.', icon: '🏠', title: 'Termostat & Kombi Ana Kontrol' },
   { id: 'hava', label: 'Hava', icon: '🌤️', title: 'Bölgesel Hava Durumu & 5 Günlük Tahmin' },
   { id: 'rapor', label: 'Rapor', icon: '📊', title: '24s Sıcaklık & Tüketim Analitiği' },
-  { id: 'program', label: 'Program', icon: '⏰', title: 'Haftalık Zaman Planı & Tüketim' },
+  { id: 'program', label: 'Prog.', icon: '⏰', title: 'Haftalık Zaman Planı & Tüketim' },
 ];
 
 export default function App() {
@@ -243,6 +246,8 @@ export default function App() {
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
+  const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
+  const [isGoogleHomeOpen, setIsGoogleHomeOpen] = useState(false);
 
   // Widgets configuration
   const [widgets, setWidgets] = useState<WidgetItem[]>(DEFAULT_WIDGETS);
@@ -1415,21 +1420,24 @@ export default function App() {
         </div>
       </main>
 
-      {/* ── FIXED BOTTOM AESTHETIC FLOATING TAB DOCK (Mouse Wheel & Touch Swipe Yetkisi ile Donatılmış) ── */}
+      {/* ── FIXED BOTTOM AESTHETIC FLOATING TAB DOCK (4'lü Bar + Dışında Sağda Sesli Komut Butonu) ── */}
       <nav
         aria-label="Sabit Alt Gezinme Barı"
-        onWheel={handleDockWheel}
-        onTouchStart={handleDockTouchStart}
-        onTouchMove={handleDockTouchMove}
-        onTouchEnd={handleDockTouchEnd}
-        onTouchCancel={handleDockTouchEnd}
-        className="fixed bottom-2 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[96vw] select-none touch-pan-x"
+        className="fixed bottom-2 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[96vw] select-none flex items-center gap-1.5 sm:gap-2.5"
       >
-        <div className={`flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2.5 p-1 sm:p-2 rounded-2xl sm:rounded-full backdrop-blur-2xl transition-all ${
-          themeMode === 'glass'
-            ? 'bg-slate-950/40 border border-white/20 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]'
-            : 'bg-white/85 dark:bg-slate-900/85 border border-slate-200/90 dark:border-slate-700/80 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.25)]'
-        }`}>
+        {/* 4'lü Menü Çerçevesi (Termo., Hava, Rapor, Prog. - Mouse Wheel & Swipe Yetkili) */}
+        <div
+          onWheel={handleDockWheel}
+          onTouchStart={handleDockTouchStart}
+          onTouchMove={handleDockTouchMove}
+          onTouchEnd={handleDockTouchEnd}
+          onTouchCancel={handleDockTouchEnd}
+          className={`flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2.5 p-1 sm:p-2 rounded-2xl sm:rounded-full backdrop-blur-2xl transition-all touch-pan-x ${
+            themeMode === 'glass'
+              ? 'bg-slate-950/40 border border-white/20 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]'
+              : 'bg-white/85 dark:bg-slate-900/85 border border-slate-200/90 dark:border-slate-700/80 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.25)]'
+          }`}
+        >
           {tabs.map((tab, idx) => {
             const isActive = activeTabIndex === idx;
             return (
@@ -1452,6 +1460,22 @@ export default function App() {
             );
           })}
         </div>
+
+        {/* 4'lü Barın DIŞINDA, EN SAĞINDA AYNI HİZADA SESLİ KOMUT BUTONU */}
+        <button
+          type="button"
+          onClick={() => setIsVoiceAssistantOpen(true)}
+          className={`relative p-2 xs:p-2.5 sm:p-3 rounded-2xl sm:rounded-full backdrop-blur-2xl transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 shadow-lg group shrink-0 ${
+            themeMode === 'glass'
+              ? 'bg-gradient-to-tr from-blue-600/80 to-indigo-600/80 hover:from-blue-500 hover:to-indigo-500 border border-white/30 text-white shadow-blue-500/30'
+              : 'bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 border border-blue-400/40'
+          }`}
+          title={t.voiceAssistantBtnTooltip}
+          aria-label={t.voiceAssistantTitle}
+        >
+          <Mic className="w-4 h-4 sm:w-4.5 sm:h-4.5 group-hover:scale-110 transition-transform" />
+          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-900 animate-pulse" />
+        </button>
       </nav>
 
       {/* ── MODALS ── */}
@@ -1490,6 +1514,7 @@ export default function App() {
         }}
         isConnected={isCloudConnected}
         onOpenVaultModal={() => setIsVaultModalOpen(true)}
+        onOpenGoogleHomeModal={() => setIsGoogleHomeOpen(true)}
         lang={lang}
         isWeatherNotificationsEnabled={isWeatherNotificationsEnabled}
         onToggleWeatherNotifications={setIsWeatherNotificationsEnabled}
@@ -1510,6 +1535,33 @@ export default function App() {
         telegramToken={telegramToken}
         telegramChatId={telegramChatId}
         onSaveTelegram={handleSaveTelegram}
+      />
+
+      {/* ── SESLİ KOMUT ASİSTANI MODALI ── */}
+      <VoiceAssistantModal
+        isOpen={isVoiceAssistantOpen}
+        onClose={() => setIsVoiceAssistantOpen(false)}
+        lang={lang}
+        targetTemp={targetTemp}
+        currentTemp={currentTemp}
+        isKombiActive={isKombiActive}
+        flameLevelPercent={flameLevelPercent}
+        waterPressure={waterPressure}
+        todayActiveText={todayActiveFormattedText}
+        onSetTargetTemp={handleSetTarget}
+        onNavigateToTab={(idx) => navigateToTab(idx)}
+      />
+
+      {/* ── GOOGLE HOME & ASİSTAN ENTEGRASYON MODALI ── */}
+      <GoogleHomeModal
+        isOpen={isGoogleHomeOpen}
+        onClose={() => setIsGoogleHomeOpen(false)}
+        lang={lang}
+        firebaseUrl={firebaseUrl}
+        currentTemp={currentTemp}
+        targetTemp={targetTemp}
+        isKombiActive={isKombiActive}
+        onSetTargetTemp={handleSetTarget}
       />
     </div>
   );

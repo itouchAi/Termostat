@@ -27,6 +27,7 @@ interface SettingsModalProps {
   onSaveCloudSettings: (dbUrl: string, apiKey: string) => void;
   isConnected: boolean;
   onOpenVaultModal?: () => void;
+  onOpenGoogleHomeModal?: () => void;
   onResetHistoricalData?: () => void;
   lang?: Language;
   isWeatherNotificationsEnabled?: boolean;
@@ -42,6 +43,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onSaveCloudSettings,
   isConnected,
   onOpenVaultModal,
+  onOpenGoogleHomeModal,
   onResetHistoricalData,
   lang = 'tr',
   isWeatherNotificationsEnabled = true,
@@ -177,6 +179,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               title="Şifreli kasa ve bildirim pop-up penceresini aç"
             >
               <span>{t.openVault}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* ── GOOGLE HOME & ASİSTAN ENTEGRASYONU ── */}
+          <div className="p-3.5 bg-gradient-to-r from-blue-500/10 via-emerald-500/10 to-amber-500/10 dark:from-blue-950/40 dark:via-emerald-950/30 dark:to-amber-950/40 rounded-2xl border border-blue-400/40 dark:border-blue-500/30 flex items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/30">
+                <span className="text-sm">🏠</span>
+              </div>
+              <div className="min-w-0">
+                <div className="font-bold text-slate-900 dark:text-white text-xs flex items-center gap-1.5 truncate">
+                  <span>{t.googleHomeTitle}</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+                    {t.googleHomeBadge}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                  {t.googleHomeSub}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenGoogleHomeModal?.();
+              }}
+              className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shrink-0 flex items-center gap-1 shadow-xs cursor-pointer transition-all"
+              title="Google Home entegrasyonu ve simülatörünü aç"
+            >
+              <span>Yönet</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>

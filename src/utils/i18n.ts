@@ -158,6 +158,21 @@ export interface TranslationDictionary {
   resetDataBtn: string;
   resetDataConfirm: string;
   resetDataSuccess: string;
+
+  // Voice Assistant & Google Home
+  voiceAssistantTitle: string;
+  voiceAssistantSub: string;
+  voiceAssistantListening: string;
+  voiceAssistantSpeakNow: string;
+  voiceAssistantPlaceholder: string;
+  voiceAssistantBtnTooltip: string;
+  voiceAssistantQuickPrompts: string;
+  googleHomeTitle: string;
+  googleHomeSub: string;
+  googleHomeBadge: string;
+  googleHomeDesc: string;
+  googleHomeTestBtn: string;
+  googleHomeGuideBtn: string;
 }
 
 export const translations: Record<Language, TranslationDictionary> = {
@@ -179,10 +194,10 @@ export const translations: Record<Language, TranslationDictionary> = {
     cloudSyncOffline: '○ Çevrimdışı / Yerel Mod',
 
     // Bottom Nav
-    tabThermostat: 'Termostat',
+    tabThermostat: 'Termo.',
     tabWeather: 'Hava',
-    tabReport: 'Tüketim ve Fatura',
-    tabProgram: 'Program',
+    tabReport: 'Rapor',
+    tabProgram: 'Prog.',
     swipeHint: 'Parmakla Kaydırın',
 
     // Thermostat Screen
@@ -319,6 +334,21 @@ export const translations: Record<Language, TranslationDictionary> = {
     resetDataBtn: 'Geçmiş Verileri Sıfırla',
     resetDataConfirm: 'Tüm geçmiş veriler silinsin mi?',
     resetDataSuccess: 'Tüm geçmiş veriler başarıyla sıfırlandı!',
+
+    // Sesli Asistan & Google Home
+    voiceAssistantTitle: 'Sesli Komut Asistanı',
+    voiceAssistantSub: 'Sıcaklık, modlar ve durum sorgulama için Türkçe sesli komutlar',
+    voiceAssistantListening: 'Dinliyor...',
+    voiceAssistantSpeakNow: 'Şimdi konuşun veya komut yazın',
+    voiceAssistantPlaceholder: 'Örn: Sıcaklığı 23 yap, Eko mod, Kombi yanıyor mu?',
+    voiceAssistantBtnTooltip: 'Sesli Komut Asistanı (Mikrofon)',
+    voiceAssistantQuickPrompts: 'Hızlı Sesli Komutlar:',
+    googleHomeTitle: 'Google Home & Asistan',
+    googleHomeSub: 'Firebase üzerinden Google Asistan ile sesli kontrol entegrasyonu',
+    googleHomeBadge: 'Google ile Uyumlu',
+    googleHomeDesc: 'Firebase veritabanınız sayesinde Google Asistan cihazları ("Hey Google, sıcaklığı 23 yap") doğrudan kombinizle konuşur.',
+    googleHomeTestBtn: 'Google Home Komutunu Simüle Et',
+    googleHomeGuideBtn: 'Entegrasyon Kılavuzu',
   },
   en: {
     // Top Header
@@ -338,10 +368,10 @@ export const translations: Record<Language, TranslationDictionary> = {
     cloudSyncOffline: '○ Offline / Local Mode',
 
     // Bottom Nav
-    tabThermostat: 'Thermostat',
+    tabThermostat: 'Thermo.',
     tabWeather: 'Weather',
-    tabReport: 'Consumption & Bill',
-    tabProgram: 'Schedule',
+    tabReport: 'Report',
+    tabProgram: 'Prog.',
     swipeHint: 'Swipe with finger',
 
     // Thermostat Screen
@@ -478,5 +508,20 @@ export const translations: Record<Language, TranslationDictionary> = {
     resetDataBtn: 'Reset Historical Data',
     resetDataConfirm: 'Are you sure you want to wipe all historical data?',
     resetDataSuccess: 'All historical data successfully cleared!',
+
+    // Voice Assistant & Google Home
+    voiceAssistantTitle: 'Voice Command Assistant',
+    voiceAssistantSub: 'Turkish & English voice commands for temperature, modes and status',
+    voiceAssistantListening: 'Listening...',
+    voiceAssistantSpeakNow: 'Speak now or type command',
+    voiceAssistantPlaceholder: 'e.g.: Set temperature to 23, Eco mode, Is boiler firing?',
+    voiceAssistantBtnTooltip: 'Voice Command Assistant (Microphone)',
+    voiceAssistantQuickPrompts: 'Quick Voice Commands:',
+    googleHomeTitle: 'Google Home & Assistant',
+    googleHomeSub: 'Voice control integration with Google Assistant via Firebase',
+    googleHomeBadge: 'Works with Google',
+    googleHomeDesc: 'Through your Firebase database, Google Assistant ("Hey Google, set temperature to 23") directly controls your boiler.',
+    googleHomeTestBtn: 'Simulate Google Home Command',
+    googleHomeGuideBtn: 'Integration Guide',
   },
 };
