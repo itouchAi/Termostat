@@ -64,11 +64,13 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
 
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 450;
+    const initialAspect = width / height;
 
     const scene = new THREE.Scene();
-    // Centered front-facing camera - completely fixed
-    const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
-    camera.position.set(0, 0, 6.9);
+    // Responsive camera: closer on tall mobile screens so dial is large and prominent
+    const camera = new THREE.PerspectiveCamera(38, initialAspect, 0.1, 100);
+    const initialZ = initialAspect < 0.75 ? 5.5 : initialAspect < 1.05 ? 6.1 : 6.9;
+    camera.position.set(0, 0, initialZ);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({
@@ -484,12 +486,14 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
     glassMesh.renderOrder = 2;
     thermostatGroup.add(glassMesh);
 
-    // Resize listener
+    // Resize listener with mobile aspect ratio responsiveness
     const onResize = () => {
       if (!container) return;
       const w = container.clientWidth || 800;
       const h = container.clientHeight || 450;
-      camera.aspect = w / h;
+      const aspect = w / h;
+      camera.aspect = aspect;
+      camera.position.z = aspect < 0.75 ? 5.5 : aspect < 1.05 ? 6.1 : 6.9;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };

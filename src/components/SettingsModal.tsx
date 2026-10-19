@@ -99,6 +99,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         localStorage.removeItem('daily_costs');
         localStorage.removeItem('gas_consumption_history');
         localStorage.removeItem('hourly_telemetry_logs');
+        localStorage.setItem('live_daily_active_seconds', '0');
+        localStorage.setItem('kombi_last_ignition_ts', String(Date.now()));
+        localStorage.setItem('kombi_last_extinguish_ts', String(Date.now()));
         window.dispatchEvent(new Event('thermostat_history_reset'));
       } catch {}
     }

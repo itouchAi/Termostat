@@ -52,6 +52,7 @@ interface ReportDeckViewProps {
   currentTemp: number;
   humidity: number;
   targetTemp: number;
+  dailyRunMinutes?: number;
   themeMode?: ThemeMode;
   lang?: Language;
 }
@@ -64,6 +65,7 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
   currentTemp,
   humidity,
   targetTemp,
+  dailyRunMinutes = 0,
   themeMode = 'glass',
   lang = 'tr',
 }) => {
@@ -122,7 +124,7 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
     };
   }, []);
 
-  // Resolve day data: ONLY current session live data for today, or saved data in storageDb.
+  // Resolve day data: ONLY real accumulated session minutes or saved telemetry in storageDb.
   // NO fabricated fake datasets! If not found, returns null so clean empty state renders.
   const currentDayData = useMemo<HistoricalDayData | null>(() => {
     if (storageDb[selectedDate]) {
@@ -130,27 +132,29 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
     }
 
     if (selectedDate === todayStr) {
-      // Build live actual status for today
+      const activeMin = typeof dailyRunMinutes === 'number' ? dailyRunMinutes : 0;
+      // Real formula: 24kW boiler at modulated flame consumes ~1.8 m3/h at max flame
+      const m3 = activeMin > 0 ? Math.round(((activeMin / 60) * 1.8 * (Math.max(20, flameLevelPercent) / 100)) * 100) / 100 : 0;
       return {
         dateKey: todayStr,
         dateTitle: lang === 'tr' ? `${selectedDate} (Bugün)` : `${selectedDate} (Today)`,
-        totalActiveMinutes: isKombiActive ? Math.round(flameLevelPercent * 2.4) : 0,
-        totalGasM3: isKombiActive ? Math.round((flameLevelPercent * 0.048) * 100) / 100 : 0,
+        totalActiveMinutes: activeMin,
+        totalGasM3: m3,
         avgTemp: currentTemp,
         hours: [
-          { hourLabel: '00:00', temp: currentTemp - 1.2, target: targetTemp, isActive: false, flameLevelPercent: 0, powerKw: 0, gasM3: 0 },
-          { hourLabel: '04:00', temp: currentTemp - 0.8, target: targetTemp, isActive: false, flameLevelPercent: 0, powerKw: 0, gasM3: 0 },
-          { hourLabel: '08:00', temp: currentTemp - 0.3, target: targetTemp, isActive: isKombiActive, flameLevelPercent: isKombiActive ? flameLevelPercent : 0, powerKw: isKombiActive ? 14.4 : 0, gasM3: isKombiActive ? 0.45 : 0 },
-          { hourLabel: '12:00', temp: currentTemp, target: targetTemp, isActive: isKombiActive, flameLevelPercent: isKombiActive ? flameLevelPercent : 0, powerKw: isKombiActive ? 12.0 : 0, gasM3: isKombiActive ? 0.38 : 0 },
-          { hourLabel: '16:00', temp: currentTemp + 0.2, target: targetTemp, isActive: isKombiActive, flameLevelPercent: isKombiActive ? flameLevelPercent : 0, powerKw: isKombiActive ? 16.8 : 0, gasM3: isKombiActive ? 0.52 : 0 },
-          { hourLabel: '20:00', temp: currentTemp, target: targetTemp, isActive: isKombiActive, flameLevelPercent: isKombiActive ? flameLevelPercent : 0, powerKw: isKombiActive ? 10.2 : 0, gasM3: isKombiActive ? 0.32 : 0 },
+          { hourLabel: '00:00', temp: currentTemp, target: targetTemp, isActive: false, flameLevelPercent: 0, powerKw: 0, gasM3: 0 },
+          { hourLabel: '04:00', temp: currentTemp, target: targetTemp, isActive: false, flameLevelPercent: 0, powerKw: 0, gasM3: 0 },
+          { hourLabel: '08:00', temp: currentTemp, target: targetTemp, isActive: false, flameLevelPercent: 0, powerKw: 0, gasM3: 0 },
+          { hourLabel: '12:00', temp: currentTemp, target: targetTemp, isActive: false, flameLevelPercent: 0, powerKw: 0, gasM3: 0 },
+          { hourLabel: '16:00', temp: currentTemp, target: targetTemp, isActive: isKombiActive, flameLevelPercent: isKombiActive ? flameLevelPercent : 0, powerKw: isKombiActive ? Math.round((24 * flameLevelPercent) / 10) / 10 : 0, gasM3: activeMin > 0 ? Math.round((m3 * 0.4) * 100) / 100 : 0 },
+          { hourLabel: '20:00', temp: currentTemp, target: targetTemp, isActive: isKombiActive, flameLevelPercent: isKombiActive ? flameLevelPercent : 0, powerKw: isKombiActive ? Math.round((24 * flameLevelPercent) / 10) / 10 : 0, gasM3: activeMin > 0 ? Math.round((m3 * 0.6) * 100) / 100 : 0 },
         ],
       };
     }
 
     // Any past day with no real data returns null!
     return null;
-  }, [selectedDate, todayStr, storageDb, isKombiActive, flameLevelPercent, currentTemp, targetTemp, lang]);
+  }, [selectedDate, todayStr, storageDb, dailyRunMinutes, isKombiActive, flameLevelPercent, currentTemp, targetTemp, lang]);
 
   // Aggregate stats based on timeframe
   const aggregatedStats = useMemo(() => {
@@ -159,7 +163,7 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
     }
 
     if (timeframe === 'weekly') {
-      const mult = 7;
+      const mult = currentDayData.totalActiveMinutes > 0 ? 7 : 0;
       const gas = Math.round(currentDayData.totalGasM3 * mult * 0.95 * 100) / 100;
       const activeMin = currentDayData.totalActiveMinutes * mult;
       const cost = Math.round(gas * gasUnitPrice * 100) / 100;
@@ -169,7 +173,7 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
     }
 
     if (timeframe === 'monthly') {
-      const mult = 30;
+      const mult = currentDayData.totalActiveMinutes > 0 ? 30 : 0;
       const gas = Math.round(currentDayData.totalGasM3 * mult * 0.92 * 100) / 100;
       const activeMin = currentDayData.totalActiveMinutes * mult;
       const cost = Math.round(gas * gasUnitPrice * 100) / 100;
@@ -405,35 +409,28 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
                 {t.inspectedDate}
               </span>
 
-              <div className="relative">
+              <div className="relative inline-flex items-center">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (dateInputRef.current) {
-                      if (typeof dateInputRef.current.showPicker === 'function') {
-                        dateInputRef.current.showPicker();
-                      } else {
-                        dateInputRef.current.click();
-                      }
-                    }
-                  }}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 active:scale-95 text-white shadow-xs flex items-center gap-1.5 cursor-pointer transition-all whitespace-nowrap"
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 active:scale-95 text-white shadow-xs flex items-center gap-1.5 transition-all whitespace-nowrap pointer-events-none"
                   title="Takvimi açmak için tıklayın"
                 >
                   <span>{currentDayData ? currentDayData.dateTitle : selectedDate}</span>
                   <ChevronDown className="w-3 h-3 text-blue-200 shrink-0" />
                 </button>
 
+                {/* Direct user-gesture native date picker overlay: zero showPicker() call, 100% safe in cross-origin iframes */}
                 <input
                   ref={dateInputRef}
                   type="date"
+                  aria-label="İncelenen gün seçimi"
                   value={selectedDate}
                   onChange={(e) => {
                     if (e.target.value) {
                       setSelectedDate(e.target.value);
                     }
                   }}
-                  className="absolute opacity-0 pointer-events-none w-0 h-0"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 />
               </div>
             </div>
@@ -442,17 +439,21 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
             {currentDayData ? (
               <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/10 text-xs">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0" />
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${currentDayData.totalActiveMinutes > 0 ? 'bg-orange-500 animate-pulse' : 'bg-slate-500'}`} />
                   <span className="text-[11px] text-slate-300">{t.activeBurnTime}:</span>
                   <span className="font-bold font-mono text-orange-400">
-                    {Math.floor(currentDayData.totalActiveMinutes / 60)}s {currentDayData.totalActiveMinutes % 60}d
+                    {currentDayData.totalActiveMinutes > 0
+                      ? `${Math.floor(currentDayData.totalActiveMinutes / 60)}s ${currentDayData.totalActiveMinutes % 60}d`
+                      : '0 dk'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 justify-end">
                   <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
                   <span className="text-[11px] text-slate-300">{t.standbyTime}:</span>
                   <span className="font-bold font-mono text-slate-200">
-                    {Math.floor((1440 - currentDayData.totalActiveMinutes) / 60)}s {(1440 - currentDayData.totalActiveMinutes) % 60}d
+                    {currentDayData.totalActiveMinutes > 0
+                      ? `${Math.floor((1440 - currentDayData.totalActiveMinutes) / 60)}s ${(1440 - currentDayData.totalActiveMinutes) % 60}d`
+                      : '24s 0d'}
                   </span>
                 </div>
               </div>
@@ -604,7 +605,9 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
                 {aggregatedStats.gas.toFixed(2)} <span className="text-xs font-normal">m³</span>
               </div>
               <span className="text-[10px] text-slate-400 font-mono">
-                {Math.floor(aggregatedStats.activeMin / 60)}s {aggregatedStats.activeMin % 60}d çalışma
+                {aggregatedStats.activeMin > 0
+                  ? `${Math.floor(aggregatedStats.activeMin / 60)}s ${aggregatedStats.activeMin % 60}d çalışma`
+                  : '0 dk çalışma'}
               </span>
             </div>
 

@@ -10,6 +10,7 @@ import {
   Settings,
   SlidersHorizontal,
   Flame,
+  Clock,
   ShieldCheck,
   ChevronLeft,
   ChevronRight,
@@ -188,11 +189,40 @@ export default function App() {
   }, [virtualIndex]);
 
   // Thermostat vitals
-  const [currentTemp] = useState<number>(21.8);
-  const [humidity] = useState<number>(48);
+  const [currentTemp, setCurrentTemp] = useState<number>(21.8);
+  const [humidity, setHumidity] = useState<number>(48);
   const [targetTemp, setTargetTemp] = useState<number>(22.5);
   const [waterPressure] = useState<number>(1.6);
-  const [dailyRunMinutes] = useState<number>(145);
+  
+  // Real active combustion duration (in seconds) and live ignition tracking
+  const [dailyRunSeconds, setDailyRunSeconds] = useState<number>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const s = localStorage.getItem('live_daily_active_seconds');
+      if (s) return Number(s) || 0;
+    }
+    return 0;
+  });
+  const dailyRunMinutes = Math.floor(dailyRunSeconds / 60);
+
+  const [lastIgnitionTime, setLastIgnitionTime] = useState<number>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const s = localStorage.getItem('kombi_last_ignition_ts');
+      if (s) return Number(s) || Date.now();
+    }
+    return Date.now();
+  });
+
+  const [lastExtinguishTime, setLastExtinguishTime] = useState<number>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const s = localStorage.getItem('kombi_last_extinguish_ts');
+      if (s) return Number(s) || Date.now();
+    }
+    return Date.now();
+  });
+
+  const [liveTicker, setLiveTicker] = useState<number>(0);
+  const isUserInteractingRef = useRef<boolean>(false);
+  const userInteractTimerRef = useRef<any>(null);
 
   // 3D Morph Mode
   const [morphMode] = useState<MorphMode>('heat');
@@ -270,6 +300,98 @@ export default function App() {
     return calculateFlameModulation(currentTemp, targetTemp, isKombiActive);
   }, [currentTemp, targetTemp, isKombiActive]);
 
+  // ── Canlı Yanma Sayacı (Aktif ateşleme anında saniye saniye artar) ──
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLiveTicker((t) => t + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isKombiActive) return;
+    const interval = setInterval(() => {
+      setDailyRunSeconds((prev) => {
+        const next = prev + 1;
+        if (next % 5 === 0 && typeof localStorage !== 'undefined') {
+          localStorage.setItem('live_daily_active_seconds', String(next));
+        }
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isKombiActive]);
+
+  // Ateşleme geçişlerini izle (Kombi yandı/söndü zaman damgası)
+  const prevKombiActiveRef = useRef<boolean>(isKombiActive);
+  useEffect(() => {
+    const now = Date.now();
+    if (isKombiActive && !prevKombiActiveRef.current) {
+      setLastIgnitionTime(now);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('kombi_last_ignition_ts', String(now));
+      }
+    } else if (!isKombiActive && prevKombiActiveRef.current) {
+      setLastExtinguishTime(now);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('kombi_last_extinguish_ts', String(now));
+      }
+    }
+    prevKombiActiveRef.current = isKombiActive;
+  }, [isKombiActive]);
+
+  // Sıfırlama işleyicisi (Ayarlar modalından çağrıldığında canlı tüm sayaçları 0'lar)
+  const handleResetHistoricalData = useCallback(() => {
+    setDailyRunSeconds(0);
+    const now = Date.now();
+    setLastIgnitionTime(now);
+    setLastExtinguishTime(now);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('live_daily_active_seconds', '0');
+      localStorage.setItem('kombi_last_ignition_ts', String(now));
+      localStorage.setItem('kombi_last_extinguish_ts', String(now));
+    }
+  }, []);
+
+  useEffect(() => {
+    const onReset = () => handleResetHistoricalData();
+    window.addEventListener('thermostat_history_reset', onReset);
+    return () => window.removeEventListener('thermostat_history_reset', onReset);
+  }, [handleResetHistoricalData]);
+
+  // Bugün Açık Kalma Biçimlendirmesi (1. Açıklama)
+  const todayActiveFormattedText = useMemo(() => {
+    void liveTicker;
+    if (dailyRunSeconds <= 0) return '0 dk (Beklemede)';
+    const h = Math.floor(dailyRunSeconds / 3600);
+    const m = Math.floor((dailyRunSeconds % 3600) / 60);
+    const s = dailyRunSeconds % 60;
+    if (h > 0) return `${h} sa ${m} dk`;
+    if (m > 0) return `${m} dk ${s} sn`;
+    return `${s} sn`;
+  }, [dailyRunSeconds, liveTicker]);
+
+  // En Son Ateşlemeden / Sönmeden Bu Yana Durum Biçimlendirmesi (2. Açıklama)
+  const ignitionStatusFormattedText = useMemo(() => {
+    void liveTicker;
+    const now = Date.now();
+    if (isKombiActive) {
+      const elapsedSec = Math.max(0, Math.floor((now - lastIgnitionTime) / 1000));
+      const m = Math.floor(elapsedSec / 60);
+      const s = elapsedSec % 60;
+      if (m > 0) return `${m} dk ${s} sn yanıyor`;
+      return `${s} sn yanıyor`;
+    } else {
+      const elapsedSec = Math.max(0, Math.floor((now - lastExtinguishTime) / 1000));
+      const h = Math.floor(elapsedSec / 3600);
+      const m = Math.floor((elapsedSec % 3600) / 60);
+      const s = elapsedSec % 60;
+      if (h > 0) return `${h} sa ${m} dk süredir yanmıyor`;
+      if (m > 0) return `${m} dk ${s} sn süredir yanmıyor`;
+      return `${s} sn süredir yanmıyor`;
+    }
+  }, [isKombiActive, lastIgnitionTime, lastExtinguishTime, liveTicker]);
+
   // 🔥 Canlı Firebase Realtime Database Senkronizasyonu (Kombiden Canlı Veri Çekme)
   useEffect(() => {
     if (!firebaseUrl) return;
@@ -293,7 +415,7 @@ export default function App() {
             setTargetTemp(Number(data.hedefSicaklik.toFixed(1)));
           }
           if (typeof data.calismaDakika === 'number') {
-            setDailyRunMinutes(data.calismaDakika);
+            setDailyRunSeconds(data.calismaDakika * 60);
           }
           setIsCloudConnected(true);
         }
@@ -1086,6 +1208,67 @@ export default function App() {
                         />
                       </div>
 
+                      {/* ── TERMOSTAT ALTI CANLI ÇİFTLİ SAYAÇ BARI (Tek bar, iki açıklama: Bugün Açık Kalma + En Son Ateşleme Durumu) ── */}
+                      <div className={`w-full flex items-center justify-between px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border backdrop-blur-md shadow-2xs my-1 sm:my-1.5 transition-all ${
+                        themeMode === 'glass'
+                          ? 'bg-white/[0.10] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3),0_6px_20px_rgba(0,0,0,0.25)] text-white'
+                          : 'bg-white/85 dark:bg-slate-800/80 border-slate-200/90 dark:border-slate-700/80 shadow-xs'
+                      }`}>
+                        {/* 1. Açıklama: Bugün Açık Kalma Sayacı */}
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-400/30 flex items-center justify-center shrink-0">
+                            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider truncate ${
+                              themeMode === 'glass' ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
+                            }`}>
+                              {t.todayActiveCounterLabel}
+                            </span>
+                            <span className={`font-mono font-black text-xs sm:text-sm tracking-tight ${
+                              themeMode === 'glass' ? 'text-white' : 'text-slate-900 dark:text-white'
+                            }`}>
+                              {todayActiveFormattedText}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Dikey İnce Ayırıcı Çizgi */}
+                        <div className={`h-7 w-[1px] mx-2 shrink-0 ${
+                          themeMode === 'glass' ? 'bg-white/15' : 'bg-slate-200 dark:bg-slate-700'
+                        }`} />
+
+                        {/* 2. Açıklama: En Son Ateşlemeden / Sönmeden Bu Yana Durum Sayacı */}
+                        <div className="flex items-center gap-2 min-w-0 flex-1 justify-end text-right">
+                          <div className="flex flex-col min-w-0 items-end">
+                            <span className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider truncate flex items-center gap-1 ${
+                              themeMode === 'glass' ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${
+                                isKombiActive ? 'bg-orange-500 animate-pulse' : 'bg-sky-400'
+                              }`} />
+                              {t.lastIgnitionCounterLabel}
+                            </span>
+                            <span className={`font-mono font-black text-xs sm:text-sm tracking-tight ${
+                              isKombiActive
+                                ? 'text-orange-500 drop-shadow-xs'
+                                : themeMode === 'glass'
+                                ? 'text-sky-300'
+                                : 'text-sky-600 dark:text-sky-400'
+                            }`}>
+                              {ignitionStatusFormattedText}
+                            </span>
+                          </div>
+                          <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center shrink-0 border ${
+                            isKombiActive
+                              ? 'bg-orange-500/20 text-orange-400 border-orange-400/40 animate-pulse'
+                              : 'bg-sky-500/15 text-sky-400 border-sky-400/30'
+                          }`}>
+                            {isKombiActive ? <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Bottom: Target Stepper + Horizontal Preset Buttons */}
                       <div className="w-full shrink-0 flex flex-col gap-1.5 sm:gap-2 mt-auto">
                         {/* Target Stepper Strip (Compact Horizontal Frosted Glass) */}
@@ -1203,6 +1386,7 @@ export default function App() {
                         currentTemp={currentTemp}
                         humidity={humidity}
                         targetTemp={targetTemp}
+                        dailyRunMinutes={dailyRunMinutes}
                         themeMode={themeMode}
                         lang={lang}
                       />
@@ -1310,10 +1494,7 @@ export default function App() {
         isWeatherNotificationsEnabled={isWeatherNotificationsEnabled}
         onToggleWeatherNotifications={setIsWeatherNotificationsEnabled}
         onTriggerTestNotification={handleTriggerWeatherNotification}
-        onResetHistoricalData={() => {
-          // Immediately notify all listeners
-          window.dispatchEvent(new Event('thermostat_history_reset'));
-        }}
+        onResetHistoricalData={handleResetHistoricalData}
       />
 
       <VaultNotificationsModal

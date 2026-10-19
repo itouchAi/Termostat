@@ -36,6 +36,11 @@ export interface TranslationDictionary {
   presetAway: string;
   presetBoost: string;
   dialAdjustHint: string;
+  todayActiveCounterLabel: string;
+  lastIgnitionCounterLabel: string;
+  activeBurningNow: string;
+  standbyDuration: string;
+  noIgnitionYet: string;
 
   // Weather Screen
   weatherTitle: string;
@@ -192,6 +197,11 @@ export const translations: Record<Language, TranslationDictionary> = {
     presetAway: 'Dışarı',
     presetBoost: 'Boost',
     dialAdjustHint: '💡 Kadran üzerindeki turuncu bar çizgisine dokunarak hedefi ayarlayabilirsiniz.',
+    todayActiveCounterLabel: 'Bugün Açık Kalma',
+    lastIgnitionCounterLabel: 'Ateşleme Durumu',
+    activeBurningNow: 'aktif yanıyor 🔥',
+    standbyDuration: 'süredir yanmıyor ❄️',
+    noIgnitionYet: 'Henüz ateşleme yok',
 
     // Weather Screen
     weatherTitle: 'Canlı Hava Durumu & 5 Günlük Tahmin',
@@ -346,6 +356,11 @@ export const translations: Record<Language, TranslationDictionary> = {
     presetAway: 'Away',
     presetBoost: 'Boost',
     dialAdjustHint: '💡 Touch the orange arc on the dial to adjust the target temperature.',
+    todayActiveCounterLabel: 'Today On-Time',
+    lastIgnitionCounterLabel: 'Ignition Status',
+    activeBurningNow: 'actively firing 🔥',
+    standbyDuration: 'standby (not firing) ❄️',
+    noIgnitionYet: 'No ignition yet',
 
     // Weather Screen
     weatherTitle: 'Live Weather & 5-Day Forecast',
