@@ -63,6 +63,16 @@ export const THEME_PHOTOS: Record<PresetVisualTheme, { url: string; title: strin
   },
 };
 
+export const THEME_VIDEOS: Record<PresetVisualTheme, string> = {
+  fireplace: 'https://assets.mixkit.co/videos/preview/mixkit-fire-burning-in-the-fireplace-43224-large.mp4',
+  rainy_window: 'https://assets.mixkit.co/videos/preview/mixkit-rain-drops-falling-on-a-window-glass-41771-large.mp4',
+  winter_snow: 'https://assets.mixkit.co/videos/preview/mixkit-snow-falling-on-pine-trees-43232-large.mp4',
+  sunset_forest: 'https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-sunlight-529-large.mp4',
+  aurora: 'https://assets.mixkit.co/videos/preview/mixkit-aurora-borealis-over-a-snowy-mountain-43234-large.mp4',
+  minimal_black: '',
+  custom: '',
+};
+
 export const ALL_THEME_KEYS: PresetVisualTheme[] = [
   'fireplace',
   'rainy_window',
@@ -90,15 +100,33 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Play/pause video element in sync
+  const isVideoMode = mode === 'video' || mode === 'video_audio_muted_mp3';
+  const effectiveVideoUrl =
+    customVideos.length > 0
+      ? customVideos[activeVideoIndex % customVideos.length]?.url
+      : customVideoUrl?.trim() || THEME_VIDEOS[theme];
+
+  // Play/pause video element in sync, keeping it silently playing in background
   useEffect(() => {
-    if (!videoRef.current) return;
+    const v = videoRef.current;
+    if (!v) return;
+
+    // Muted is essential so browser autoplay policy never blocks it and it never clashes with MP3 song
+    v.muted = true;
+    v.defaultMuted = true;
+
     if (isPlaying) {
-      videoRef.current.play().catch(() => {});
+      const p = v.play();
+      if (p !== undefined) {
+        p.catch(() => {
+          v.muted = true;
+          v.play().catch(() => {});
+        });
+      }
     } else {
-      videoRef.current.pause();
+      v.pause();
     }
-  }, [isPlaying]);
+  }, [isPlaying, effectiveVideoUrl, blurBackground, mode]);
 
   // Determine CSS background-size from imageFitMode
   const bgSizeStyle =
@@ -127,13 +155,7 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
     return <div className="absolute inset-0 bg-black" />;
   }
 
-  // 2. Video Mode: Active video from playlist or customVideoUrl
-  const isVideoMode = mode === 'video' || mode === 'video_audio_muted_mp3';
-  const effectiveVideoUrl =
-    customVideos.length > 0
-      ? customVideos[activeVideoIndex % customVideos.length]?.url
-      : customVideoUrl?.trim();
-
+  // 2. Video Mode: Active video from playlist, customVideoUrl or default preset video
   if (isVideoMode && effectiveVideoUrl) {
     return (
       <div className="absolute inset-0 overflow-hidden bg-black" style={blurFilterStyle}>
@@ -143,8 +165,14 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
           src={effectiveVideoUrl}
           autoPlay={isPlaying}
           loop={customVideos.length <= 1}
-          muted={mode === 'video_audio_muted_mp3'}
+          muted={true}
           playsInline
+          onLoadedData={() => {
+            if (videoRef.current && isPlaying) {
+              videoRef.current.muted = true;
+              videoRef.current.play().catch(() => {});
+            }
+          }}
           onEnded={onVideoEnded}
           className={`w-full h-full ${videoFitClass}`}
         />

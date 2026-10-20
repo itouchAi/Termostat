@@ -24,6 +24,7 @@ import { AmbientVisualCanvas } from './AmbientVisualCanvas.tsx';
 import { ambientAudio } from '../../utils/ambientAudio.ts';
 import { MusicEqualizer } from './MusicEqualizer.tsx';
 import { LuxuryMediaBar } from './LuxuryMediaBar.tsx';
+import { ThermostatTouchDialModal } from './ThermostatTouchDialModal.tsx';
 
 interface SmartDisplayOverlayProps {
   isOpen: boolean;
@@ -53,6 +54,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
   const [isControlsVisible, setIsControlsVisible] = useState(true);
   const [isSleeping, setIsSleeping] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [isThermostatWheelOpen, setIsThermostatWheelOpen] = useState(false);
 
   // Playlist navigation indices
   const [slideIndex, setSlideIndex] = useState(0);
@@ -418,15 +420,48 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
             </div>
           )}
 
-          {/* RIGHT: Live Weather Animation & Temperature Badge */}
-          <div className="flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/15 shadow-2xl">
-            {renderWeatherIcon()}
-            <div className="text-right">
-              <div className="text-xl sm:text-2xl md:text-3xl font-black font-mono tracking-tighter text-white">
-                {weather.temp ?? 14}°C
+          {/* RIGHT: Dokun ve Kontrol Et Termostat Butonu + Hava Durumu Çerçevesi */}
+          <div className="flex items-center gap-2 sm:gap-2.5 pointer-events-auto">
+            {/* Dokun ve Kontrol Et: Termostat Görseli & Tekerlek Açma Butonu */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsThermostatWheelOpen(true);
+              }}
+              className="group flex items-center gap-2 sm:gap-2.5 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-3xl bg-black/40 hover:bg-black/60 active:scale-95 backdrop-blur-xl border border-white/15 hover:border-amber-400/50 shadow-2xl transition-all cursor-pointer"
+              title="Dokun ve Kontrol Et (15 sn Otomatik Kapanan Termostat Tekerleği)"
+            >
+              {/* Termostat Dairesel Görsel & Alev Simülasyonu */}
+              <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-300 p-0.5 shadow-[0_0_14px_rgba(245,158,11,0.4)] group-hover:scale-105 transition-transform flex items-center justify-center">
+                <div className="w-full h-full rounded-full bg-slate-950 flex flex-col items-center justify-center">
+                  <Flame
+                    className={`w-4 h-4 ${
+                      isKombiActive ? 'text-amber-400 animate-pulse' : 'text-slate-400'
+                    }`}
+                  />
+                </div>
               </div>
-              <div className="text-[10px] sm:text-[11px] font-semibold text-slate-300 capitalize truncate max-w-[100px] sm:max-w-[130px]">
-                {weather.cityName || 'Ankara'}
+              <div className="text-left pr-0.5">
+                <div className="text-[9px] sm:text-[10px] text-slate-300 font-bold uppercase tracking-wider">
+                  Termostat
+                </div>
+                <div className="text-sm sm:text-base font-black font-mono text-amber-400 tracking-tight leading-none">
+                  {targetTemp.toFixed(1)}°C
+                </div>
+              </div>
+            </button>
+
+            {/* Sağ üstteki derece ve hava durumu çerçevemiz (Aynen korunuyor!) */}
+            <div className="flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/15 shadow-2xl">
+              {renderWeatherIcon()}
+              <div className="text-right">
+                <div className="text-xl sm:text-2xl md:text-3xl font-black font-mono tracking-tighter text-white">
+                  {weather.temp ?? 14}°C
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-semibold text-slate-300 capitalize truncate max-w-[100px] sm:max-w-[130px]">
+                  {weather.cityName || 'Ankara'}
+                </div>
               </div>
             </div>
           </div>
@@ -512,24 +547,9 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
             isControlsVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
           }`}
         >
-          {/* Mode Badge */}
-          <div className="flex items-center gap-2 bg-black/50 backdrop-blur-xl px-3.5 py-1.5 rounded-2xl border border-white/15">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-[11px] font-bold text-slate-200 uppercase tracking-wider">
-              {config.mode === 'aod'
-                ? 'Always-On Display'
-                : config.mode === 'slideshow'
-                ? 'Çoklu Slayt Gösterisi'
-                : config.mode === 'video_audio_muted_mp3'
-                ? 'Sessiz Video + MP3'
-                : config.mode === 'video'
-                ? 'Canlı Video Döngüsü'
-                : 'Sabit Görsel Teması'}
-            </span>
-          </div>
-
           {/* CENTER: Dokununca Genişleyen Lüks Medya Kontrol Barı (User requested) */}
-          <LuxuryMediaBar
+          <div className="flex-1 flex justify-center sm:justify-start">
+            <LuxuryMediaBar
             mediaType={activeMediaInfo.type}
             title={activeMediaInfo.title}
             counterText={activeMediaInfo.counter}
@@ -544,6 +564,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
                 : undefined
             }
           />
+        </div>
 
           {/* Right Toolbar: Brightness Slider, Fullscreen & Exit */}
           <div className="flex items-center gap-2 bg-black/60 backdrop-blur-2xl px-3 py-1.5 rounded-2xl border border-white/20 shadow-2xl">
@@ -607,6 +628,16 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Dokun ve Kontrol Et: Termostat Tekerleği Modalı (15 sn Otomatik Kapanma) */}
+      <ThermostatTouchDialModal
+        isOpen={isThermostatWheelOpen}
+        onClose={() => setIsThermostatWheelOpen(false)}
+        currentTemp={currentTemp}
+        targetTemp={targetTemp}
+        isKombiActive={isKombiActive}
+        onSetTargetTemp={onSetTargetTemp}
+      />
     </div>,
     document.body
   );

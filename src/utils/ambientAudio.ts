@@ -20,7 +20,8 @@ class AmbientAudioEngine {
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.value = 0.5;
         this.analyser = this.ctx.createAnalyser();
-        this.analyser.fftSize = 64;
+        this.analyser.fftSize = 128; // Higher resolution frequency bins (64 bins)
+        this.analyser.smoothingTimeConstant = 0.78; // Smooth, realistic bounce
         this.masterGain.connect(this.analyser);
         this.analyser.connect(this.ctx.destination);
       }
@@ -88,18 +89,40 @@ class AmbientAudioEngine {
       array.fill(0);
       return;
     }
-    if (this.analyser && this.currentTrack !== 'custom') {
+
+    // 1. Genuine Web Audio Analyser Data (Direct FFT of playing audio)
+    if (this.analyser) {
       this.analyser.getByteFrequencyData(array as any);
+      let sum = 0;
+      for (let i = 0; i < array.length; i++) {
+        sum += array[i];
+      }
+      if (sum > 0) {
+        return; // Genuine frequency spectrum active!
+      }
+    }
+
+    // 2. Dynamic tempo-harmonic responder fallback if audio is playing without Web Audio hook (CORS fallback)
+    if (this.audioElement && !this.audioElement.paused && this.audioElement.currentTime > 0) {
+      const cur = this.audioElement.currentTime;
+      const vol = this.audioElement.volume ?? 0.8;
+      const beatBass = Math.sin(cur * 8.0) * 0.5 + 0.5;
+      const beatMid = Math.sin(cur * 16.0 + 1.2) * 0.5 + 0.5;
+
+      for (let i = 0; i < array.length; i++) {
+        const factor = 1 - (i / array.length) * 0.55;
+        const wave = Math.sin(cur * 10 + i * 0.5) * 0.5 + 0.5;
+        const dynamicVal =
+          (beatBass * 0.5 + beatMid * 0.3 + wave * 0.2) *
+          240 *
+          factor *
+          vol;
+        array[i] = Math.min(255, Math.max(12, Math.floor(dynamicVal + Math.random() * 20 * vol)));
+      }
       return;
     }
-    // Animated rhythmic spectrum for custom audio / fallback
-    const t = Date.now() * 0.005;
-    for (let i = 0; i < array.length; i++) {
-      const wave = Math.sin(t * 1.5 + i * 0.4) * 0.5 + 0.5;
-      const beat = Math.sin(t * 3.0) > 0.4 ? 1.4 : 0.8;
-      const decay = 1 - (i / array.length) * 0.5;
-      array[i] = Math.min(255, Math.floor(wave * 200 * beat * decay + Math.random() * 35));
-    }
+
+    array.fill(0);
   }
 
   public playTrack(track: string, volume: number = 0.5, customUrl?: string) {
@@ -113,12 +136,19 @@ class AmbientAudioEngine {
     this.isRunning = true;
     this.isPausedState = false;
 
-    // Custom audio track via external MP3 URL
+    this.initContext();
+
+    // Custom audio track via external or uploaded MP3 URL
     if (track === 'custom' && customUrl && customUrl.trim()) {
       try {
-        const audio = new Audio(customUrl.trim());
+        const audio = new Audio();
+        if (!customUrl.startsWith('blob:') && !customUrl.startsWith('data:')) {
+          audio.crossOrigin = 'anonymous';
+        }
+        audio.src = customUrl.trim();
         audio.volume = Math.max(0, Math.min(1, volume));
-        audio.crossOrigin = 'anonymous';
+        audio.preload = 'auto';
+
         audio.onended = () => {
           if (this.onEndedCallback) {
             this.onEndedCallback();
@@ -127,9 +157,30 @@ class AmbientAudioEngine {
             audio.play().catch(() => {});
           }
         };
-        audio.play().catch((err) => {
-          console.warn('Custom audio playback could not start:', err);
-        });
+
+        // Wire to Web Audio graph for true frequency synchronization!
+        if (this.ctx && this.masterGain) {
+          try {
+            const source = this.ctx.createMediaElementSource(audio);
+            source.connect(this.masterGain);
+            this.activeNodes.push(source);
+          } catch (e) {
+            console.warn('MediaElementSource connection note:', e);
+          }
+        }
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.warn('Custom audio playback note:', err);
+            // If CORS issue occurred due to crossOrigin, retry without crossOrigin
+            if (audio.crossOrigin) {
+              audio.crossOrigin = null;
+              audio.src = customUrl.trim();
+              audio.play().catch(() => {});
+            }
+          });
+        }
         this.audioElement = audio;
       } catch (err) {
         console.warn('Failed to load custom audio URL:', err);
