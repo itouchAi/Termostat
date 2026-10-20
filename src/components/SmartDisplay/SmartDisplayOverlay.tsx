@@ -58,6 +58,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
   const [isSleeping, setIsSleeping] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isThermostatWheelOpen, setIsThermostatWheelOpen] = useState(false);
+  const [isThermostatClosing, setIsThermostatClosing] = useState(false);
 
   // Playlist navigation indices
   const [slideIndex, setSlideIndex] = useState(0);
@@ -337,8 +338,10 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
   const isAudioPlaying = config.audioTrack !== 'none' && !isMuted && isPlaying;
   const isEqualizerActive = config.equalizerEnabled && isAudioPlaying;
 
-  // Background blur active whenever music/MP3 is playing OR when thermostat wheel modal is open!
-  const isBackgroundBlurred = isAudioPlaying || isThermostatWheelOpen;
+  // Background blur active during equalizer mode OR when thermostat is actively opened & not closing.
+  // When thermostat closes (reverse animation), background smoothly unblurs at the exact same time
+  const isThermostatActive = isThermostatWheelOpen && !isThermostatClosing;
+  const isBackgroundBlurred = isEqualizerActive || isThermostatActive;
 
   return createPortal(
     <div
@@ -433,10 +436,11 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
+                setIsThermostatClosing(false);
                 setIsThermostatWheelOpen(true);
               }}
               className="group flex items-center gap-2 sm:gap-2.5 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-3xl bg-black/40 hover:bg-black/60 active:scale-95 backdrop-blur-xl border border-white/15 hover:border-amber-400/50 shadow-2xl transition-all cursor-pointer"
-              title="Dokun ve Kontrol Et (15 sn Otomatik Kapanan Termostat Tekerleği)"
+              title="Dokun ve Kontrol Et (5 sn Otomatik Kapanan Termostat Tekerleği)"
             >
               {/* Termostat Dairesel Görsel & Alev Simülasyonu */}
               <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-300 p-0.5 shadow-[0_0_14px_rgba(245,158,11,0.4)] group-hover:scale-105 transition-transform flex items-center justify-center">
@@ -635,10 +639,14 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
         </div>
       </div>
 
-      {/* Dokun ve Kontrol Et: Termostat Tekerleği Modalı (5 sn Otomatik Kapanma & Blur Animasyonu) */}
+      {/* Dokun ve Kontrol Et: Termostat Tekerleği Modalı (5 sn Otomatik Kapanma & Senkronize Blur Animasyonu) */}
       <ThermostatTouchDialModal
         isOpen={isThermostatWheelOpen}
-        onClose={() => setIsThermostatWheelOpen(false)}
+        onClosingChange={(closing) => setIsThermostatClosing(closing)}
+        onClose={() => {
+          setIsThermostatWheelOpen(false);
+          setIsThermostatClosing(false);
+        }}
         currentTemp={currentTemp}
         targetTemp={targetTemp}
         isKombiActive={isKombiActive}

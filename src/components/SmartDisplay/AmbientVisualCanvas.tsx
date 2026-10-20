@@ -111,31 +111,65 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
       ? customVideos[activeVideoIndex % customVideos.length]?.url
       : customVideoUrl?.trim() || THEME_VIDEOS[theme] || THEME_VIDEOS.fireplace;
 
-  // Play/pause video element in sync, keeping it silently playing in background
+  // Robust HTML5 Video Playback Engine (Solves browser 1-second autoplay pause bug)
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
 
-    v.muted = true;
+    // Browser audio/video security requires imperative DOM muted=true to prevent 1-second auto-pause
     v.defaultMuted = true;
+    v.muted = true;
+    v.volume = 0;
+    v.setAttribute('muted', '');
+    v.setAttribute('playsinline', '');
+    v.setAttribute('webkit-playsinline', '');
+
+    const handleUnexpectedPause = () => {
+      if (isPlaying && v && v.paused && !v.ended) {
+        v.defaultMuted = true;
+        v.muted = true;
+        v.volume = 0;
+        v.play().catch(() => {});
+      }
+    };
+
+    const handleVideoEnded = () => {
+      if (customVideos.length <= 1) {
+        // Single video: seamlessly loop without stopping
+        v.currentTime = 0;
+        v.play().catch(() => {});
+      } else {
+        // Multi-video playlist: advance to next track
+        onVideoEnded?.();
+      }
+    };
+
+    v.addEventListener('pause', handleUnexpectedPause);
+    v.addEventListener('ended', handleVideoEnded);
 
     if (isPlaying) {
       const p = v.play();
       if (p !== undefined) {
-        p.catch((err) => {
-          console.warn('Video play attempt:', err);
+        p.catch(() => {
           setTimeout(() => {
-            if (videoRef.current) {
+            if (videoRef.current && isPlaying) {
+              videoRef.current.defaultMuted = true;
               videoRef.current.muted = true;
+              videoRef.current.volume = 0;
               videoRef.current.play().catch(() => {});
             }
-          }, 150);
+          }, 100);
         });
       }
     } else {
       v.pause();
     }
-  }, [isPlaying, effectiveVideoUrl, blurBackground, mode]);
+
+    return () => {
+      v.removeEventListener('pause', handleUnexpectedPause);
+      v.removeEventListener('ended', handleVideoEnded);
+    };
+  }, [isPlaying, effectiveVideoUrl, mode, customVideos.length, onVideoEnded]);
 
   // Determine CSS background-size from imageFitMode
   const bgSizeStyle =
@@ -171,27 +205,54 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
     return (
       <div className="absolute inset-0 overflow-hidden bg-black" style={blurFilterStyle}>
         <video
-          ref={videoRef}
+          ref={(node) => {
+            videoRef.current = node;
+            if (node) {
+              node.defaultMuted = true;
+              node.muted = true;
+              node.volume = 0;
+              node.setAttribute('muted', '');
+              node.setAttribute('playsinline', '');
+              node.setAttribute('webkit-playsinline', '');
+              if (isPlaying && node.paused) {
+                node.play().catch(() => {});
+              }
+            }
+          }}
           key={effectiveVideoUrl}
           src={effectiveVideoUrl}
           autoPlay
           loop={customVideos.length <= 1}
-          muted={true}
+          muted
           playsInline
           preload="auto"
+          onLoadedMetadata={(e) => {
+            const el = e.currentTarget;
+            el.defaultMuted = true;
+            el.muted = true;
+            el.volume = 0;
+            if (isPlaying) {
+              el.play().catch(() => {});
+            }
+          }}
           onCanPlay={(e) => {
+            const el = e.currentTarget;
+            el.defaultMuted = true;
+            el.muted = true;
+            el.volume = 0;
             if (isPlaying) {
-              e.currentTarget.muted = true;
-              e.currentTarget.play().catch(() => {});
+              el.play().catch(() => {});
             }
           }}
-          onLoadedData={(e) => {
-            if (isPlaying) {
-              e.currentTarget.muted = true;
-              e.currentTarget.play().catch(() => {});
+          onTimeUpdate={(e) => {
+            const el = e.currentTarget;
+            if (isPlaying && el.paused && !el.ended) {
+              el.defaultMuted = true;
+              el.muted = true;
+              el.volume = 0;
+              el.play().catch(() => {});
             }
           }}
-          onEnded={onVideoEnded}
           className={`w-full h-full ${videoFitClass}`}
         />
         <div className="absolute inset-0 bg-radial from-transparent via-black/30 to-black/75 pointer-events-none" />

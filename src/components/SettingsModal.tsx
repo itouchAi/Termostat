@@ -550,7 +550,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <input
                                   type="file"
                                   multiple
-                                  accept="video/mp4,video/webm"
+                                  accept="video/*,video/mp4,video/webm,video/ogg,video/quicktime"
                                   className="hidden"
                                   onChange={(e) => {
                                     const files = e.target.files;

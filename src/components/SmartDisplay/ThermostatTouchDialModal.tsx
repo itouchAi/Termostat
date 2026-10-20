@@ -14,6 +14,7 @@ import type { ThemeMode } from '../../types.ts';
 interface ThermostatTouchDialModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onClosingChange?: (isClosing: boolean) => void;
   currentTemp: number;
   targetTemp: number;
   isKombiActive: boolean;
@@ -24,6 +25,7 @@ interface ThermostatTouchDialModalProps {
 export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> = ({
   isOpen,
   onClose,
+  onClosingChange,
   currentTemp,
   targetTemp,
   isKombiActive,
@@ -46,13 +48,16 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
   // Keep stable reference to onClose to prevent clock tick re-render cancellations
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const onClosingChangeRef = useRef(onClosingChange);
+  onClosingChangeRef.current = onClosingChange;
 
-  // Trigger cinematic close with blur-out animation
+  // Trigger cinematic close with blur-out animation and simultaneous background unblur
   const handleTriggerClose = useCallback(() => {
     setIsClosing(true);
+    onClosingChangeRef.current?.(true);
     setTimeout(() => {
       onCloseRef.current();
-    }, 450); // Matches animation duration
+    }, 500); // Matches 0.5s CSS animation duration
   }, []);
 
   // Stable inactivity timer reset
@@ -82,6 +87,7 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
   useEffect(() => {
     if (isOpen) {
       setIsClosing(false);
+      onClosingChangeRef.current?.(false);
       setCountdown(INACTIVITY_TIMEOUT_SEC);
       // Small timeout to trigger CSS transition from blur to sharp focus
       const t = setTimeout(() => {
@@ -98,6 +104,7 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
     } else {
       setIsAnimatingIn(false);
       setIsClosing(false);
+      onClosingChangeRef.current?.(false);
     }
   }, [isOpen, resetInactivityTimer]);
 
@@ -169,30 +176,40 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
 
   // Theme-specific styling classes
   const isLight = themeMode === 'light';
-  const isGlass = themeMode === 'glass';
+  const isGlass = themeMode === 'glass' || (!themeMode && true);
 
-  // Backdrop animation: Smoothly transitions into deep frosted blur and back to transparent on exit
-  const backdropClasses = `fixed inset-0 z-50 flex items-center justify-center p-4 select-none cursor-default transition-all duration-450 ${
+  // Backdrop: In glass theme, keep backdrop very translucent so wallpaper is clearly visible!
+  const backdropTheme = isLight
+    ? 'bg-slate-900/40 backdrop-blur-md'
+    : isGlass
+    ? 'bg-black/20 backdrop-blur-xs'
+    : 'bg-black/70 backdrop-blur-xl';
+
+  const backdropClasses = `fixed inset-0 z-50 flex items-center justify-center p-4 select-none cursor-default transition-all duration-500 ${backdropTheme} ${
     isAnimatingIn && !isClosing
-      ? 'bg-black/70 backdrop-blur-2xl opacity-100'
-      : 'bg-black/0 backdrop-blur-none opacity-0'
+      ? 'opacity-100 pointer-events-auto'
+      : 'opacity-0 pointer-events-none'
   }`;
 
-  // Card theme styling
+  // Card theme styling: In glass mode, use translucent frosted glass with inner highlights
   const cardThemeClasses = isLight
     ? 'bg-white/95 text-slate-900 border-slate-200/90 shadow-[0_25px_60px_rgba(0,0,0,0.35)]'
     : isGlass
-    ? 'bg-slate-900/40 text-white border-white/25 shadow-[0_8px_32px_0_rgba(255,255,255,0.15)] backdrop-blur-3xl'
+    ? 'bg-white/[0.12] text-white border-white/35 shadow-[0_25px_60px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.45)] backdrop-blur-2xl'
     : 'bg-slate-950/95 text-white border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.9)]';
 
-  // Card animation: "blurdan netleserek gelecek, kapanırkende blur olarak yok olacak"
-  const cardAnimationClasses = `relative w-full max-w-sm sm:max-w-md p-6 sm:p-8 rounded-3xl border transition-all duration-450 ${cardThemeClasses} ${
+  // Card animation: "blurdan netleşerek gelecek, kapanırken de blur olarak yok olacak"
+  const cardAnimationClasses = `relative w-full max-w-sm sm:max-w-md p-6 sm:p-8 rounded-3xl border transition-all duration-500 ${cardThemeClasses} ${
     isAnimatingIn && !isClosing
       ? 'opacity-100 scale-100 blur-none'
-      : 'opacity-0 scale-90 blur-xl'
+      : 'opacity-0 scale-90 blur-2xl'
   }`;
 
-  const trackStroke = isLight ? 'rgba(0, 0, 0, 0.12)' : isGlass ? 'rgba(255, 255, 255, 0.22)' : 'rgba(255, 255, 255, 0.12)';
+  const trackStroke = isLight
+    ? 'rgba(0, 0, 0, 0.12)'
+    : isGlass
+    ? 'rgba(255, 255, 255, 0.28)'
+    : 'rgba(255, 255, 255, 0.12)';
 
   return (
     <div
@@ -227,16 +244,30 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className={`text-sm sm:text-base font-bold tracking-wide ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                <h3
+                  className={`text-sm sm:text-base font-bold tracking-wide ${
+                    isLight ? 'text-slate-900' : 'text-white'
+                  }`}
+                >
                   Termostat Tekerleği
                 </h3>
-                <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                  isLight ? 'bg-slate-200 text-slate-700' : isGlass ? 'bg-white/15 text-white/90' : 'bg-slate-800 text-slate-300'
-                }`}>
+                <span
+                  className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                    isLight
+                      ? 'bg-slate-200 text-slate-700'
+                      : isGlass
+                      ? 'bg-white/20 text-white border border-white/25 shadow-xs'
+                      : 'bg-slate-800 text-slate-300'
+                  }`}
+                >
                   {isGlass ? 'Cam Tema' : isLight ? 'Aydınlık' : 'Karanlık'}
                 </span>
               </div>
-              <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+              <p
+                className={`text-[10px] ${
+                  isLight ? 'text-slate-500' : isGlass ? 'text-white/80' : 'text-slate-400'
+                }`}
+              >
                 Dokunmatik hassas sıcaklık ayarı
               </p>
             </div>
@@ -248,6 +279,8 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
             className={`p-2 rounded-xl transition-all cursor-pointer ${
               isLight
                 ? 'bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700'
+                : isGlass
+                ? 'bg-white/15 hover:bg-white/25 active:scale-95 text-white border border-white/25'
                 : 'bg-white/10 hover:bg-white/20 active:scale-95 text-slate-300 hover:text-white'
             }`}
             title="Kapat ve Ambiyansa Dön"
@@ -257,16 +290,20 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
         </div>
 
         {/* 5-Second Inactivity Countdown Pill ("5 sn sonra kapanır") */}
-        <div className={`w-full my-2 flex items-center justify-between px-3 py-1.5 rounded-full border text-[10px] font-mono ${
-          isLight
-            ? 'bg-slate-100 border-slate-200 text-slate-700'
-            : 'bg-white/5 border-white/10 text-slate-300'
-        }`}>
+        <div
+          className={`w-full my-2 flex items-center justify-between px-3 py-1.5 rounded-full border text-[10px] font-mono ${
+            isLight
+              ? 'bg-slate-100 border-slate-200 text-slate-700'
+              : isGlass
+              ? 'bg-white/10 border-white/20 text-white'
+              : 'bg-white/5 border-white/10 text-slate-300'
+          }`}
+        >
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
             <span>Dokunulmazsa ambiyansa döner</span>
           </span>
-          <span className="font-bold text-amber-500 dark:text-amber-400 bg-amber-400/15 px-2 py-0.5 rounded-full">
+          <span className="font-bold text-amber-500 dark:text-amber-400 bg-amber-400/20 px-2 py-0.5 rounded-full border border-amber-400/30">
             {countdown} sn
           </span>
         </div>
@@ -337,12 +374,18 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
 
           {/* Central Target Temp Readout & Status */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-            <span className={`text-[10px] font-bold uppercase tracking-widest ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+            <span
+              className={`text-[10px] font-bold uppercase tracking-widest ${
+                isLight ? 'text-slate-500' : isGlass ? 'text-white/80' : 'text-slate-400'
+              }`}
+            >
               Hedef Sıcaklık
             </span>
-            <div className={`flex items-baseline font-mono font-black text-4xl sm:text-5xl tracking-tight drop-shadow-md ${
-              isLight ? 'text-slate-900' : 'text-white'
-            }`}>
+            <div
+              className={`flex items-baseline font-mono font-black text-4xl sm:text-5xl tracking-tight drop-shadow-md ${
+                isLight ? 'text-slate-900' : 'text-white'
+              }`}
+            >
               <span>{targetTemp.toFixed(1)}</span>
               <span className="text-xl sm:text-2xl text-amber-500 ml-0.5">°C</span>
             </div>
@@ -351,9 +394,11 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
             <div
               className={`mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${
                 isKombiActive
-                  ? 'bg-amber-500/20 text-amber-500 border-amber-500/40 animate-pulse'
+                  ? 'bg-amber-500/25 text-amber-400 border-amber-400/40 animate-pulse'
                   : isLight
                   ? 'bg-slate-100 text-slate-600 border-slate-300'
+                  : isGlass
+                  ? 'bg-white/10 text-white/90 border-white/20'
                   : 'bg-slate-800 text-slate-300 border-slate-700'
               }`}
             >
@@ -361,11 +406,19 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
               <span>{isKombiActive ? 'Kombi Isıtıyor' : 'Beklemede'}</span>
             </div>
 
-            <div className={`mt-1 text-[10px] font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+            <div
+              className={`mt-1 text-[10px] font-medium ${
+                isLight ? 'text-slate-600' : isGlass ? 'text-white/90' : 'text-slate-400'
+              }`}
+            >
               Oda:{' '}
-              <span className="font-bold text-emerald-500">{currentTemp}°C</span>
+              <span className="font-bold text-emerald-400">{currentTemp}°C</span>
               {tempDiff !== 0 && (
-                <span className={`ml-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                <span
+                  className={`ml-1 ${
+                    isLight ? 'text-slate-500' : isGlass ? 'text-white/75' : 'text-slate-400'
+                  }`}
+                >
                   ({tempDiff > 0 ? `+${tempDiff}°C` : `${tempDiff}°C`})
                 </span>
               )}
@@ -381,30 +434,42 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
             className={`w-12 h-12 rounded-2xl font-black flex items-center justify-center transition-all border shadow-md active:scale-90 cursor-pointer ${
               isLight
                 ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800'
+                : isGlass
+                ? 'bg-white/15 hover:bg-white/25 border-white/25 text-white backdrop-blur-md'
                 : 'bg-white/10 hover:bg-white/20 border-white/15 text-white'
             }`}
             title="0.5°C Azalt"
           >
-            <Minus className="w-5 h-5 text-sky-500" />
+            <Minus className="w-5 h-5 text-sky-400" />
           </button>
 
-          <div className={`flex flex-col items-center px-4 py-1.5 rounded-2xl border ${
-            isLight
-              ? 'bg-slate-100 border-slate-200 text-slate-800'
-              : 'bg-white/5 border-white/10 text-slate-200'
-          }`}>
-            <span className={`text-[9px] uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+          <div
+            className={`flex flex-col items-center px-4 py-1.5 rounded-2xl border ${
+              isLight
+                ? 'bg-slate-100 border-slate-200 text-slate-800'
+                : isGlass
+                ? 'bg-white/10 border-white/20 text-white backdrop-blur-md'
+                : 'bg-white/5 border-white/10 text-slate-200'
+            }`}
+          >
+            <span
+              className={`text-[9px] uppercase tracking-wider ${
+                isLight ? 'text-slate-500' : isGlass ? 'text-white/70' : 'text-slate-400'
+              }`}
+            >
               Hassas Adım
             </span>
-            <span className="text-xs font-mono font-bold">
-              0.5°C
-            </span>
+            <span className="text-xs font-mono font-bold">0.5°C</span>
           </div>
 
           <button
             type="button"
             onClick={() => handleStep(0.5)}
-            className="w-12 h-12 rounded-2xl bg-amber-600 hover:bg-amber-500 active:scale-90 text-white font-black flex items-center justify-center transition-all shadow-lg shadow-amber-600/30 cursor-pointer"
+            className={`w-12 h-12 rounded-2xl font-black flex items-center justify-center transition-all shadow-lg active:scale-90 cursor-pointer ${
+              isGlass
+                ? 'bg-amber-500/80 hover:bg-amber-500 border border-amber-300/40 text-white shadow-amber-500/30'
+                : 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/30'
+            }`}
             title="0.5°C Artır"
           >
             <Plus className="w-5 h-5 text-white" />
@@ -412,14 +477,16 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
         </div>
 
         {/* ── QUICK PRESET BUTTONS (Gece, Eko, Konfor, Boost) ── */}
-        <div className={`w-full grid grid-cols-4 gap-1.5 mt-3 pt-3 border-t ${
-          isLight ? 'border-slate-200' : 'border-white/10'
-        }`}>
+        <div
+          className={`w-full grid grid-cols-4 gap-1.5 mt-3 pt-3 border-t ${
+            isLight ? 'border-slate-200' : 'border-white/15'
+          }`}
+        >
           {[
-            { label: 'Gece', temp: 18.5, icon: Moon, color: 'text-indigo-500' },
-            { label: 'Eko', temp: 20.0, icon: Leaf, color: 'text-emerald-500' },
-            { label: 'Konfor', temp: 22.5, icon: Flame, color: 'text-amber-500' },
-            { label: 'Boost', temp: 25.0, icon: Zap, color: 'text-rose-500' },
+            { label: 'Gece', temp: 18.5, icon: Moon, color: 'text-indigo-400' },
+            { label: 'Eko', temp: 20.0, icon: Leaf, color: 'text-emerald-400' },
+            { label: 'Konfor', temp: 22.5, icon: Flame, color: 'text-amber-400' },
+            { label: 'Boost', temp: 25.0, icon: Zap, color: 'text-rose-400' },
           ].map((preset) => {
             const Icon = preset.icon;
             const isSelected = targetTemp === preset.temp;
@@ -430,15 +497,21 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
                 onClick={() => handleSetPreset(preset.temp)}
                 className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-amber-500/25 border-amber-500 text-amber-600 dark:text-amber-400 font-bold shadow-md'
+                    ? 'bg-amber-500/30 border-amber-400 text-amber-300 font-bold shadow-md backdrop-blur-md'
                     : isLight
                     ? 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                    : isGlass
+                    ? 'bg-white/10 hover:bg-white/20 border-white/20 text-white/90 backdrop-blur-md'
                     : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300'
                 }`}
               >
                 <Icon className={`w-3.5 h-3.5 ${preset.color} mb-0.5`} />
                 <span className="text-[10px]">{preset.label}</span>
-                <span className={`text-[9px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                <span
+                  className={`text-[9px] font-mono ${
+                    isLight ? 'text-slate-500' : isGlass ? 'text-white/70' : 'text-slate-400'
+                  }`}
+                >
                   {preset.temp}°C
                 </span>
               </button>
@@ -453,6 +526,8 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
           className={`w-full mt-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
             isLight
               ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800'
+              : isGlass
+              ? 'bg-white/15 hover:bg-white/25 border-white/25 text-white backdrop-blur-md shadow-xs'
               : 'bg-white/10 hover:bg-white/20 border-white/15 text-slate-200 hover:text-white'
           }`}
         >
