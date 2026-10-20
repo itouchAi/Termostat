@@ -14,16 +14,16 @@ import {
   Moon,
   Clock,
   Sparkles,
-  Sliders,
-  ChevronRight,
-  ChevronLeft,
+  Music,
   Plus,
   Minus,
 } from 'lucide-react';
 import type { SmartDisplayConfig } from '../../types/smartDisplay.ts';
-import type { CurrentWeather, WeatherCondition } from '../../utils/weather.ts';
+import type { CurrentWeather } from '../../utils/weather.ts';
 import { AmbientVisualCanvas } from './AmbientVisualCanvas.tsx';
 import { ambientAudio } from '../../utils/ambientAudio.ts';
+import { MusicEqualizer } from './MusicEqualizer.tsx';
+import { LuxuryMediaBar } from './LuxuryMediaBar.tsx';
 
 interface SmartDisplayOverlayProps {
   isOpen: boolean;
@@ -52,7 +52,13 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isControlsVisible, setIsControlsVisible] = useState(true);
   const [isSleeping, setIsSleeping] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  // Playlist navigation indices
   const [slideIndex, setSlideIndex] = useState(0);
+  const [activeVideoIndex, setActiveVideoIndex] = useState(0);
+  const [activeAudioIndex, setActiveAudioIndex] = useState(0);
+
   const [pixelOffset, setPixelOffset] = useState({ x: 0, y: 0 });
   const [isMuted, setIsMuted] = useState(config.audioTrack === 'none');
 
@@ -66,14 +72,14 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
     return () => clearInterval(interval);
   }, [isOpen]);
 
-  // Slideshow timer
+  // Slideshow auto-advance timer
   useEffect(() => {
-    if (!isOpen || config.mode !== 'slideshow') return;
+    if (!isOpen || config.mode !== 'slideshow' || !isPlaying) return;
     const interval = setInterval(() => {
       setSlideIndex((prev) => prev + 1);
     }, config.slideshowIntervalSec * 1000);
     return () => clearInterval(interval);
-  }, [isOpen, config.mode, config.slideshowIntervalSec]);
+  }, [isOpen, config.mode, config.slideshowIntervalSec, isPlaying]);
 
   // OLED Burn-in pixel protection (shifts clock 2-4px every 60s)
   useEffect(() => {
@@ -87,15 +93,30 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
     return () => clearInterval(interval);
   }, [isOpen, config.burnInProtection]);
 
-  // Ambient Audio Player
+  // Ambient Audio Player & Multi-Track Playlist Auto-Next
+  const currentAudioUrl = useMemo(() => {
+    if (config.customAudioTracks && config.customAudioTracks.length > 0) {
+      return config.customAudioTracks[activeAudioIndex % config.customAudioTracks.length]?.url;
+    }
+    return config.customAudioUrl;
+  }, [config.customAudioTracks, activeAudioIndex, config.customAudioUrl]);
+
   useEffect(() => {
     if (!isOpen) {
       ambientAudio.stop();
       return;
     }
 
-    if (config.audioTrack !== 'none' && !isMuted) {
-      ambientAudio.playTrack(config.audioTrack, config.audioVolume, config.customAudioUrl);
+    if (config.audioTrack !== 'none' && !isMuted && isPlaying) {
+      // Wire auto-advance to next audio track in playlist
+      ambientAudio.setOnEnded(() => {
+        if (config.customAudioTracks && config.customAudioTracks.length > 1) {
+          setActiveAudioIndex((prev) => (prev + 1) % config.customAudioTracks.length);
+        }
+      });
+      ambientAudio.playTrack(config.audioTrack, config.audioVolume, currentAudioUrl);
+    } else if (!isPlaying) {
+      ambientAudio.pause();
     } else {
       ambientAudio.stop();
     }
@@ -103,7 +124,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
     return () => {
       ambientAudio.stop();
     };
-  }, [isOpen, config.audioTrack, config.audioVolume, config.customAudioUrl, isMuted]);
+  }, [isOpen, config.audioTrack, config.audioVolume, currentAudioUrl, isMuted, isPlaying]);
 
   // Screen Sleep Timer
   const resetSleepTimer = () => {
@@ -123,7 +144,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     controlsTimeoutRef.current = setTimeout(() => {
       setIsControlsVisible(false);
-    }, 4500);
+    }, 5500);
   };
 
   useEffect(() => {
@@ -146,6 +167,123 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
     }
   };
 
+  // Current playing media metadata for Marquee and Media Bar
+  const currentTrackTitle = useMemo(() => {
+    if (config.customAudioTracks && config.customAudioTracks.length > 0) {
+      const item = config.customAudioTracks[activeAudioIndex % config.customAudioTracks.length];
+      return item?.name || 'Özel Parça';
+    }
+    if (config.audioTrack === 'fireplace') return 'Şömine Çıtırtısı & Sıcak Rezonans';
+    if (config.audioTrack === 'rain') return 'Sakin Yağmur & Damla Akustiği';
+    if (config.audioTrack === 'lofi') return 'Akustik Lofi Chill Beat';
+    if (config.audioTrack === 'relax_piano') return 'Derin Relax Piyano';
+    if (config.audioTrack === 'nature') return 'Doğa Kuşları & Dingin Orman';
+    if (config.audioTrack === 'custom') return 'Harici MP3 / Radyo Yayını';
+    return '';
+  }, [config.audioTrack, config.customAudioTracks, activeAudioIndex]);
+
+  const activeMediaInfo = useMemo(() => {
+    const isVideo = config.mode === 'video' || config.mode === 'video_audio_muted_mp3';
+    if (isVideo) {
+      const count = config.customVideos.length;
+      const title =
+        count > 0
+          ? config.customVideos[activeVideoIndex % count]?.name || 'Video'
+          : 'Canlı Doğa Videosu';
+      return {
+        type: 'video' as const,
+        title,
+        counter: count > 0 ? `Video ${activeVideoIndex + 1} / ${count}` : 'Canlı Video',
+      };
+    }
+
+    if (config.mode === 'slideshow' || config.mode === 'image') {
+      const count = config.customImages.length;
+      const title =
+        count > 0
+          ? config.customImages[slideIndex % count]?.name || 'Görsel'
+          : config.presetTheme === 'fireplace'
+          ? 'Şömineli Kış Evi'
+          : config.presetTheme === 'rainy_window'
+          ? 'Yağmurlu Pencere'
+          : config.presetTheme === 'winter_snow'
+          ? 'Karlı Çam Ormanı'
+          : config.presetTheme === 'sunset_forest'
+          ? 'Gün Batımı'
+          : config.presetTheme === 'aurora'
+          ? 'Kutup Işıkları'
+          : 'Minimal Dokusu';
+      return {
+        type: 'image' as const,
+        title,
+        counter: count > 0 ? `Slayt ${ (slideIndex % count) + 1} / ${count}` : 'Slayt',
+      };
+    }
+
+    // Default audio or ambient
+    return {
+      type: 'audio' as const,
+      title: currentTrackTitle || 'Ambiyans Modu',
+      counter:
+        config.customAudioTracks.length > 0
+          ? `Parça ${(activeAudioIndex % config.customAudioTracks.length) + 1} / ${
+              config.customAudioTracks.length
+            }`
+          : 'Ortam Sesi',
+    };
+  }, [
+    config.mode,
+    config.presetTheme,
+    config.customVideos,
+    config.customImages,
+    config.customAudioTracks,
+    activeVideoIndex,
+    slideIndex,
+    activeAudioIndex,
+    currentTrackTitle,
+  ]);
+
+  // Playlist Navigation Handlers
+  const handlePreviousMedia = () => {
+    const isVideo = config.mode === 'video' || config.mode === 'video_audio_muted_mp3';
+    if (isVideo && config.customVideos.length > 0) {
+      setActiveVideoIndex((prev) =>
+        prev === 0 ? config.customVideos.length - 1 : prev - 1
+      );
+    } else if (
+      (config.mode === 'slideshow' || config.mode === 'image') &&
+      config.customImages.length > 0
+    ) {
+      setSlideIndex((prev) => (prev === 0 ? config.customImages.length - 1 : prev - 1));
+    } else if (config.customAudioTracks.length > 0) {
+      setActiveAudioIndex((prev) =>
+        prev === 0 ? config.customAudioTracks.length - 1 : prev - 1
+      );
+    } else {
+      setSlideIndex((prev) => Math.max(0, prev - 1));
+    }
+  };
+
+  const handleNextMedia = () => {
+    const isVideo = config.mode === 'video' || config.mode === 'video_audio_muted_mp3';
+    if (isVideo && config.customVideos.length > 0) {
+      setActiveVideoIndex((prev) => (prev + 1) % config.customVideos.length);
+    } else if (
+      (config.mode === 'slideshow' || config.mode === 'image') &&
+      config.customImages.length > 0
+    ) {
+      setSlideIndex((prev) => (prev + 1) % config.customImages.length);
+    } else if (config.customAudioTracks.length > 0) {
+      setActiveAudioIndex((prev) => (prev + 1) % config.customAudioTracks.length);
+    } else {
+      setSlideIndex((prev) => prev + 1);
+    }
+  };
+
+  const handleTogglePlay = () => {
+    setIsPlaying((prev) => !prev);
+  };
+
   if (!isOpen || typeof document === 'undefined') return null;
 
   // Format time (HH:MM:SS) and date
@@ -165,33 +303,34 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
     if (condition.includes('rain') || condition.includes('drizzle')) {
       return (
         <div className="relative">
-          <CloudRain className="w-9 h-9 text-blue-400 animate-bounce duration-1000" />
+          <CloudRain className="w-8 h-8 sm:w-9 sm:h-9 text-blue-400 animate-bounce duration-1000" />
         </div>
       );
     }
     if (condition.includes('snow')) {
       return (
         <div className="relative">
-          <CloudSnow className="w-9 h-9 text-cyan-200 animate-pulse duration-1000" />
+          <CloudSnow className="w-8 h-8 sm:w-9 sm:h-9 text-cyan-200 animate-pulse duration-1000" />
         </div>
       );
     }
     if (condition.includes('cloud')) {
       return (
         <div className="relative">
-          <Cloud className="w-9 h-9 text-slate-300 animate-pulse" />
+          <Cloud className="w-8 h-8 sm:w-9 sm:h-9 text-slate-300 animate-pulse" />
         </div>
       );
     }
     return (
       <div className="relative">
-        <Sun className="w-9 h-9 text-amber-400 animate-spin duration-[12000ms]" />
+        <Sun className="w-8 h-8 sm:w-9 sm:h-9 text-amber-400 animate-spin duration-[12000ms]" />
       </div>
     );
   };
 
-  // Brightness overlay darkness (100% -> 0 overlay, 10% -> 0.9 overlay)
-  const darknessOpacity = Math.max(0, Math.min(0.9, (100 - config.brightnessPercent) / 100));
+  // Whether equalizer is active & blurring background
+  const isEqualizerActive =
+    config.equalizerEnabled && config.audioTrack !== 'none' && !isMuted;
 
   return createPortal(
     <div
@@ -210,9 +349,16 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
         theme={config.presetTheme}
         customImageUrl={config.customImageUrl}
         customVideoUrl={config.customVideoUrl}
+        customImages={config.customImages}
+        customVideos={config.customVideos}
+        activeVideoIndex={activeVideoIndex}
+        imageFitMode={config.imageFitMode || 'cover'}
+        blurBackground={isEqualizerActive}
         slideIntervalSec={config.slideshowIntervalSec}
         slideTransition={config.slideTransition}
         slideIndex={slideIndex}
+        isPlaying={isPlaying}
+        onVideoEnded={handleNextMedia}
       />
 
       {/* Screen Sleep Dark Layer (if inactive & timeout reached) */}
@@ -227,97 +373,122 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
 
       {/* ── ALWAYS-ON DISPLAY & AMBIENT HUD LAYER ── */}
       <div
-        className="relative z-20 w-full h-full p-6 sm:p-10 flex flex-col justify-between text-white pointer-events-none"
+        className="relative z-20 w-full h-full p-4 sm:p-8 md:p-10 flex flex-col justify-between text-white pointer-events-none"
         style={{
           transform: `translate(${pixelOffset.x}px, ${pixelOffset.y}px)`,
           transition: 'transform 1s ease-in-out',
         }}
       >
-        {/* TOP BAR: Room details on Left, Weather Badge on Right */}
-        <div className="flex items-start justify-between">
-          {/* Left: Device & Ambient status */}
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-lg">
+        {/* ── TOP BAR: Room details on Left, Marquee Now-Playing in Center, Weather on Right ── */}
+        <div className="flex items-start justify-between gap-2">
+          {/* Left: Device & Kombi status */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="p-2 sm:p-2.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-lg">
               <Flame
-                className={`w-6 h-6 ${
+                className={`w-5 h-5 sm:w-6 sm:h-6 ${
                   isKombiActive ? 'text-amber-400 animate-pulse' : 'text-slate-400'
                 }`}
               />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-black tracking-wide text-white drop-shadow-md">
+              <h2 className="text-sm sm:text-base md:text-lg font-black tracking-wide text-white drop-shadow-md">
                 Kombi3D Akıllı Termostat
               </h2>
-              <div className="flex items-center gap-2 text-xs font-medium text-slate-300 drop-shadow">
+              <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-medium text-slate-300 drop-shadow">
                 <span>Oturma Odası</span>
                 <span>•</span>
-                <span
-                  className={
-                    isKombiActive
-                      ? 'text-amber-400 font-bold'
-                      : 'text-slate-400'
-                  }
-                >
-                  {isKombiActive
-                    ? `🔥 Aktif Ateşleme (${targetTemp}°C)`
-                    : '❄️ Bekleme Modu'}
+                <span className={isKombiActive ? 'text-amber-400 font-bold' : 'text-slate-400'}>
+                  {isKombiActive ? `🔥 Aktif (${targetTemp}°C)` : '❄️ Bekleme'}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* RIGHT: Live Weather Animation & Temperature Badge (User requested) */}
-          <div className="flex items-center gap-3 px-4 py-2.5 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/15 shadow-2xl">
+          {/* CENTER: Kayan Yazı Şarkı İsmi Barı (Marquee Now-Playing) */}
+          {config.showMarqueeTrackTitle && config.audioTrack !== 'none' && !isMuted && (
+            <div className="pointer-events-auto hidden md:flex items-center gap-2.5 px-4 py-2 rounded-full bg-black/70 backdrop-blur-2xl border border-pink-400/30 shadow-[0_0_20px_rgba(244,63,94,0.25)] max-w-xs lg:max-w-md overflow-hidden">
+              <div className="relative flex items-center justify-center shrink-0">
+                <Music className="w-3.5 h-3.5 text-pink-400 animate-pulse" />
+              </div>
+              <div className="overflow-hidden whitespace-nowrap text-xs font-bold text-pink-100 flex-1 min-w-0">
+                <span className="animate-marquee tracking-wide">
+                  🎵 Şimdi Çalıyor: {currentTrackTitle || 'Ortam Melodisi'} &nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp; Kombi3D Smart Display &nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp;
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* RIGHT: Live Weather Animation & Temperature Badge */}
+          <div className="flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/15 shadow-2xl">
             {renderWeatherIcon()}
             <div className="text-right">
-              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tighter text-white">
+              <div className="text-xl sm:text-2xl md:text-3xl font-black font-mono tracking-tighter text-white">
                 {weather.temp ?? 14}°C
               </div>
-              <div className="text-[11px] font-semibold text-slate-300 capitalize truncate max-w-[130px]">
-                {weather.cityName || 'Ankara'} • {weather.conditionText || 'Parçalı Bulutlu'}
+              <div className="text-[10px] sm:text-[11px] font-semibold text-slate-300 capitalize truncate max-w-[100px] sm:max-w-[130px]">
+                {weather.cityName || 'Ankara'}
               </div>
             </div>
           </div>
         </div>
 
-        {/* CENTER / MAIN: Large Modern Digital Clock & Date */}
+        {/* ── CENTER / MAIN: Digital Clock + Equalizer + Temp Capsule ── */}
         <div className="my-auto flex flex-col items-center justify-center text-center">
+          {/* Large Clock */}
           <div className="flex items-baseline font-mono tracking-tight font-black drop-shadow-2xl text-white">
-            <span className="text-7xl sm:text-9xl md:text-[11rem] leading-none">
+            <span className="text-6xl sm:text-8xl md:text-[10rem] lg:text-[11.5rem] leading-none">
               {hours}:{minutes}
             </span>
-            <span className="text-2xl sm:text-4xl text-slate-400 font-bold ml-2 sm:ml-4">
+            <span className="text-xl sm:text-3xl md:text-4xl text-slate-400 font-bold ml-2 sm:ml-4">
               {seconds}
             </span>
           </div>
 
-          <p className="mt-3 sm:mt-5 text-sm sm:text-xl font-medium tracking-widest text-slate-300 uppercase drop-shadow-md">
+          <p className="mt-2 sm:mt-4 text-xs sm:text-base md:text-lg font-medium tracking-widest text-slate-300 uppercase drop-shadow-md">
             {dateStr}
           </p>
 
+          {/* Reactive Music Equalizer Visualizer (User requested) */}
+          {isEqualizerActive && (
+            <div className="mt-3 pointer-events-auto w-full flex flex-col items-center justify-center animate-in zoom-in-95 duration-300">
+              <MusicEqualizer
+                enabled={config.equalizerEnabled}
+                style={config.equalizerStyle || 'bars'}
+                isPlaying={isPlaying}
+              />
+              <span className="text-[9px] font-mono tracking-wider text-pink-300/80 uppercase mt-0.5">
+                {config.equalizerStyle === 'wave'
+                  ? 'Dalga Akışı Spektrumu'
+                  : config.equalizerStyle === 'pulse'
+                  ? 'Nabız & Beat Halka'
+                  : 'Neon Frekans Barları'}
+              </span>
+            </div>
+          )}
+
           {/* Quick Temperature Capsule */}
-          <div className="mt-6 flex items-center gap-4 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl pointer-events-auto">
+          <div className="mt-4 sm:mt-6 flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl pointer-events-auto">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Oda:</span>
-              <span className="text-lg font-bold font-mono text-emerald-400">
+              <span className="text-[11px] sm:text-xs text-slate-400">Oda:</span>
+              <span className="text-base sm:text-lg font-bold font-mono text-emerald-400">
                 {currentTemp}°C
               </span>
             </div>
-            <div className="w-px h-5 bg-white/20" />
+            <div className="w-px h-4 sm:h-5 bg-white/20" />
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Hedef:</span>
+              <span className="text-[11px] sm:text-xs text-slate-400">Hedef:</span>
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onSetTargetTemp(Math.max(10, +(targetTemp - 0.5).toFixed(1)));
                 }}
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
+                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
                 title="Hedef Sıcaklığı Azalt"
               >
                 <Minus className="w-3.5 h-3.5" />
               </button>
-              <span className="text-lg font-bold font-mono text-amber-400">
+              <span className="text-base sm:text-lg font-bold font-mono text-amber-400">
                 {targetTemp}°C
               </span>
               <button
@@ -326,7 +497,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
                   e.stopPropagation();
                   onSetTargetTemp(Math.min(32, +(targetTemp + 0.5).toFixed(1)));
                 }}
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
+                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
                 title="Hedef Sıcaklığı Artır"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -335,28 +506,47 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
           </div>
         </div>
 
-        {/* BOTTOM HUD / FLOATING CONTROLS (Fades away after 4s inactivity) */}
+        {/* ── BOTTOM HUD / FLOATING MEDIA CONTROLS & LUXURY BAR ── */}
         <div
-          className={`flex items-center justify-between transition-opacity duration-500 ${
+          className={`flex flex-col sm:flex-row items-center justify-between gap-3 transition-opacity duration-500 ${
             isControlsVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
           }`}
         >
-          {/* Left: Mode Badge & Quick Preset Switch */}
-          <div className="flex items-center gap-2 bg-black/50 backdrop-blur-xl px-3.5 py-2 rounded-2xl border border-white/15">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+          {/* Mode Badge */}
+          <div className="flex items-center gap-2 bg-black/50 backdrop-blur-xl px-3.5 py-1.5 rounded-2xl border border-white/15">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span className="text-[11px] font-bold text-slate-200 uppercase tracking-wider">
               {config.mode === 'aod'
                 ? 'Always-On Display'
                 : config.mode === 'slideshow'
-                ? 'Slayt Gösterisi'
+                ? 'Çoklu Slayt Gösterisi'
                 : config.mode === 'video_audio_muted_mp3'
-                ? 'Sessiz Video + Müzik'
-                : 'Canlı Ambiyans'}
+                ? 'Sessiz Video + MP3'
+                : config.mode === 'video'
+                ? 'Canlı Video Döngüsü'
+                : 'Sabit Görsel Teması'}
             </span>
           </div>
 
-          {/* Right: Interactive Toolbar (Mute, Brightness, Fullscreen, Exit) */}
-          <div className="flex items-center gap-2 bg-black/60 backdrop-blur-2xl px-3 py-2 rounded-2xl border border-white/20 shadow-2xl">
+          {/* CENTER: Dokununca Genişleyen Lüks Medya Kontrol Barı (User requested) */}
+          <LuxuryMediaBar
+            mediaType={activeMediaInfo.type}
+            title={activeMediaInfo.title}
+            counterText={activeMediaInfo.counter}
+            isPlaying={isPlaying}
+            onTogglePlay={handleTogglePlay}
+            onPrevious={handlePreviousMedia}
+            onNext={handleNextMedia}
+            isMuted={isMuted}
+            onToggleMute={
+              config.audioTrack !== 'none'
+                ? () => setIsMuted((prev) => !prev)
+                : undefined
+            }
+          />
+
+          {/* Right Toolbar: Brightness Slider, Fullscreen & Exit */}
+          <div className="flex items-center gap-2 bg-black/60 backdrop-blur-2xl px-3 py-1.5 rounded-2xl border border-white/20 shadow-2xl">
             {/* Interactive Brightness Slider */}
             <div
               className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-slate-300 bg-white/5 rounded-xl border border-white/10"
@@ -376,27 +566,10 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
                 }}
                 className="w-16 sm:w-20 accent-amber-400 cursor-pointer h-1 rounded-lg"
               />
-              <span className="font-mono text-[10px] w-7 text-right">%{config.brightnessPercent || 85}</span>
+              <span className="font-mono text-[10px] w-7 text-right">
+                %{config.brightnessPercent || 85}
+              </span>
             </div>
-
-            {/* Mute / Unmute Audio */}
-            {config.audioTrack !== 'none' && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsMuted(!isMuted);
-                }}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-90 text-white transition-all cursor-pointer"
-                title={isMuted ? 'Sesi Aç' : 'Sesi Kapat'}
-              >
-                {isMuted ? (
-                  <VolumeX className="w-4 h-4 text-rose-400" />
-                ) : (
-                  <Volume2 className="w-4 h-4 text-emerald-400" />
-                )}
-              </button>
-            )}
 
             {/* Fullscreen Toggle */}
             <button
@@ -415,7 +588,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
               )}
             </button>
 
-            {/* Close / Return to Normal App */}
+            {/* Exit / Return */}
             <button
               type="button"
               onClick={(e) => {

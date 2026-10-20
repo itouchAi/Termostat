@@ -67,3 +67,25 @@ html:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   perspective-origin: 50% 50%;
   transform-style: preserve-3d;
 }
+
+/* Kayan yazı / Marquee track title animation */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee-scroll 12s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+

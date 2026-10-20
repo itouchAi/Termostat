@@ -28,6 +28,9 @@ import {
   Link,
   FileVideo,
   Volume2,
+  Layers,
+  Activity,
+  Maximize,
 } from 'lucide-react';
 import { translations, type Language } from '../utils/i18n.ts';
 import type { SmartDisplayConfig } from '../types/smartDisplay.ts';
@@ -400,13 +403,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 )}
 
-                {/* 3. Görsel / Video Teması & Harici Medya */}
+                {/* 3. Görsel / Video Teması & Çoklu Medya Seçimi */}
                 {smartDisplayConfig.mode !== 'aod' && (
-                  <div className="flex flex-col gap-2 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                  <div className="flex flex-col gap-2.5 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center justify-between">
                       <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                         <ImageIcon className="w-3.5 h-3.5 text-blue-500" />
-                        <span>Görsel / Video Teması & Seçimi:</span>
+                        <span>Görsel / Video Teması:</span>
                       </label>
                       <span className="text-[9px] font-semibold text-slate-400">
                         {smartDisplayConfig.mode === 'image' ? '📸 Tekli Görsel' : '🎬 Canlı / Hareketli'}
@@ -443,44 +446,125 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       ))}
                     </div>
 
-                    {/* Dışarıdan Görsel / Video Ekleme Kutusu */}
+                    {/* Görsel Yerleşim Modu: Oto / Fit / Stretch (User requested) */}
+                    <div className="flex flex-col gap-1 pt-1 border-t border-slate-200/80 dark:border-slate-700">
+                      <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <Maximize className="w-3 h-3 text-indigo-500" />
+                        Görsel Yerleşim Modu:
+                      </span>
+                      <div className="grid grid-cols-3 gap-1 text-[10px]">
+                        {[
+                          { id: 'cover', label: '🖼️ Oto (Cover)', desc: 'Ekranı doldur' },
+                          { id: 'contain', label: '📐 Fit (Sığdır)', desc: 'Orantılı tam boy' },
+                          { id: 'fill', label: '↔️ Stretch (Uzat)', desc: 'Ekran boyu esnet' },
+                        ].map((fit) => (
+                          <button
+                            key={fit.id}
+                            type="button"
+                            onClick={() =>
+                              onUpdateSmartDisplayConfig?.({
+                                imageFitMode: fit.id as any,
+                              })
+                            }
+                            className={`p-1.5 rounded-lg border text-center transition-all cursor-pointer font-bold ${
+                              (smartDisplayConfig.imageFitMode || 'cover') === fit.id
+                                ? 'bg-indigo-600 text-white border-indigo-500'
+                                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600'
+                            }`}
+                          >
+                            <div className="truncate">{fit.label}</div>
+                            <div className="text-[8px] opacity-75 font-normal truncate mt-0.5">
+                              {fit.desc}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Dışarıdan Çoklu Video / Görsel Yükleme Paneli */}
                     {(smartDisplayConfig.presetTheme === 'custom' ||
+                      (smartDisplayConfig.customImages && smartDisplayConfig.customImages.length > 0) ||
+                      (smartDisplayConfig.customVideos && smartDisplayConfig.customVideos.length > 0) ||
                       smartDisplayConfig.customImageUrl ||
                       smartDisplayConfig.customVideoUrl) && (
-                      <div className="mt-1 p-2 rounded-lg bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/60 flex flex-col gap-2 animate-in fade-in">
-                        {/* Harici Video (Eğer video modundaysa) */}
+                      <div className="mt-1 p-2 rounded-lg bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/60 flex flex-col gap-2.5 animate-in fade-in">
+                        {/* Çoklu Video Seçimi (Video modları için) */}
                         {(smartDisplayConfig.mode === 'video' ||
                           smartDisplayConfig.mode === 'video_audio_muted_mp3') && (
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                              <FileVideo className="w-3 h-3 text-indigo-500" />
-                              Dışarıdan Video URL'si (MP4 / WebM):
-                            </span>
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                <FileVideo className="w-3 h-3 text-indigo-500" />
+                                Çoklu Video Oynatma Listesi:
+                              </span>
+                              <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                {smartDisplayConfig.customVideos?.length || 0} Video
+                              </span>
+                            </div>
+
+                            {/* Video listesi */}
+                            {smartDisplayConfig.customVideos && smartDisplayConfig.customVideos.length > 0 && (
+                              <div className="max-h-24 overflow-y-auto custom-scrollbar flex flex-col gap-1 p-1 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">
+                                {smartDisplayConfig.customVideos.map((vid, idx) => (
+                                  <div
+                                    key={vid.id || idx}
+                                    className="flex items-center justify-between px-2 py-1 bg-white dark:bg-slate-800 rounded text-[9px] font-medium border border-slate-200 dark:border-slate-700"
+                                  >
+                                    <span className="truncate flex-1 min-w-0 pr-1">
+                                      {idx + 1}. {vid.name}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = smartDisplayConfig.customVideos.filter(
+                                          (_, i) => i !== idx
+                                        );
+                                        onUpdateSmartDisplayConfig?.({ customVideos: updated });
+                                      }}
+                                      className="text-rose-500 hover:text-rose-700 p-0.5 rounded cursor-pointer"
+                                      title="Videoyu Listeden Sil"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
                             <div className="flex gap-1">
                               <input
                                 type="text"
-                                placeholder="https://example.com/video.mp4"
+                                placeholder="Video URL'si veya çoklu dosya seçin..."
                                 value={smartDisplayConfig.customVideoUrl || ''}
                                 onChange={(e) =>
                                   onUpdateSmartDisplayConfig?.({
                                     customVideoUrl: e.target.value,
+                                    presetTheme: 'custom',
                                   })
                                 }
                                 className="flex-1 px-2 py-1 text-[10px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white"
                               />
-                              <label className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] rounded-lg cursor-pointer flex items-center gap-1 shrink-0">
+                              <label className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] rounded-lg cursor-pointer flex items-center gap-1 shrink-0">
                                 <Upload className="w-2.5 h-2.5" />
-                                <span>Dosya</span>
+                                <span>Çoklu Video Seç</span>
                                 <input
                                   type="file"
+                                  multiple
                                   accept="video/mp4,video/webm"
                                   className="hidden"
                                   onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      const url = URL.createObjectURL(file);
+                                    const files = e.target.files;
+                                    if (files && files.length > 0) {
+                                      const newVideos = Array.from(files).map((f) => ({
+                                        id: Math.random().toString(36).substring(2, 9),
+                                        name: f.name,
+                                        url: URL.createObjectURL(f),
+                                      }));
                                       onUpdateSmartDisplayConfig?.({
-                                        customVideoUrl: url,
+                                        customVideos: [
+                                          ...(smartDisplayConfig.customVideos || []),
+                                          ...newVideos,
+                                        ],
                                         presetTheme: 'custom',
                                       });
                                     }
@@ -491,47 +575,96 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           </div>
                         )}
 
-                        {/* Harici Görsel (Eğer image veya slideshow ise) */}
+                        {/* Çoklu Görsel / Slayt Seçimi (Görsel ve Slayt modları için) */}
                         {(smartDisplayConfig.mode === 'image' ||
                           smartDisplayConfig.mode === 'slideshow') && (
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                              <ImageIcon className="w-3 h-3 text-blue-500" />
-                              Dışarıdan Resim URL'si veya Cihazdan Seç:
-                            </span>
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                <ImageIcon className="w-3 h-3 text-blue-500" />
+                                Çoklu Görsel & Slayt Listesi:
+                              </span>
+                              <span className="text-[9px] font-mono font-bold text-blue-600 dark:text-blue-400">
+                                {smartDisplayConfig.customImages?.length || 0} Görsel Yüklendi
+                              </span>
+                            </div>
+
+                            {/* Yüklenen görsellerin küçük resim listesi */}
+                            {smartDisplayConfig.customImages && smartDisplayConfig.customImages.length > 0 && (
+                              <div className="max-h-28 overflow-y-auto custom-scrollbar flex flex-col gap-1 p-1 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">
+                                {smartDisplayConfig.customImages.map((img, idx) => (
+                                  <div
+                                    key={img.id || idx}
+                                    className="flex items-center justify-between px-2 py-1 bg-white dark:bg-slate-800 rounded text-[9px] font-medium border border-slate-200 dark:border-slate-700 gap-1.5"
+                                  >
+                                    <img
+                                      src={img.url}
+                                      alt="Önizleme"
+                                      className="w-5 h-5 rounded object-cover border border-slate-300 dark:border-slate-600 shrink-0"
+                                    />
+                                    <span className="truncate flex-1 min-w-0">{img.name}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = smartDisplayConfig.customImages.filter(
+                                          (_, i) => i !== idx
+                                        );
+                                        onUpdateSmartDisplayConfig?.({ customImages: updated });
+                                      }}
+                                      className="text-rose-500 hover:text-rose-700 p-0.5 rounded cursor-pointer shrink-0"
+                                      title="Görseli Listeden Sil"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
                             <div className="flex gap-1">
                               <input
                                 type="text"
-                                placeholder="https://example.com/resim.jpg"
+                                placeholder="Görsel URL'si veya çoklu fotoğraf seçin..."
                                 value={smartDisplayConfig.customImageUrl || ''}
                                 onChange={(e) =>
                                   onUpdateSmartDisplayConfig?.({
                                     customImageUrl: e.target.value,
+                                    presetTheme: 'custom',
                                   })
                                 }
                                 className="flex-1 px-2 py-1 text-[10px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white"
                               />
-                              <label className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-lg cursor-pointer flex items-center gap-1 shrink-0">
+                              <label className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-lg cursor-pointer flex items-center gap-1 shrink-0">
                                 <Upload className="w-2.5 h-2.5" />
-                                <span>Yükle</span>
+                                <span>Çoklu Görsel Seç</span>
                                 <input
                                   type="file"
+                                  multiple
                                   accept="image/*"
                                   className="hidden"
                                   onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      const reader = new FileReader();
-                                      reader.onload = (ev) => {
-                                        const res = ev.target?.result as string;
-                                        if (res) {
-                                          onUpdateSmartDisplayConfig?.({
-                                            customImageUrl: res,
-                                            presetTheme: 'custom',
-                                          });
-                                        }
-                                      };
-                                      reader.readAsDataURL(file);
+                                    const files = e.target.files;
+                                    if (files && files.length > 0) {
+                                      Array.from(files).forEach((file) => {
+                                        const reader = new FileReader();
+                                        reader.onload = (ev) => {
+                                          const dataUrl = ev.target?.result as string;
+                                          if (dataUrl) {
+                                            onUpdateSmartDisplayConfig?.({
+                                              customImages: [
+                                                ...(smartDisplayConfig.customImages || []),
+                                                {
+                                                  id: Math.random().toString(36).substring(2, 9),
+                                                  name: file.name,
+                                                  url: dataUrl,
+                                                },
+                                              ],
+                                              presetTheme: 'custom',
+                                            });
+                                          }
+                                        };
+                                        reader.readAsDataURL(file);
+                                      });
                                     }
                                   }}
                                 />
@@ -544,12 +677,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 )}
 
-                {/* 4. Arka Plan Sesi / MP3 Müzik & Dışarıdan MP3 */}
-                <div className="flex flex-col gap-2 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                {/* 4. Arka Plan Sesi / MP3 Müzik & Çoklu MP3 & Ekolayzır & Kayan Yazı */}
+                <div className="flex flex-col gap-2.5 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                       <Music className="w-3.5 h-3.5 text-pink-500" />
-                      <span>Ortam Sesi & MP3 Müzik Listesi:</span>
+                      <span>Ortam Sesi & MP3 Çalma Listesi:</span>
                     </label>
                     <span className="text-[9px] font-mono text-pink-600 dark:text-pink-400">
                       Ses: %{Math.round((smartDisplayConfig.audioVolume ?? 0.5) * 100)}
@@ -586,16 +719,51 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     ))}
                   </div>
 
-                  {/* Dışarıdan MP3 URL veya Dosya Seçimi */}
+                  {/* Dışarıdan Çoklu MP3 Yükleme Paneli */}
                   {smartDisplayConfig.audioTrack === 'custom' && (
-                    <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-pink-200 dark:border-pink-900/60 flex flex-col gap-1.5 animate-in fade-in">
-                      <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">
-                        Harici MP3 / Canlı Akış URL'si:
-                      </span>
+                    <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-pink-200 dark:border-pink-900/60 flex flex-col gap-2 animate-in fade-in">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                          Çoklu MP3 Müzik Listesi:
+                        </span>
+                        <span className="text-[9px] font-mono font-bold text-pink-600">
+                          {smartDisplayConfig.customAudioTracks?.length || 0} Parça
+                        </span>
+                      </div>
+
+                      {/* Çoklu parça listesi */}
+                      {smartDisplayConfig.customAudioTracks && smartDisplayConfig.customAudioTracks.length > 0 && (
+                        <div className="max-h-24 overflow-y-auto custom-scrollbar flex flex-col gap-1 p-1 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">
+                          {smartDisplayConfig.customAudioTracks.map((trk, idx) => (
+                            <div
+                              key={trk.id || idx}
+                              className="flex items-center justify-between px-2 py-1 bg-white dark:bg-slate-800 rounded text-[9px] font-medium border border-slate-200 dark:border-slate-700"
+                            >
+                              <span className="truncate flex-1 min-w-0 pr-1">
+                                {idx + 1}. {trk.name}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = smartDisplayConfig.customAudioTracks.filter(
+                                    (_, i) => i !== idx
+                                  );
+                                  onUpdateSmartDisplayConfig?.({ customAudioTracks: updated });
+                                }}
+                                className="text-rose-500 hover:text-rose-700 p-0.5 rounded cursor-pointer"
+                                title="Parçayı Listeden Sil"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="flex gap-1">
                         <input
                           type="text"
-                          placeholder="https://example.com/muzik.mp3"
+                          placeholder="https://example.com/muzik.mp3 veya dosya seçin..."
                           value={smartDisplayConfig.customAudioUrl || ''}
                           onChange={(e) =>
                             onUpdateSmartDisplayConfig?.({
@@ -604,19 +772,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           }
                           className="flex-1 px-2 py-1 text-[10px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white"
                         />
-                        <label className="px-2 py-1 bg-pink-600 hover:bg-pink-700 text-white font-bold text-[10px] rounded-lg cursor-pointer flex items-center gap-1 shrink-0">
+                        <label className="px-2.5 py-1 bg-pink-600 hover:bg-pink-700 text-white font-bold text-[10px] rounded-lg cursor-pointer flex items-center gap-1 shrink-0">
                           <Upload className="w-2.5 h-2.5" />
-                          <span>MP3 Seç</span>
+                          <span>Çoklu MP3 Seç</span>
                           <input
                             type="file"
+                            multiple
                             accept="audio/mp3,audio/*"
                             className="hidden"
                             onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const url = URL.createObjectURL(file);
+                              const files = e.target.files;
+                              if (files && files.length > 0) {
+                                const newTracks = Array.from(files).map((f) => ({
+                                  id: Math.random().toString(36).substring(2, 9),
+                                  name: f.name.replace(/\.[^/.]+$/, ''),
+                                  url: URL.createObjectURL(f),
+                                }));
                                 onUpdateSmartDisplayConfig?.({
-                                  customAudioUrl: url,
+                                  customAudioTracks: [
+                                    ...(smartDisplayConfig.customAudioTracks || []),
+                                    ...newTracks,
+                                  ],
                                 });
                               }
                             }}
@@ -625,6 +801,96 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                     </div>
                   )}
+
+                  {/* Kayan Yazı Şarkı İsmi Seçeneği (Aç / Kapa - User requested) */}
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[11px]">
+                    <div>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                        Üst Kayan Yazı Şarkı İsmi
+                      </span>
+                      <span className="text-[9px] text-slate-400">
+                        Ekranın üstünde çalan parçayı kayan bant olarak gösterir
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateSmartDisplayConfig?.({
+                          showMarqueeTrackTitle: !smartDisplayConfig.showMarqueeTrackTitle,
+                        })
+                      }
+                      className={`px-2 py-0.5 rounded-full font-bold text-[10px] cursor-pointer transition-all ${
+                        smartDisplayConfig.showMarqueeTrackTitle !== false
+                          ? 'bg-pink-600 text-white'
+                          : 'bg-slate-300 dark:bg-slate-600 text-slate-600 dark:text-slate-300'
+                      }`}
+                    >
+                      {smartDisplayConfig.showMarqueeTrackTitle !== false ? 'Açık' : 'Kapalı'}
+                    </button>
+                  </div>
+
+                  {/* Canlı Müzik Ekolayzır Modu & Tema Seçimi (User requested) */}
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-900/60 flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <div>
+                        <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                          <Activity className="w-3.5 h-3.5 text-purple-500" />
+                          Canlı Müzik Ekolayzır Modu
+                        </span>
+                        <span className="text-[9px] text-slate-400">
+                          Açıkken arka plan hafif blur olur, ekolayzır ön planda parlar
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onUpdateSmartDisplayConfig?.({
+                            equalizerEnabled: !smartDisplayConfig.equalizerEnabled,
+                          })
+                        }
+                        className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] cursor-pointer transition-all ${
+                          smartDisplayConfig.equalizerEnabled
+                            ? 'bg-purple-600 text-white shadow-xs'
+                            : 'bg-slate-300 dark:bg-slate-600 text-slate-600 dark:text-slate-300'
+                        }`}
+                      >
+                        {smartDisplayConfig.equalizerEnabled ? 'Aktif' : 'Pasif'}
+                      </button>
+                    </div>
+
+                    {/* Ekolayzır Temaları */}
+                    {smartDisplayConfig.equalizerEnabled && (
+                      <div className="flex flex-col gap-1 pt-1.5 border-t border-slate-100 dark:border-slate-800 animate-in fade-in">
+                        <span className="text-[9px] font-bold text-slate-500">
+                          Ekolayzır Stili:
+                        </span>
+                        <div className="grid grid-cols-3 gap-1 text-[10px]">
+                          {[
+                            { id: 'bars', label: '📊 Neon Barlar' },
+                            { id: 'wave', label: '🌊 Sıvı Akış' },
+                            { id: 'pulse', label: '💫 Nabız Halka' },
+                          ].map((eq) => (
+                            <button
+                              key={eq.id}
+                              type="button"
+                              onClick={() =>
+                                onUpdateSmartDisplayConfig?.({
+                                  equalizerStyle: eq.id as any,
+                                })
+                              }
+                              className={`py-1 rounded-lg border font-bold text-center cursor-pointer transition-all ${
+                                (smartDisplayConfig.equalizerStyle || 'bars') === eq.id
+                                  ? 'bg-purple-600 text-white border-purple-500'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                              }`}
+                            >
+                              {eq.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Ses Seviyesi Slider */}
                   {smartDisplayConfig.audioTrack !== 'none' && (

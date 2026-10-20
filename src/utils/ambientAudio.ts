@@ -5,8 +5,12 @@ class AmbientAudioEngine {
   private ctx: AudioContext | null = null;
   private currentTrack: string = 'none';
   private masterGain: GainNode | null = null;
+  private analyser: AnalyserNode | null = null;
   private activeNodes: (AudioNode | number)[] = [];
   private isRunning: boolean = false;
+  private isPausedState: boolean = false;
+  private audioElement: HTMLAudioElement | null = null;
+  private onEndedCallback: (() => void) | null = null;
 
   private initContext() {
     if (!this.ctx) {
@@ -15,7 +19,10 @@ class AmbientAudioEngine {
         this.ctx = new AudioCtx();
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.value = 0.5;
-        this.masterGain.connect(this.ctx.destination);
+        this.analyser = this.ctx.createAnalyser();
+        this.analyser.fftSize = 64;
+        this.masterGain.connect(this.analyser);
+        this.analyser.connect(this.ctx.destination);
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
@@ -23,7 +30,16 @@ class AmbientAudioEngine {
     }
   }
 
-  private audioElement: HTMLAudioElement | null = null;
+  public setOnEnded(cb: (() => void) | null) {
+    this.onEndedCallback = cb;
+    if (this.audioElement) {
+      this.audioElement.onended = () => {
+        if (this.onEndedCallback) {
+          this.onEndedCallback();
+        }
+      };
+    }
+  }
 
   public setVolume(volume: number) {
     const clamped = Math.max(0, Math.min(1, volume));
@@ -32,6 +48,57 @@ class AmbientAudioEngine {
     }
     if (this.audioElement) {
       this.audioElement.volume = clamped;
+    }
+  }
+
+  public pause() {
+    this.isPausedState = true;
+    if (this.audioElement) {
+      this.audioElement.pause();
+    }
+    if (this.ctx && this.ctx.state === 'running') {
+      this.ctx.suspend().catch(() => {});
+    }
+  }
+
+  public resume() {
+    this.isPausedState = false;
+    if (this.audioElement) {
+      this.audioElement.play().catch(() => {});
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
+  }
+
+  public isPaused(): boolean {
+    return this.isPausedState;
+  }
+
+  public isPlaying(): boolean {
+    return this.isRunning && !this.isPausedState;
+  }
+
+  public getCurrentTrack(): string {
+    return this.currentTrack;
+  }
+
+  public getFrequencyData(array: Uint8Array): void {
+    if (!this.isRunning || this.isPausedState) {
+      array.fill(0);
+      return;
+    }
+    if (this.analyser && this.currentTrack !== 'custom') {
+      this.analyser.getByteFrequencyData(array as any);
+      return;
+    }
+    // Animated rhythmic spectrum for custom audio / fallback
+    const t = Date.now() * 0.005;
+    for (let i = 0; i < array.length; i++) {
+      const wave = Math.sin(t * 1.5 + i * 0.4) * 0.5 + 0.5;
+      const beat = Math.sin(t * 3.0) > 0.4 ? 1.4 : 0.8;
+      const decay = 1 - (i / array.length) * 0.5;
+      array[i] = Math.min(255, Math.floor(wave * 200 * beat * decay + Math.random() * 35));
     }
   }
 
@@ -44,14 +111,22 @@ class AmbientAudioEngine {
 
     this.currentTrack = track;
     this.isRunning = true;
+    this.isPausedState = false;
 
     // Custom audio track via external MP3 URL
     if (track === 'custom' && customUrl && customUrl.trim()) {
       try {
         const audio = new Audio(customUrl.trim());
-        audio.loop = true;
         audio.volume = Math.max(0, Math.min(1, volume));
         audio.crossOrigin = 'anonymous';
+        audio.onended = () => {
+          if (this.onEndedCallback) {
+            this.onEndedCallback();
+          } else {
+            audio.currentTime = 0;
+            audio.play().catch(() => {});
+          }
+        };
         audio.play().catch((err) => {
           console.warn('Custom audio playback could not start:', err);
         });

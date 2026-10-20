@@ -1,14 +1,27 @@
 import React, { useEffect, useRef } from 'react';
-import type { PresetVisualTheme, SmartDisplayMode, SlideTransition } from '../../types/smartDisplay.ts';
+import type {
+  PresetVisualTheme,
+  SmartDisplayMode,
+  SlideTransition,
+  ImageFitMode,
+  MediaPlaylistItem,
+} from '../../types/smartDisplay.ts';
 
 interface AmbientVisualCanvasProps {
   mode: SmartDisplayMode;
   theme: PresetVisualTheme;
   customImageUrl?: string;
   customVideoUrl?: string;
+  customImages?: MediaPlaylistItem[];
+  customVideos?: MediaPlaylistItem[];
+  activeVideoIndex?: number;
+  imageFitMode?: ImageFitMode;
+  blurBackground?: boolean;
   slideIntervalSec: number;
   slideTransition: SlideTransition;
   slideIndex: number;
+  isPlaying?: boolean;
+  onVideoEnded?: () => void;
 }
 
 // Distinct high-resolution ambient photos mapped to each preset theme
@@ -64,79 +77,142 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
   theme,
   customImageUrl,
   customVideoUrl,
+  customImages = [],
+  customVideos = [],
+  activeVideoIndex = 0,
+  imageFitMode = 'cover',
+  blurBackground = false,
   slideTransition,
   slideIndex,
+  isPlaying = true,
+  onVideoEnded,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Play/pause video element in sync
+  useEffect(() => {
+    if (!videoRef.current) return;
+    if (isPlaying) {
+      videoRef.current.play().catch(() => {});
+    } else {
+      videoRef.current.pause();
+    }
+  }, [isPlaying]);
+
+  // Determine CSS background-size from imageFitMode
+  const bgSizeStyle =
+    imageFitMode === 'contain'
+      ? 'contain'
+      : imageFitMode === 'fill'
+      ? '100% 100%'
+      : 'cover';
+
+  // Determine CSS object-fit for video
+  const videoFitClass =
+    imageFitMode === 'contain'
+      ? 'object-contain'
+      : imageFitMode === 'fill'
+      ? 'object-fill'
+      : 'object-cover';
+
+  // Background filter for equalizer mode blur
+  const blurFilterStyle: React.CSSProperties = {
+    filter: blurBackground ? 'blur(12px) brightness(0.65)' : 'none',
+    transition: 'filter 0.5s ease-out',
+  };
 
   // 1. AOD Mode: Pure black screen
   if (mode === 'aod') {
     return <div className="absolute inset-0 bg-black" />;
   }
 
-  // 2. Video Mode with Custom Video URL
+  // 2. Video Mode: Active video from playlist or customVideoUrl
   const isVideoMode = mode === 'video' || mode === 'video_audio_muted_mp3';
-  if (isVideoMode && customVideoUrl && customVideoUrl.trim()) {
+  const effectiveVideoUrl =
+    customVideos.length > 0
+      ? customVideos[activeVideoIndex % customVideos.length]?.url
+      : customVideoUrl?.trim();
+
+  if (isVideoMode && effectiveVideoUrl) {
     return (
-      <div className="absolute inset-0 overflow-hidden bg-black">
+      <div className="absolute inset-0 overflow-hidden bg-black" style={blurFilterStyle}>
         <video
-          src={customVideoUrl.trim()}
-          autoPlay
-          loop
+          ref={videoRef}
+          key={effectiveVideoUrl}
+          src={effectiveVideoUrl}
+          autoPlay={isPlaying}
+          loop={customVideos.length <= 1}
           muted={mode === 'video_audio_muted_mp3'}
           playsInline
-          className="w-full h-full object-cover"
+          onEnded={onVideoEnded}
+          className={`w-full h-full ${videoFitClass}`}
         />
         <div className="absolute inset-0 bg-radial from-transparent via-black/30 to-black/75 pointer-events-none" />
       </div>
     );
   }
 
-  // 3. Single Image Mode: Strictly uses selected theme's photo or custom image
+  // 3. Single Image Mode: Selected image from playlist, customImageUrl, or preset theme
   if (mode === 'image') {
-    const photoUrl =
-      theme === 'custom' && customImageUrl && customImageUrl.trim()
-        ? customImageUrl.trim()
-        : THEME_PHOTOS[theme]?.url || THEME_PHOTOS.fireplace.url;
+    let photoUrl = '';
+    if (customImages.length > 0) {
+      photoUrl = customImages[slideIndex % customImages.length]?.url || customImages[0]?.url;
+    } else if (theme === 'custom' && customImageUrl && customImageUrl.trim()) {
+      photoUrl = customImageUrl.trim();
+    } else {
+      photoUrl = THEME_PHOTOS[theme]?.url || THEME_PHOTOS.fireplace.url;
+    }
 
     return (
-      <div className="absolute inset-0 overflow-hidden bg-black">
+      <div className="absolute inset-0 overflow-hidden bg-black" style={blurFilterStyle}>
         <div
           key={photoUrl}
-          className="absolute inset-0 bg-cover bg-center transition-all duration-1000 animate-in fade-in"
-          style={{ backgroundImage: `url(${photoUrl})` }}
+          className="absolute inset-0 bg-no-repeat bg-center transition-all duration-1000 animate-in fade-in"
+          style={{
+            backgroundImage: `url(${photoUrl})`,
+            backgroundSize: bgSizeStyle,
+          }}
         >
-          {/* Dark vignette overlay for contrast and clock readability */}
+          {/* Subtle dark vignette overlay for contrast and clock readability */}
           <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/80" />
         </div>
       </div>
     );
   }
 
-  // 4. Slideshow Mode: Cycles through all themes or custom images
+  // 4. Slideshow Mode: Cycles through customImages playlist or built-in theme photos
   if (mode === 'slideshow') {
-    const photoList = ALL_THEME_KEYS.map((k) => THEME_PHOTOS[k]);
-    if (customImageUrl && customImageUrl.trim()) {
-      photoList.unshift({
-        url: customImageUrl.trim(),
-        title: 'Özel Görselim',
-        desc: 'Eklediğiniz fotoğraf',
-      });
+    let currentPhotoUrl = '';
+    if (customImages.length > 0) {
+      currentPhotoUrl = customImages[slideIndex % customImages.length]?.url;
+    } else {
+      const photoList = ALL_THEME_KEYS.map((k) => THEME_PHOTOS[k]);
+      if (customImageUrl && customImageUrl.trim()) {
+        photoList.unshift({
+          url: customImageUrl.trim(),
+          title: 'Özel Görselim',
+          desc: 'Eklediğiniz fotoğraf',
+        });
+      }
+      currentPhotoUrl = photoList[slideIndex % photoList.length]?.url;
     }
-    const currentPhoto = photoList[slideIndex % photoList.length];
 
     return (
-      <div className="absolute inset-0 overflow-hidden bg-black">
+      <div className="absolute inset-0 overflow-hidden bg-black" style={blurFilterStyle}>
         <div
-          key={slideIndex}
-          className={`absolute inset-0 bg-cover bg-center transition-all duration-1000 ${
+          key={`${currentPhotoUrl}_${slideIndex}`}
+          className={`absolute inset-0 bg-no-repeat bg-center transition-all duration-1000 ${
             slideTransition === 'zoom'
               ? 'animate-in zoom-in-105 duration-1000'
               : slideTransition === 'slide'
               ? 'animate-in slide-in-from-right duration-700'
               : 'animate-in fade-in duration-1000'
           }`}
-          style={{ backgroundImage: `url(${currentPhoto.url})` }}
+          style={{
+            backgroundImage: `url(${currentPhotoUrl})`,
+            backgroundSize: bgSizeStyle,
+          }}
         >
           <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/80" />
         </div>
@@ -146,18 +222,18 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
 
   // 5. Canvas Particle Visualizer for Live Fireplace, Rain, Snow, Aurora
   return (
-    <CanvasParticleVisualizer
-      canvasRef={canvasRef}
-      theme={theme}
-    />
+    <div className="absolute inset-0" style={blurFilterStyle}>
+      <CanvasParticleVisualizer canvasRef={canvasRef} theme={theme} isPlaying={isPlaying} />
+    </div>
   );
 };
 
-// Extracted Canvas Particle Visualizer
+// Canvas Particle Visualizer
 const CanvasParticleVisualizer: React.FC<{
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   theme: PresetVisualTheme;
-}> = ({ canvasRef, theme }) => {
+  isPlaying?: boolean;
+}> = ({ canvasRef, theme, isPlaying = true }) => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -219,7 +295,9 @@ const CanvasParticleVisualizer: React.FC<{
     let time = 0;
 
     const render = () => {
-      time += 0.02;
+      if (isPlaying) {
+        time += 0.02;
+      }
 
       if (theme === 'fireplace') {
         const grad = ctx.createRadialGradient(
@@ -239,18 +317,20 @@ const CanvasParticleVisualizer: React.FC<{
         ctx.globalCompositeOperation = 'lighter';
         for (let i = 0; i < particles.length; i++) {
           const p = particles[i];
-          p.y += p.speedY;
-          p.x += p.speedX + Math.sin(time + i) * 0.8;
-          p.life -= p.decay;
-          p.size *= 0.985;
+          if (isPlaying) {
+            p.y += p.speedY;
+            p.x += p.speedX + Math.sin(time + i) * 0.8;
+            p.life -= p.decay;
+            p.size *= 0.985;
 
-          if (p.life <= 0 || p.size < 2 || p.y < height * 0.2) {
-            p.x = width * 0.5 + (Math.random() - 0.5) * width * 0.45;
-            p.y = height + 10;
-            p.size = Math.random() * 28 + 12;
-            p.speedY = -(Math.random() * 3.5 + 2);
-            p.life = 1.0;
-            p.hue = Math.random() * 40 + 10;
+            if (p.life <= 0 || p.size < 2 || p.y < height * 0.2) {
+              p.x = width * 0.5 + (Math.random() - 0.5) * width * 0.45;
+              p.y = height + 10;
+              p.size = Math.random() * 28 + 12;
+              p.speedY = -(Math.random() * 3.5 + 2);
+              p.life = 1.0;
+              p.hue = Math.random() * 40 + 10;
+            }
           }
 
           const radial = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
@@ -274,11 +354,13 @@ const CanvasParticleVisualizer: React.FC<{
         ctx.fillStyle = '#ffffff';
         for (let i = 0; i < particles.length; i++) {
           const p = particles[i];
-          p.y += p.speedY;
-          p.x += Math.sin(time + i * 0.5) * 0.6;
-          if (p.y > height) {
-            p.y = -10;
-            p.x = Math.random() * width;
+          if (isPlaying) {
+            p.y += p.speedY;
+            p.x += Math.sin(time + i * 0.5) * 0.6;
+            if (p.y > height) {
+              p.y = -10;
+              p.x = Math.random() * width;
+            }
           }
 
           ctx.beginPath();
@@ -297,11 +379,13 @@ const CanvasParticleVisualizer: React.FC<{
         ctx.lineWidth = 1.2;
         for (let i = 0; i < particles.length; i++) {
           const p = particles[i];
-          p.y += p.speedY;
-          p.x -= 1.2;
-          if (p.y > height) {
-            p.y = -p.length;
-            p.x = Math.random() * (width + 100);
+          if (isPlaying) {
+            p.y += p.speedY;
+            p.x -= 1.2;
+            if (p.y > height) {
+              p.y = -p.length;
+              p.x = Math.random() * (width + 100);
+            }
           }
 
           ctx.beginPath();
@@ -358,7 +442,7 @@ const CanvasParticleVisualizer: React.FC<{
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [theme]);
+  }, [theme, isPlaying]);
 
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
 };
