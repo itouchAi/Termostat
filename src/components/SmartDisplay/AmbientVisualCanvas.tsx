@@ -4,47 +4,161 @@ import type { PresetVisualTheme, SmartDisplayMode, SlideTransition } from '../..
 interface AmbientVisualCanvasProps {
   mode: SmartDisplayMode;
   theme: PresetVisualTheme;
+  customImageUrl?: string;
+  customVideoUrl?: string;
   slideIntervalSec: number;
   slideTransition: SlideTransition;
   slideIndex: number;
 }
 
-// Curated ambient photos for image/slideshow mode
-export const AMBIENT_PHOTOS = [
-  {
+// Distinct high-resolution ambient photos mapped to each preset theme
+export const THEME_PHOTOS: Record<PresetVisualTheme, { url: string; title: string; desc: string }> = {
+  fireplace: {
     url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1920&q=80',
-    title: 'Şömineli Kış Evi',
+    title: 'Şömineli Sıcak Dağ Evi',
+    desc: 'Odun ateşi ve sıcacık şömine alevi',
   },
-  {
+  rainy_window: {
     url: 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=1920&q=80',
-    title: 'Yağmurlu Orman & Sis',
+    title: 'Yağmurlu Pencere & Gece Işıkları',
+    desc: 'Camdan süzülen sakin yağmur damlaları',
   },
-  {
+  winter_snow: {
     url: 'https://images.unsplash.com/photo-1491557345352-5929e343eb89?auto=format&fit=crop&w=1920&q=80',
-    title: 'Karlı Çam Ormanı',
+    title: 'Karlı Çam Ormanı & Beyaz Kış',
+    desc: 'Lapa lapa kar altındaki çam ağaçları',
   },
-  {
+  sunset_forest: {
     url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80',
-    title: 'Altın Saat Gün Batımı',
+    title: 'Altın Saat Dağ & Gün Batımı',
+    desc: 'Kızıl gün batımı ve dingin manzara',
   },
-  {
+  aurora: {
     url: 'https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=1920&q=80',
-    title: 'Kuzey Işıkları & Aurora',
+    title: 'Kutup Işıkları & Büyüleyici Aurora',
+    desc: 'Gökyüzünde dans eden yeşil kuzey ışıkları',
   },
+  minimal_black: {
+    url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=1920&q=80',
+    title: 'Minimal Derin Siyah Dokusu',
+    desc: 'Gözü yormayan saf gece modu',
+  },
+  custom: {
+    url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80',
+    title: 'Özel Görsel',
+    desc: 'Kullanıcı tarafından yüklenen harici görsel',
+  },
+};
+
+export const ALL_THEME_KEYS: PresetVisualTheme[] = [
+  'fireplace',
+  'rainy_window',
+  'winter_snow',
+  'sunset_forest',
+  'aurora',
+  'minimal_black',
 ];
 
 export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
   mode,
   theme,
+  customImageUrl,
+  customVideoUrl,
   slideTransition,
   slideIndex,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Canvas animation for Fireplace, Rain, Snow, Aurora
-  useEffect(() => {
-    if (mode === 'aod' || mode === 'image' || mode === 'slideshow') return;
+  // 1. AOD Mode: Pure black screen
+  if (mode === 'aod') {
+    return <div className="absolute inset-0 bg-black" />;
+  }
 
+  // 2. Video Mode with Custom Video URL
+  const isVideoMode = mode === 'video' || mode === 'video_audio_muted_mp3';
+  if (isVideoMode && customVideoUrl && customVideoUrl.trim()) {
+    return (
+      <div className="absolute inset-0 overflow-hidden bg-black">
+        <video
+          src={customVideoUrl.trim()}
+          autoPlay
+          loop
+          muted={mode === 'video_audio_muted_mp3'}
+          playsInline
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-radial from-transparent via-black/30 to-black/75 pointer-events-none" />
+      </div>
+    );
+  }
+
+  // 3. Single Image Mode: Strictly uses selected theme's photo or custom image
+  if (mode === 'image') {
+    const photoUrl =
+      theme === 'custom' && customImageUrl && customImageUrl.trim()
+        ? customImageUrl.trim()
+        : THEME_PHOTOS[theme]?.url || THEME_PHOTOS.fireplace.url;
+
+    return (
+      <div className="absolute inset-0 overflow-hidden bg-black">
+        <div
+          key={photoUrl}
+          className="absolute inset-0 bg-cover bg-center transition-all duration-1000 animate-in fade-in"
+          style={{ backgroundImage: `url(${photoUrl})` }}
+        >
+          {/* Dark vignette overlay for contrast and clock readability */}
+          <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/80" />
+        </div>
+      </div>
+    );
+  }
+
+  // 4. Slideshow Mode: Cycles through all themes or custom images
+  if (mode === 'slideshow') {
+    const photoList = ALL_THEME_KEYS.map((k) => THEME_PHOTOS[k]);
+    if (customImageUrl && customImageUrl.trim()) {
+      photoList.unshift({
+        url: customImageUrl.trim(),
+        title: 'Özel Görselim',
+        desc: 'Eklediğiniz fotoğraf',
+      });
+    }
+    const currentPhoto = photoList[slideIndex % photoList.length];
+
+    return (
+      <div className="absolute inset-0 overflow-hidden bg-black">
+        <div
+          key={slideIndex}
+          className={`absolute inset-0 bg-cover bg-center transition-all duration-1000 ${
+            slideTransition === 'zoom'
+              ? 'animate-in zoom-in-105 duration-1000'
+              : slideTransition === 'slide'
+              ? 'animate-in slide-in-from-right duration-700'
+              : 'animate-in fade-in duration-1000'
+          }`}
+          style={{ backgroundImage: `url(${currentPhoto.url})` }}
+        >
+          <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/80" />
+        </div>
+      </div>
+    );
+  }
+
+  // 5. Canvas Particle Visualizer for Live Fireplace, Rain, Snow, Aurora
+  return (
+    <CanvasParticleVisualizer
+      canvasRef={canvasRef}
+      theme={theme}
+    />
+  );
+};
+
+// Extracted Canvas Particle Visualizer
+const CanvasParticleVisualizer: React.FC<{
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  theme: PresetVisualTheme;
+}> = ({ canvasRef, theme }) => {
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -61,21 +175,20 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
     };
     window.addEventListener('resize', handleResize);
 
-    // Particle system setup based on theme
     const particles: any[] = [];
     const count = theme === 'fireplace' ? 70 : theme === 'winter_snow' ? 120 : 60;
 
     for (let i = 0; i < count; i++) {
       if (theme === 'fireplace') {
         particles.push({
-          x: width * 0.5 + (Math.random() - 0.5) * width * 0.4,
+          x: width * 0.5 + (Math.random() - 0.5) * width * 0.45,
           y: height + Math.random() * 50,
           size: Math.random() * 24 + 10,
           speedY: -(Math.random() * 3 + 2),
           speedX: (Math.random() - 0.5) * 1.5,
           life: 1.0,
           decay: Math.random() * 0.012 + 0.008,
-          hue: Math.random() * 35 + 10, // red to warm amber
+          hue: Math.random() * 35 + 10,
         });
       } else if (theme === 'winter_snow') {
         particles.push({
@@ -95,7 +208,6 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
           opacity: Math.random() * 0.4 + 0.2,
         });
       } else {
-        // Aurora waves
         particles.push({
           x: (i / count) * width,
           y: height * 0.4,
@@ -109,9 +221,7 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
     const render = () => {
       time += 0.02;
 
-      // Dark atmospheric background
       if (theme === 'fireplace') {
-        // Warm hearth background
         const grad = ctx.createRadialGradient(
           width * 0.5,
           height * 0.85,
@@ -126,7 +236,6 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, width, height);
 
-        // Render rising fire embers and flames
         ctx.globalCompositeOperation = 'lighter';
         for (let i = 0; i < particles.length; i++) {
           const p = particles[i];
@@ -156,7 +265,6 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
         }
         ctx.globalCompositeOperation = 'source-over';
       } else if (theme === 'winter_snow') {
-        // Deep winter night gradient
         const grad = ctx.createLinearGradient(0, 0, 0, height);
         grad.addColorStop(0, '#060d19');
         grad.addColorStop(1, '#0c1a2d');
@@ -179,14 +287,12 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
           ctx.fill();
         }
       } else if (theme === 'rainy_window') {
-        // Stormy evening background
         const grad = ctx.createLinearGradient(0, 0, 0, height);
         grad.addColorStop(0, '#0a111a');
         grad.addColorStop(1, '#111b27');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, width, height);
 
-        // Rain streak lines
         ctx.strokeStyle = 'rgba(160, 200, 255, 0.35)';
         ctx.lineWidth = 1.2;
         for (let i = 0; i < particles.length; i++) {
@@ -228,7 +334,12 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
           ctx.closePath();
 
           const auroraGrad = ctx.createLinearGradient(0, height * 0.2, 0, height * 0.7);
-          const color1 = i === 0 ? 'rgba(16, 185, 129, 0.25)' : i === 1 ? 'rgba(59, 130, 246, 0.2)' : 'rgba(139, 92, 246, 0.15)';
+          const color1 =
+            i === 0
+              ? 'rgba(16, 185, 129, 0.25)'
+              : i === 1
+              ? 'rgba(59, 130, 246, 0.2)'
+              : 'rgba(139, 92, 246, 0.15)';
           auroraGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
           auroraGrad.addColorStop(0.5, color1);
           auroraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
@@ -247,36 +358,7 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [mode, theme]);
+  }, [theme]);
 
-  // AOD Mode: Pure black screen
-  if (mode === 'aod') {
-    return <div className="absolute inset-0 bg-black" />;
-  }
-
-  // Image & Slideshow mode
-  if (mode === 'image' || mode === 'slideshow') {
-    const currentPhoto = AMBIENT_PHOTOS[slideIndex % AMBIENT_PHOTOS.length];
-    return (
-      <div className="absolute inset-0 overflow-hidden bg-black">
-        <div
-          key={slideIndex}
-          className={`absolute inset-0 bg-cover bg-center transition-all duration-1000 ${
-            slideTransition === 'zoom'
-              ? 'animate-in zoom-in-105 duration-1000'
-              : slideTransition === 'slide'
-              ? 'animate-in slide-in-from-right duration-700'
-              : 'animate-in fade-in duration-1000'
-          }`}
-          style={{ backgroundImage: `url(${currentPhoto.url})` }}
-        >
-          {/* Subtle dark vignette overlay for readability */}
-          <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/80" />
-        </div>
-      </div>
-    );
-  }
-
-  // Canvas visual background
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
 };

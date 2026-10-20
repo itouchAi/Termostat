@@ -95,7 +95,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
     }
 
     if (config.audioTrack !== 'none' && !isMuted) {
-      ambientAudio.playTrack(config.audioTrack, config.audioVolume);
+      ambientAudio.playTrack(config.audioTrack, config.audioVolume, config.customAudioUrl);
     } else {
       ambientAudio.stop();
     }
@@ -103,7 +103,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
     return () => {
       ambientAudio.stop();
     };
-  }, [isOpen, config.audioTrack, config.audioVolume, isMuted]);
+  }, [isOpen, config.audioTrack, config.audioVolume, config.customAudioUrl, isMuted]);
 
   // Screen Sleep Timer
   const resetSleepTimer = () => {
@@ -199,20 +199,20 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
       onClick={handleUserActivity}
       onMouseMove={handleUserActivity}
       onTouchStart={handleUserActivity}
+      style={{
+        filter: `brightness(${Math.max(10, Math.min(100, config.brightnessPercent || 85))}%)`,
+        transition: 'filter 0.25s ease-out',
+      }}
     >
-      {/* Visual Canvas / Background / Photos */}
+      {/* Visual Canvas / Background / Photos / Video */}
       <AmbientVisualCanvas
         mode={config.mode}
         theme={config.presetTheme}
+        customImageUrl={config.customImageUrl}
+        customVideoUrl={config.customVideoUrl}
         slideIntervalSec={config.slideshowIntervalSec}
         slideTransition={config.slideTransition}
         slideIndex={slideIndex}
-      />
-
-      {/* Screen Brightness Filter Layer */}
-      <div
-        className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-300"
-        style={{ opacity: darknessOpacity }}
       />
 
       {/* Screen Sleep Dark Layer (if inactive & timeout reached) */}
@@ -357,13 +357,26 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
 
           {/* Right: Interactive Toolbar (Mute, Brightness, Fullscreen, Exit) */}
           <div className="flex items-center gap-2 bg-black/60 backdrop-blur-2xl px-3 py-2 rounded-2xl border border-white/20 shadow-2xl">
-            {/* Brightness button/indicator */}
+            {/* Interactive Brightness Slider */}
             <div
-              className="flex items-center gap-1.5 px-2 py-1 text-xs text-slate-300"
-              title={`Ekran Aydınlığı: %${config.brightnessPercent}`}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-slate-300 bg-white/5 rounded-xl border border-white/10"
+              title={`Ekran Aydınlığı: %${config.brightnessPercent || 85}`}
             >
-              <Sun className="w-4 h-4 text-amber-300" />
-              <span className="font-mono text-[11px]">%{config.brightnessPercent}</span>
+              <Sun className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+              <input
+                type="range"
+                min="10"
+                max="100"
+                step="5"
+                value={config.brightnessPercent || 85}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  onUpdateConfig({ brightnessPercent: Number(e.target.value) });
+                }}
+                className="w-16 sm:w-20 accent-amber-400 cursor-pointer h-1 rounded-lg"
+              />
+              <span className="font-mono text-[10px] w-7 text-right">%{config.brightnessPercent || 85}</span>
             </div>
 
             {/* Mute / Unmute Audio */}

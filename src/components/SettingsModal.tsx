@@ -24,6 +24,10 @@ import {
   Moon,
   Sun,
   Play,
+  Upload,
+  Link,
+  FileVideo,
+  Volume2,
 } from 'lucide-react';
 import { translations, type Language } from '../utils/i18n.ts';
 import type { SmartDisplayConfig } from '../types/smartDisplay.ts';
@@ -105,8 +109,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setSaved(true);
     setTimeout(() => {
       setSaved(false);
-      onClose();
-    }, 1200);
+    }, 1500);
   };
 
   const handleExecuteReset = () => {
@@ -397,13 +400,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 )}
 
-                {/* 3. Canlı Tema / Video Seçimi (Eğer Video veya Slayt ise) */}
+                {/* 3. Görsel / Video Teması & Harici Medya */}
                 {smartDisplayConfig.mode !== 'aod' && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                      <ImageIcon className="w-3.5 h-3.5 text-blue-500" />
-                      <span>Görsel / Video Teması:</span>
-                    </label>
+                  <div className="flex flex-col gap-2 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-blue-500" />
+                        <span>Görsel / Video Teması & Seçimi:</span>
+                      </label>
+                      <span className="text-[9px] font-semibold text-slate-400">
+                        {smartDisplayConfig.mode === 'image' ? '📸 Tekli Görsel' : '🎬 Canlı / Hareketli'}
+                      </span>
+                    </div>
+
+                    {/* Dahili Tema Seçenekleri */}
                     <div className="grid grid-cols-3 gap-1.5 text-[10px]">
                       {[
                         { id: 'fireplace', label: '🔥 Şömine Alevi' },
@@ -412,6 +422,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         { id: 'sunset_forest', label: '🌲 Gün Batımı' },
                         { id: 'aurora', label: '🌌 Kutup Işıkları' },
                         { id: 'minimal_black', label: '🌑 Minimal Siyah' },
+                        { id: 'custom', label: '📁 Dışarıdan Medya' },
                       ].map((th) => (
                         <button
                           key={th.id}
@@ -423,30 +434,138 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           }
                           className={`p-1.5 rounded-lg border text-center transition-all truncate font-semibold cursor-pointer ${
                             smartDisplayConfig.presetTheme === th.id
-                              ? 'bg-indigo-600 text-white border-indigo-500'
-                              : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+                              ? 'bg-indigo-600 text-white border-indigo-500 shadow-xs'
+                              : 'bg-white/90 dark:bg-slate-700/80 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200'
                           }`}
                         >
                           {th.label}
                         </button>
                       ))}
                     </div>
+
+                    {/* Dışarıdan Görsel / Video Ekleme Kutusu */}
+                    {(smartDisplayConfig.presetTheme === 'custom' ||
+                      smartDisplayConfig.customImageUrl ||
+                      smartDisplayConfig.customVideoUrl) && (
+                      <div className="mt-1 p-2 rounded-lg bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/60 flex flex-col gap-2 animate-in fade-in">
+                        {/* Harici Video (Eğer video modundaysa) */}
+                        {(smartDisplayConfig.mode === 'video' ||
+                          smartDisplayConfig.mode === 'video_audio_muted_mp3') && (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                              <FileVideo className="w-3 h-3 text-indigo-500" />
+                              Dışarıdan Video URL'si (MP4 / WebM):
+                            </span>
+                            <div className="flex gap-1">
+                              <input
+                                type="text"
+                                placeholder="https://example.com/video.mp4"
+                                value={smartDisplayConfig.customVideoUrl || ''}
+                                onChange={(e) =>
+                                  onUpdateSmartDisplayConfig?.({
+                                    customVideoUrl: e.target.value,
+                                  })
+                                }
+                                className="flex-1 px-2 py-1 text-[10px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white"
+                              />
+                              <label className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] rounded-lg cursor-pointer flex items-center gap-1 shrink-0">
+                                <Upload className="w-2.5 h-2.5" />
+                                <span>Dosya</span>
+                                <input
+                                  type="file"
+                                  accept="video/mp4,video/webm"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const url = URL.createObjectURL(file);
+                                      onUpdateSmartDisplayConfig?.({
+                                        customVideoUrl: url,
+                                        presetTheme: 'custom',
+                                      });
+                                    }
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Harici Görsel (Eğer image veya slideshow ise) */}
+                        {(smartDisplayConfig.mode === 'image' ||
+                          smartDisplayConfig.mode === 'slideshow') && (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                              <ImageIcon className="w-3 h-3 text-blue-500" />
+                              Dışarıdan Resim URL'si veya Cihazdan Seç:
+                            </span>
+                            <div className="flex gap-1">
+                              <input
+                                type="text"
+                                placeholder="https://example.com/resim.jpg"
+                                value={smartDisplayConfig.customImageUrl || ''}
+                                onChange={(e) =>
+                                  onUpdateSmartDisplayConfig?.({
+                                    customImageUrl: e.target.value,
+                                  })
+                                }
+                                className="flex-1 px-2 py-1 text-[10px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white"
+                              />
+                              <label className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-lg cursor-pointer flex items-center gap-1 shrink-0">
+                                <Upload className="w-2.5 h-2.5" />
+                                <span>Yükle</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = (ev) => {
+                                        const res = ev.target?.result as string;
+                                        if (res) {
+                                          onUpdateSmartDisplayConfig?.({
+                                            customImageUrl: res,
+                                            presetTheme: 'custom',
+                                          });
+                                        }
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* 4. Arka Plan Sesi / MP3 Müzik */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <Music className="w-3.5 h-3.5 text-pink-500" />
-                    <span>Ortam Sesi & Müzik:</span>
-                  </label>
+                {/* 4. Arka Plan Sesi / MP3 Müzik & Dışarıdan MP3 */}
+                <div className="flex flex-col gap-2 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Music className="w-3.5 h-3.5 text-pink-500" />
+                      <span>Ortam Sesi & MP3 Müzik Listesi:</span>
+                    </label>
+                    <span className="text-[9px] font-mono text-pink-600 dark:text-pink-400">
+                      Ses: %{Math.round((smartDisplayConfig.audioVolume ?? 0.5) * 100)}
+                    </span>
+                  </div>
+
+                  {/* MP3 Parça Listesi */}
                   <div className="grid grid-cols-3 gap-1.5 text-[10px]">
                     {[
                       { id: 'none', label: '🔇 Sessiz' },
                       { id: 'fireplace', label: '🪵 Şömine Çıtırtısı' },
                       { id: 'rain', label: '🌧️ Sakin Yağmur' },
                       { id: 'lofi', label: '🎧 Lofi Akustik' },
-                      { id: 'relax_piano', label: '🎹 Relax Piyano/Zil' },
+                      { id: 'relax_piano', label: '🎹 Relax Piyano' },
+                      { id: 'nature', label: '🌲 Doğa & Kuşlar' },
+                      { id: 'custom', label: '🎵 Dışarıdan MP3' },
                     ].map((tr) => (
                       <button
                         key={tr.id}
@@ -458,27 +577,112 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         }
                         className={`p-1.5 rounded-lg border text-center transition-all truncate font-semibold cursor-pointer ${
                           (smartDisplayConfig.audioTrack || 'none') === tr.id
-                            ? 'bg-pink-600 text-white border-pink-500'
-                            : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+                            ? 'bg-pink-600 text-white border-pink-500 shadow-xs'
+                            : 'bg-white/90 dark:bg-slate-700/80 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200'
                         }`}
                       >
                         {tr.label}
                       </button>
                     ))}
                   </div>
+
+                  {/* Dışarıdan MP3 URL veya Dosya Seçimi */}
+                  {smartDisplayConfig.audioTrack === 'custom' && (
+                    <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-pink-200 dark:border-pink-900/60 flex flex-col gap-1.5 animate-in fade-in">
+                      <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                        Harici MP3 / Canlı Akış URL'si:
+                      </span>
+                      <div className="flex gap-1">
+                        <input
+                          type="text"
+                          placeholder="https://example.com/muzik.mp3"
+                          value={smartDisplayConfig.customAudioUrl || ''}
+                          onChange={(e) =>
+                            onUpdateSmartDisplayConfig?.({
+                              customAudioUrl: e.target.value,
+                            })
+                          }
+                          className="flex-1 px-2 py-1 text-[10px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white"
+                        />
+                        <label className="px-2 py-1 bg-pink-600 hover:bg-pink-700 text-white font-bold text-[10px] rounded-lg cursor-pointer flex items-center gap-1 shrink-0">
+                          <Upload className="w-2.5 h-2.5" />
+                          <span>MP3 Seç</span>
+                          <input
+                            type="file"
+                            accept="audio/mp3,audio/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const url = URL.createObjectURL(file);
+                                onUpdateSmartDisplayConfig?.({
+                                  customAudioUrl: url,
+                                });
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Ses Seviyesi Slider */}
+                  {smartDisplayConfig.audioTrack !== 'none' && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <Volume2 className="w-3.5 h-3.5 text-pink-500 shrink-0" />
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={smartDisplayConfig.audioVolume ?? 0.5}
+                        onChange={(e) =>
+                          onUpdateSmartDisplayConfig?.({
+                            audioVolume: Number(e.target.value),
+                          })
+                        }
+                        className="flex-1 accent-pink-600 cursor-pointer h-1.5 rounded-lg"
+                      />
+                    </div>
+                  )}
                 </div>
 
-                {/* 5. Ekran Aydınlık Ayarı (Dahili Parlaklık Slider) */}
-                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex flex-col gap-1.5">
+                {/* 5. Ekran Aydınlık Ayarı & Canlı Önizleme */}
+                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex flex-col gap-2">
                   <div className="flex items-center justify-between text-[11px] font-bold text-slate-800 dark:text-slate-200">
                     <span className="flex items-center gap-1.5">
                       <Sun className="w-3.5 h-3.5 text-amber-500" />
                       Dahili Ekran Aydınlık Ayarı
                     </span>
-                    <span className="font-mono text-purple-600 dark:text-purple-400">
+                    <span className="font-mono text-purple-600 dark:text-purple-400 font-black">
                       %{smartDisplayConfig.brightnessPercent || 85}
                     </span>
                   </div>
+
+                  {/* Canlı Ekran Aydınlığı Simülasyonu (Kullanıcının çalıştığını görmesi için) */}
+                  <div
+                    className="relative w-full h-16 rounded-xl bg-black overflow-hidden border border-slate-700/50 flex items-center justify-between px-3 text-white transition-all duration-200 shadow-inner"
+                    style={{
+                      filter: `brightness(${smartDisplayConfig.brightnessPercent || 85}%)`,
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl font-mono font-black tracking-tight text-white">
+                        22:45
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">00</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 bg-white/10 px-2 py-0.5 rounded-lg border border-white/10 text-[10px]">
+                      <span>🌤️ 18°C</span>
+                      <span className="text-amber-400 font-bold">• 22.5°C</span>
+                    </div>
+
+                    <div className="absolute bottom-1 right-2 text-[8px] font-mono text-slate-400">
+                      Canlı Aydınlık: %{smartDisplayConfig.brightnessPercent || 85}
+                    </div>
+                  </div>
+
                   <input
                     type="range"
                     min="10"
@@ -490,12 +694,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         brightnessPercent: Number(e.target.value),
                       })
                     }
-                    className="w-full accent-purple-600 cursor-pointer h-1.5 rounded-lg"
+                    className="w-full accent-amber-500 cursor-pointer h-1.5 rounded-lg"
                   />
-                  <div className="flex justify-between text-[9px] text-slate-400">
-                    <span>%10 (Gece Loş)</span>
-                    <span>%50</span>
-                    <span>%100 (Tam Aydınlık)</span>
+
+                  {/* Hızlı Aydınlık Butonları */}
+                  <div className="flex gap-1 text-[9px]">
+                    {[
+                      { pct: 20, label: '🌙 Gece (%20)' },
+                      { pct: 50, label: '🌆 Loş (%50)' },
+                      { pct: 85, label: '☀️ Normal (%85)' },
+                      { pct: 100, label: '⚡ Tam (%100)' },
+                    ].map((btn) => (
+                      <button
+                        key={btn.pct}
+                        type="button"
+                        onClick={() =>
+                          onUpdateSmartDisplayConfig?.({
+                            brightnessPercent: btn.pct,
+                          })
+                        }
+                        className={`flex-1 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                          smartDisplayConfig.brightnessPercent === btn.pct
+                            ? 'bg-amber-500 text-white'
+                            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
+                        }`}
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 

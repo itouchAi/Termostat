@@ -23,17 +23,42 @@ class AmbientAudioEngine {
     }
   }
 
+  private audioElement: HTMLAudioElement | null = null;
+
   public setVolume(volume: number) {
+    const clamped = Math.max(0, Math.min(1, volume));
     if (this.masterGain && this.ctx) {
-      const clamped = Math.max(0, Math.min(1, volume));
       this.masterGain.gain.setTargetAtTime(clamped, this.ctx.currentTime, 0.1);
+    }
+    if (this.audioElement) {
+      this.audioElement.volume = clamped;
     }
   }
 
-  public playTrack(track: string, volume: number = 0.5) {
+  public playTrack(track: string, volume: number = 0.5, customUrl?: string) {
     this.stop();
     if (track === 'none') {
       this.currentTrack = 'none';
+      return;
+    }
+
+    this.currentTrack = track;
+    this.isRunning = true;
+
+    // Custom audio track via external MP3 URL
+    if (track === 'custom' && customUrl && customUrl.trim()) {
+      try {
+        const audio = new Audio(customUrl.trim());
+        audio.loop = true;
+        audio.volume = Math.max(0, Math.min(1, volume));
+        audio.crossOrigin = 'anonymous';
+        audio.play().catch((err) => {
+          console.warn('Custom audio playback could not start:', err);
+        });
+        this.audioElement = audio;
+      } catch (err) {
+        console.warn('Failed to load custom audio URL:', err);
+      }
       return;
     }
 
@@ -41,8 +66,6 @@ class AmbientAudioEngine {
     if (!this.ctx || !this.masterGain) return;
 
     this.setVolume(volume);
-    this.currentTrack = track;
-    this.isRunning = true;
 
     try {
       if (track === 'fireplace') {
@@ -61,6 +84,14 @@ class AmbientAudioEngine {
 
   public stop() {
     this.isRunning = false;
+    if (this.audioElement) {
+      try {
+        this.audioElement.pause();
+        this.audioElement.src = '';
+        this.audioElement.load();
+      } catch {}
+      this.audioElement = null;
+    }
     this.activeNodes.forEach((node) => {
       try {
         if (typeof node === 'number') {
