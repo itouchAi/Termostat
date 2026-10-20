@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import type { SmartDisplayConfig } from '../../types/smartDisplay.ts';
 import type { CurrentWeather } from '../../utils/weather.ts';
+import type { ThemeMode } from '../../types.ts';
 import { AmbientVisualCanvas } from './AmbientVisualCanvas.tsx';
 import { ambientAudio } from '../../utils/ambientAudio.ts';
 import { MusicEqualizer } from './MusicEqualizer.tsx';
@@ -36,6 +37,7 @@ interface SmartDisplayOverlayProps {
   isKombiActive: boolean;
   weather: CurrentWeather;
   onSetTargetTemp: (temp: number) => void;
+  themeMode?: ThemeMode;
 }
 
 export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
@@ -48,6 +50,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
   isKombiActive,
   weather,
   onSetTargetTemp,
+  themeMode = 'glass',
 }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -330,9 +333,12 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
     );
   };
 
-  // Whether equalizer is active & blurring background
-  const isEqualizerActive =
-    config.equalizerEnabled && config.audioTrack !== 'none' && !isMuted;
+  // Whether MP3 music or equalizer is active
+  const isAudioPlaying = config.audioTrack !== 'none' && !isMuted && isPlaying;
+  const isEqualizerActive = config.equalizerEnabled && isAudioPlaying;
+
+  // Background blur active whenever music/MP3 is playing OR when thermostat wheel modal is open!
+  const isBackgroundBlurred = isAudioPlaying || isThermostatWheelOpen;
 
   return createPortal(
     <div
@@ -355,7 +361,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
         customVideos={config.customVideos}
         activeVideoIndex={activeVideoIndex}
         imageFitMode={config.imageFitMode || 'cover'}
-        blurBackground={isEqualizerActive}
+        blurBackground={isBackgroundBlurred}
         slideIntervalSec={config.slideshowIntervalSec}
         slideTransition={config.slideTransition}
         slideIndex={slideIndex}
@@ -629,7 +635,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
         </div>
       </div>
 
-      {/* Dokun ve Kontrol Et: Termostat Tekerleği Modalı (15 sn Otomatik Kapanma) */}
+      {/* Dokun ve Kontrol Et: Termostat Tekerleği Modalı (5 sn Otomatik Kapanma & Blur Animasyonu) */}
       <ThermostatTouchDialModal
         isOpen={isThermostatWheelOpen}
         onClose={() => setIsThermostatWheelOpen(false)}
@@ -637,6 +643,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
         targetTemp={targetTemp}
         isKombiActive={isKombiActive}
         onSetTargetTemp={onSetTargetTemp}
+        themeMode={themeMode}
       />
     </div>,
     document.body

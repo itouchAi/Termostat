@@ -1619,6 +1619,7 @@ export default function App() {
         isKombiActive={isKombiActive}
         weather={weather}
         onSetTargetTemp={handleSetTarget}
+        themeMode={themeMode}
       />
     </div>
   );

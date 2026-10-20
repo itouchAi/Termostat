@@ -64,11 +64,16 @@ export const THEME_PHOTOS: Record<PresetVisualTheme, { url: string; title: strin
 };
 
 export const THEME_VIDEOS: Record<PresetVisualTheme, string> = {
-  fireplace: 'https://assets.mixkit.co/videos/preview/mixkit-fire-burning-in-the-fireplace-43224-large.mp4',
-  rainy_window: 'https://assets.mixkit.co/videos/preview/mixkit-rain-drops-falling-on-a-window-glass-41771-large.mp4',
-  winter_snow: 'https://assets.mixkit.co/videos/preview/mixkit-snow-falling-on-pine-trees-43232-large.mp4',
-  sunset_forest: 'https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-sunlight-529-large.mp4',
-  aurora: 'https://assets.mixkit.co/videos/preview/mixkit-aurora-borealis-over-a-snowy-mountain-43234-large.mp4',
+  fireplace:
+    'https://upload.wikimedia.org/wikipedia/commons/transcoded/0/04/Fireplace_1_2021-02-14.webm/Fireplace_1_2021-02-14.webm.480p.vp9.webm',
+  rainy_window:
+    'https://upload.wikimedia.org/wikipedia/commons/transcoded/2/2e/Radevormwald_-_Raindrops_on_a_window_10_%281%29_ies.webm/Radevormwald_-_Raindrops_on_a_window_10_%281%29_ies.webm.480p.vp9.webm',
+  winter_snow:
+    'https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Snow_falling_in_Tuntorp.webm/Snow_falling_in_Tuntorp.webm.480p.vp9.webm',
+  sunset_forest:
+    'https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e5/Sunset_timelapse_in_Funchal_-_2014.webm/Sunset_timelapse_in_Funchal_-_2014.webm.480p.vp9.webm',
+  aurora:
+    'https://upload.wikimedia.org/wikipedia/commons/transcoded/d/df/Aurora_borealis_timelapse.webm/Aurora_borealis_timelapse.webm.480p.vp9.webm',
   minimal_black: '',
   custom: '',
 };
@@ -104,23 +109,27 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
   const effectiveVideoUrl =
     customVideos.length > 0
       ? customVideos[activeVideoIndex % customVideos.length]?.url
-      : customVideoUrl?.trim() || THEME_VIDEOS[theme];
+      : customVideoUrl?.trim() || THEME_VIDEOS[theme] || THEME_VIDEOS.fireplace;
 
   // Play/pause video element in sync, keeping it silently playing in background
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
 
-    // Muted is essential so browser autoplay policy never blocks it and it never clashes with MP3 song
     v.muted = true;
     v.defaultMuted = true;
 
     if (isPlaying) {
       const p = v.play();
       if (p !== undefined) {
-        p.catch(() => {
-          v.muted = true;
-          v.play().catch(() => {});
+        p.catch((err) => {
+          console.warn('Video play attempt:', err);
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.muted = true;
+              videoRef.current.play().catch(() => {});
+            }
+          }, 150);
         });
       }
     } else {
@@ -144,10 +153,12 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
       ? 'object-fill'
       : 'object-cover';
 
-  // Background filter for equalizer mode blur
+  // Background filter for equalizer mode blur & thermostat modal blur
   const blurFilterStyle: React.CSSProperties = {
-    filter: blurBackground ? 'blur(12px) brightness(0.65)' : 'none',
-    transition: 'filter 0.5s ease-out',
+    filter: blurBackground ? 'blur(16px) brightness(0.6)' : 'none',
+    transform: blurBackground ? 'scale(1.06)' : 'scale(1)',
+    transition: 'filter 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+    willChange: 'filter, transform',
   };
 
   // 1. AOD Mode: Pure black screen
@@ -163,14 +174,21 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
           ref={videoRef}
           key={effectiveVideoUrl}
           src={effectiveVideoUrl}
-          autoPlay={isPlaying}
+          autoPlay
           loop={customVideos.length <= 1}
           muted={true}
           playsInline
-          onLoadedData={() => {
-            if (videoRef.current && isPlaying) {
-              videoRef.current.muted = true;
-              videoRef.current.play().catch(() => {});
+          preload="auto"
+          onCanPlay={(e) => {
+            if (isPlaying) {
+              e.currentTarget.muted = true;
+              e.currentTarget.play().catch(() => {});
+            }
+          }}
+          onLoadedData={(e) => {
+            if (isPlaying) {
+              e.currentTarget.muted = true;
+              e.currentTarget.play().catch(() => {});
             }
           }}
           onEnded={onVideoEnded}
