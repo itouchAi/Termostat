@@ -16,8 +16,17 @@ import {
   ShieldAlert,
   Send,
   Zap,
+  Monitor,
+  Tv,
+  Music,
+  Image as ImageIcon,
+  Sliders,
+  Moon,
+  Sun,
+  Play,
 } from 'lucide-react';
 import { translations, type Language } from '../utils/i18n.ts';
+import type { SmartDisplayConfig } from '../types/smartDisplay.ts';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -33,6 +42,9 @@ interface SettingsModalProps {
   isWeatherNotificationsEnabled?: boolean;
   onToggleWeatherNotifications?: (enabled: boolean) => void;
   onTriggerTestNotification?: () => void;
+  smartDisplayConfig?: SmartDisplayConfig;
+  onUpdateSmartDisplayConfig?: (cfg: Partial<SmartDisplayConfig>) => void;
+  onLaunchSmartDisplay?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -49,6 +61,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   isWeatherNotificationsEnabled = true,
   onToggleWeatherNotifications,
   onTriggerTestNotification,
+  smartDisplayConfig,
+  onUpdateSmartDisplayConfig,
+  onLaunchSmartDisplay,
 }) => {
   const t = translations[lang] || translations.tr;
   const [localUrl, setLocalUrl] = useState(dbUrl);
@@ -214,6 +229,338 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <span>Yönet</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
+          </div>
+
+          {/* ── SMART DISPLAY & AMBİYANS MODU (Tablet / Masaüstü Ekranı) ── */}
+          <div className="p-3.5 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 dark:from-purple-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 rounded-2xl border border-purple-400/40 dark:border-purple-500/30 flex flex-col gap-3 shadow-xs">
+            {/* Header with Master Toggle */}
+            <div className="flex items-center justify-between pb-2 border-b border-purple-200/50 dark:border-purple-800/50">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-purple-500/30">
+                  <Monitor className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-slate-900 dark:text-white text-xs flex items-center gap-1.5 truncate">
+                    <span>Smart Display & Ambiyans</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300">
+                      Tablet / PC
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    Masaüstü veya duvarda canlı saat, hava ve medya ekranı
+                  </p>
+                </div>
+              </div>
+
+              {/* Master Opt-in Switch (Kullanıcı onay tiki) */}
+              <button
+                type="button"
+                onClick={() =>
+                  onUpdateSmartDisplayConfig?.({
+                    enabled: !smartDisplayConfig?.enabled,
+                  })
+                }
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs shrink-0 ${
+                  smartDisplayConfig?.enabled
+                    ? 'bg-purple-600 text-white shadow-purple-500/30'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                }`}
+                title="Smart Display özelliğini aç veya kapat"
+              >
+                <span>{smartDisplayConfig?.enabled ? 'Açık ✓' : 'Kapalı'}</span>
+              </button>
+            </div>
+
+            {/* Smart Display Expanded Settings (Visible only when enabled) */}
+            {smartDisplayConfig?.enabled && (
+              <div className="flex flex-col gap-3 pt-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                {/* Launch Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onLaunchSmartDisplay?.();
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-98 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-purple-500/25 transition-all cursor-pointer"
+                >
+                  <Play className="w-4 h-4 fill-white" />
+                  <span>Smart Display'i Şimdi Başlat (Tam Ekran)</span>
+                </button>
+
+                {/* 1. Görüntü / Medya Modu Seçimi */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Tv className="w-3.5 h-3.5 text-purple-500" />
+                    <span>Ekran Modu:</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                    {[
+                      { id: 'aod', label: '🌙 Always-On Display (AOD)', desc: 'Siyah Ekran + Büyük Saat + Hava' },
+                      { id: 'video_audio_muted_mp3', label: '🎬 Sessiz Video + MP3', desc: 'Canlı arka plan + ortam müziği' },
+                      { id: 'video', label: '🔥 Canlı Video / Doğa', desc: 'Şömine & canlı doğa döngüsü' },
+                      { id: 'slideshow', label: '🖼️ Slayt Gösterisi', desc: 'Fotoğraflar arası otomatik geçiş' },
+                      { id: 'image', label: '📸 Tekli Görsel', desc: 'Sakin sabit fotoğraf' },
+                    ].map((m) => {
+                      const isSelected = (smartDisplayConfig.mode || 'aod') === m.id;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() =>
+                            onUpdateSmartDisplayConfig?.({
+                              mode: m.id as any,
+                            })
+                          }
+                          className={`p-2 rounded-xl text-left border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-purple-600 text-white border-purple-500 shadow-xs font-bold'
+                              : 'bg-white/80 dark:bg-slate-800/80 hover:bg-purple-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+                          }`}
+                        >
+                          <div className="truncate font-semibold">{m.label}</div>
+                          <div
+                            className={`text-[9px] truncate mt-0.5 ${
+                              isSelected ? 'text-purple-100' : 'text-slate-400'
+                            }`}
+                          >
+                            {m.desc}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Slayt Ayarları (Sadece Slayt Gösterisi seçiliyse) */}
+                {smartDisplayConfig.mode === 'slideshow' && (
+                  <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-300 dark:border-purple-800/60 flex flex-col gap-2">
+                    <span className="font-bold text-[11px] text-purple-700 dark:text-purple-300">
+                      Slayt Süresi & Geçiş Efekti
+                    </span>
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block mb-1">
+                          Slayt Değişim Süresi:
+                        </span>
+                        <div className="flex gap-1">
+                          {[5, 10, 15, 30].map((sec) => (
+                            <button
+                              key={sec}
+                              type="button"
+                              onClick={() =>
+                                onUpdateSmartDisplayConfig?.({
+                                  slideshowIntervalSec: sec,
+                                })
+                              }
+                              className={`flex-1 py-1 rounded-lg font-bold ${
+                                smartDisplayConfig.slideshowIntervalSec === sec
+                                  ? 'bg-purple-600 text-white'
+                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                              }`}
+                            >
+                              {sec}s
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block mb-1">
+                          Geçiş Efekti:
+                        </span>
+                        <div className="flex gap-1">
+                          {[
+                            { id: 'fade', label: 'Fade' },
+                            { id: 'slide', label: 'Kayma' },
+                            { id: 'zoom', label: 'Zoom' },
+                          ].map((eff) => (
+                            <button
+                              key={eff.id}
+                              type="button"
+                              onClick={() =>
+                                onUpdateSmartDisplayConfig?.({
+                                  slideTransition: eff.id as any,
+                                })
+                              }
+                              className={`flex-1 py-1 rounded-lg font-bold ${
+                                smartDisplayConfig.slideTransition === eff.id
+                                  ? 'bg-purple-600 text-white'
+                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                              }`}
+                            >
+                              {eff.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Canlı Tema / Video Seçimi (Eğer Video veya Slayt ise) */}
+                {smartDisplayConfig.mode !== 'aod' && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <ImageIcon className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Görsel / Video Teması:</span>
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+                      {[
+                        { id: 'fireplace', label: '🔥 Şömine Alevi' },
+                        { id: 'rainy_window', label: '🌧️ Yağmurlu Cam' },
+                        { id: 'winter_snow', label: '❄️ Kış & Kar' },
+                        { id: 'sunset_forest', label: '🌲 Gün Batımı' },
+                        { id: 'aurora', label: '🌌 Kutup Işıkları' },
+                        { id: 'minimal_black', label: '🌑 Minimal Siyah' },
+                      ].map((th) => (
+                        <button
+                          key={th.id}
+                          type="button"
+                          onClick={() =>
+                            onUpdateSmartDisplayConfig?.({
+                              presetTheme: th.id as any,
+                            })
+                          }
+                          className={`p-1.5 rounded-lg border text-center transition-all truncate font-semibold cursor-pointer ${
+                            smartDisplayConfig.presetTheme === th.id
+                              ? 'bg-indigo-600 text-white border-indigo-500'
+                              : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+                          }`}
+                        >
+                          {th.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Arka Plan Sesi / MP3 Müzik */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Music className="w-3.5 h-3.5 text-pink-500" />
+                    <span>Ortam Sesi & Müzik:</span>
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+                    {[
+                      { id: 'none', label: '🔇 Sessiz' },
+                      { id: 'fireplace', label: '🪵 Şömine Çıtırtısı' },
+                      { id: 'rain', label: '🌧️ Sakin Yağmur' },
+                      { id: 'lofi', label: '🎧 Lofi Akustik' },
+                      { id: 'relax_piano', label: '🎹 Relax Piyano/Zil' },
+                    ].map((tr) => (
+                      <button
+                        key={tr.id}
+                        type="button"
+                        onClick={() =>
+                          onUpdateSmartDisplayConfig?.({
+                            audioTrack: tr.id as any,
+                          })
+                        }
+                        className={`p-1.5 rounded-lg border text-center transition-all truncate font-semibold cursor-pointer ${
+                          (smartDisplayConfig.audioTrack || 'none') === tr.id
+                            ? 'bg-pink-600 text-white border-pink-500'
+                            : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+                        }`}
+                      >
+                        {tr.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 5. Ekran Aydınlık Ayarı (Dahili Parlaklık Slider) */}
+                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                    <span className="flex items-center gap-1.5">
+                      <Sun className="w-3.5 h-3.5 text-amber-500" />
+                      Dahili Ekran Aydınlık Ayarı
+                    </span>
+                    <span className="font-mono text-purple-600 dark:text-purple-400">
+                      %{smartDisplayConfig.brightnessPercent || 85}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="10"
+                    max="100"
+                    step="5"
+                    value={smartDisplayConfig.brightnessPercent || 85}
+                    onChange={(e) =>
+                      onUpdateSmartDisplayConfig?.({
+                        brightnessPercent: Number(e.target.value),
+                      })
+                    }
+                    className="w-full accent-purple-600 cursor-pointer h-1.5 rounded-lg"
+                  />
+                  <div className="flex justify-between text-[9px] text-slate-400">
+                    <span>%10 (Gece Loş)</span>
+                    <span>%50</span>
+                    <span>%100 (Tam Aydınlık)</span>
+                  </div>
+                </div>
+
+                {/* 6. Ekran Kapanma / Uyku Süresi */}
+                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex flex-col gap-1.5">
+                  <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Moon className="w-3.5 h-3.5 text-indigo-500" />
+                    Ekran Uyku / Kapanma Süresi
+                  </span>
+                  <div className="flex gap-1.5 text-[10px]">
+                    {[
+                      { min: 0, label: 'Sürekli Açık' },
+                      { min: 1, label: '1 Dk' },
+                      { min: 5, label: '5 Dk' },
+                      { min: 15, label: '15 Dk' },
+                      { min: 30, label: '30 Dk' },
+                    ].map((tmo) => (
+                      <button
+                        key={tmo.min}
+                        type="button"
+                        onClick={() =>
+                          onUpdateSmartDisplayConfig?.({
+                            sleepTimeoutMin: tmo.min,
+                          })
+                        }
+                        className={`flex-1 py-1 rounded-lg font-bold border transition-all cursor-pointer ${
+                          smartDisplayConfig.sleepTimeoutMin === tmo.min
+                            ? 'bg-indigo-600 text-white border-indigo-500'
+                            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600'
+                        }`}
+                      >
+                        {tmo.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 7. OLED Burn-In Koruması */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[11px]">
+                  <div>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                      OLED Piksel Koruma
+                    </span>
+                    <span className="text-[9px] text-slate-400">
+                      Saati 60 saniyede bir hafif kaydırarak ekranı korur
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onUpdateSmartDisplayConfig?.({
+                        burnInProtection: !smartDisplayConfig.burnInProtection,
+                      })
+                    }
+                    className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                      smartDisplayConfig.burnInProtection
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-300 dark:bg-slate-600 text-slate-600 dark:text-slate-300'
+                    }`}
+                  >
+                    {smartDisplayConfig.burnInProtection ? 'Aktif' : 'Pasif'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── BİLDİRİM AYARLARI & OTOMASYON (3 Saatlik & Acil Emniyet Bildirimleri) ── */}

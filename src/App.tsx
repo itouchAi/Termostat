@@ -15,9 +15,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Mic,
+  Monitor,
 } from 'lucide-react';
 
 import type { ThemeMode, PerformanceMode, MorphMode, ScheduleItem, WidgetItem } from './types.ts';
+import type { SmartDisplayConfig } from './types/smartDisplay.ts';
+import { DEFAULT_SMART_DISPLAY_CONFIG } from './types/smartDisplay.ts';
 import { translations, type Language } from './utils/i18n.ts';
 import { ThreeScene } from './components/ThreeCanvas/ThreeScene.tsx';
 import { AtmosphericWeatherBackground } from './components/Weather/AtmosphericWeatherBackground.tsx';
@@ -38,6 +41,7 @@ import { SettingsModal } from './components/SettingsModal.tsx';
 import { VaultNotificationsModal } from './components/VaultNotificationsModal.tsx';
 import { VoiceAssistantModal } from './components/VoiceAssistant/VoiceAssistantModal.tsx';
 import { GoogleHomeModal } from './components/GoogleHome/GoogleHomeModal.tsx';
+import { SmartDisplayOverlay } from './components/SmartDisplay/SmartDisplayOverlay.tsx';
 
 
 import {
@@ -248,6 +252,30 @@ export default function App() {
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
   const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
   const [isGoogleHomeOpen, setIsGoogleHomeOpen] = useState(false);
+  const [isSmartDisplayOpen, setIsSmartDisplayOpen] = useState(false);
+
+  // Smart Display & Ambient Mode Config
+  const [smartDisplayConfig, setSmartDisplayConfig] = useState<SmartDisplayConfig>(() => {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('smart_display_config_v1');
+        if (saved) return { ...DEFAULT_SMART_DISPLAY_CONFIG, ...JSON.parse(saved) };
+      } catch {}
+    }
+    return DEFAULT_SMART_DISPLAY_CONFIG;
+  });
+
+  const handleUpdateSmartDisplayConfig = (partial: Partial<SmartDisplayConfig>) => {
+    setSmartDisplayConfig((prev) => {
+      const next = { ...prev, ...partial };
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem('smart_display_config_v1', JSON.stringify(next));
+        } catch {}
+      }
+      return next;
+    });
+  };
 
   // Widgets configuration
   const [widgets, setWidgets] = useState<WidgetItem[]>(DEFAULT_WIDGETS);
@@ -1027,6 +1055,19 @@ export default function App() {
             <SlidersHorizontal className="w-3.5 h-3.5" />
           </button>
 
+          {/* Smart Display Quick Launch (Tablet / PC) */}
+          {smartDisplayConfig.enabled && (
+            <button
+              type="button"
+              onClick={() => setIsSmartDisplayOpen(true)}
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-600 dark:text-purple-400 border border-purple-400/40 flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer animate-in fade-in"
+              aria-label="Smart Display / Ambiyans Modu"
+              title="Smart Display / Ambiyans Modunu Başlat (Tablet & PC)"
+            >
+              <Monitor className="w-3.5 h-3.5" />
+            </button>
+          )}
+
           {/* 4. Cloud Settings */}
           <button
             type="button"
@@ -1520,6 +1561,9 @@ export default function App() {
         onToggleWeatherNotifications={setIsWeatherNotificationsEnabled}
         onTriggerTestNotification={handleTriggerWeatherNotification}
         onResetHistoricalData={handleResetHistoricalData}
+        smartDisplayConfig={smartDisplayConfig}
+        onUpdateSmartDisplayConfig={handleUpdateSmartDisplayConfig}
+        onLaunchSmartDisplay={() => setIsSmartDisplayOpen(true)}
       />
 
       <VaultNotificationsModal
@@ -1561,6 +1605,19 @@ export default function App() {
         currentTemp={currentTemp}
         targetTemp={targetTemp}
         isKombiActive={isKombiActive}
+        onSetTargetTemp={handleSetTarget}
+      />
+
+      {/* ── SMART DISPLAY & AMBİYANS MODU OVERLAY (Tablet & Masaüstü) ── */}
+      <SmartDisplayOverlay
+        isOpen={isSmartDisplayOpen}
+        onClose={() => setIsSmartDisplayOpen(false)}
+        config={smartDisplayConfig}
+        onUpdateConfig={handleUpdateSmartDisplayConfig}
+        currentTemp={currentTemp}
+        targetTemp={targetTemp}
+        isKombiActive={isKombiActive}
+        weather={weather}
         onSetTargetTemp={handleSetTarget}
       />
     </div>
