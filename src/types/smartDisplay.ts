@@ -56,6 +56,7 @@ export interface SmartDisplayConfig {
   showMarqueeTrackTitle: boolean; // Üstte kayan yazı şarkı ismi barı
   equalizerEnabled: boolean; // Müzik ekolayzır modu (ekranı hafif blur yaparak ön plana çıkar)
   equalizerStyle: EqualizerStyle; // 'bars' | 'wave' | 'pulse'
+  isLoop?: boolean; // Medya döngüsü (loop) açık/kapalı
 }
 
 export const DEFAULT_SMART_DISPLAY_CONFIG: SmartDisplayConfig = {

@@ -17,6 +17,7 @@ import {
   Music,
   Plus,
   Minus,
+  Paintbrush,
 } from 'lucide-react';
 import type { SmartDisplayConfig } from '../../types/smartDisplay.ts';
 import type { CurrentWeather } from '../../utils/weather.ts';
@@ -26,6 +27,7 @@ import { ambientAudio } from '../../utils/ambientAudio.ts';
 import { MusicEqualizer } from './MusicEqualizer.tsx';
 import { LuxuryMediaBar } from './LuxuryMediaBar.tsx';
 import { ThermostatTouchDialModal } from './ThermostatTouchDialModal.tsx';
+import { SmartDisplayControlsPill } from './SmartDisplayControlsPill.tsx';
 
 interface SmartDisplayOverlayProps {
   isOpen: boolean;
@@ -59,6 +61,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
   const [isPlaying, setIsPlaying] = useState(true);
   const [isThermostatWheelOpen, setIsThermostatWheelOpen] = useState(false);
   const [isThermostatClosing, setIsThermostatClosing] = useState(false);
+  const [isCleanScreen, setIsCleanScreen] = useState(false);
 
   // Playlist navigation indices
   const [slideIndex, setSlideIndex] = useState(0);
@@ -369,6 +372,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
         slideTransition={config.slideTransition}
         slideIndex={slideIndex}
         isPlaying={isPlaying}
+        isLoop={config.isLoop !== false}
         onVideoEnded={handleNextMedia}
       />
 
@@ -390,8 +394,14 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
           transition: 'transform 1s ease-in-out',
         }}
       >
-        {/* ── TOP BAR: Room details on Left, Marquee Now-Playing in Center, Weather on Right ── */}
-        <div className="flex items-start justify-between gap-2">
+        {/* ── TOP BAR: Room details on Left, Marquee Now-Playing in Center, Weather on Right (Slides up in clean mode) ── */}
+        <div
+          className={`flex items-start justify-between gap-2 transition-all duration-700 ease-in-out ${
+            isCleanScreen
+              ? '-translate-y-36 opacity-0 pointer-events-none'
+              : 'translate-y-0 opacity-100'
+          }`}
+        >
           {/* Left: Device & Kombi status */}
           <div className="flex items-center gap-2.5 sm:gap-3">
             <div className="p-2 sm:p-2.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-lg">
@@ -462,7 +472,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
               </div>
             </button>
 
-            {/* Sağ üstteki derece ve hava durumu çerçevemiz (Aynen korunuyor!) */}
+            {/* Sağ üstteki derece ve hava durumu çerçevemiz */}
             <div className="flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/15 shadow-2xl">
               {renderWeatherIcon()}
               <div className="text-right">
@@ -478,7 +488,17 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
         </div>
 
         {/* ── CENTER / MAIN: Digital Clock + Equalizer + Temp Capsule ── */}
-        <div className="my-auto flex flex-col items-center justify-center text-center">
+        {/* Temiz Ekran modunda sağ üste süzülerek küçülür, kullanıcı hareketin gidişini görür */}
+        <div
+          className={`my-auto flex flex-col items-center justify-center text-center transition-all duration-700 ease-in-out origin-top-right transform ${
+            isCleanScreen
+              ? 'translate-x-[calc(50vw-140px)] -translate-y-[calc(40vh-20px)] scale-[0.32] sm:scale-[0.36] md:scale-[0.4] opacity-90'
+              : 'translate-x-0 translate-y-0 scale-100 opacity-100'
+          }`}
+          style={{
+            transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        >
           {/* Large Clock */}
           <div className="flex items-baseline font-mono tracking-tight font-black drop-shadow-2xl text-white">
             <span className="text-6xl sm:text-8xl md:text-[10rem] lg:text-[11.5rem] leading-none">
@@ -493,21 +513,20 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
             {dateStr}
           </p>
 
-          {/* Reactive Music Equalizer Visualizer (User requested) */}
+          {/* Reactive Music Equalizer Visualizer (User requested: no label text, blurs out in clean screen mode) */}
           {isEqualizerActive && (
-            <div className="mt-3 pointer-events-auto w-full flex flex-col items-center justify-center animate-in zoom-in-95 duration-300">
+            <div
+              className={`mt-3 pointer-events-auto w-full flex flex-col items-center justify-center transition-all duration-700 ${
+                isCleanScreen
+                  ? 'opacity-0 blur-md pointer-events-none'
+                  : 'opacity-100 blur-none'
+              }`}
+            >
               <MusicEqualizer
                 enabled={config.equalizerEnabled}
                 style={config.equalizerStyle || 'bars'}
                 isPlaying={isPlaying}
               />
-              <span className="text-[9px] font-mono tracking-wider text-pink-300/80 uppercase mt-0.5">
-                {config.equalizerStyle === 'wave'
-                  ? 'Dalga Akışı Spektrumu'
-                  : config.equalizerStyle === 'pulse'
-                  ? 'Nabız & Beat Halka'
-                  : 'Neon Frekans Barları'}
-              </span>
             </div>
           )}
 
@@ -551,89 +570,89 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
           </div>
         </div>
 
-        {/* ── BOTTOM HUD / FLOATING MEDIA CONTROLS & LUXURY BAR ── */}
+        {/* ── BOTTOM HUD / FLOATING CONTROLS & CLEAN SCREEN BUTTON ── */}
         <div
-          className={`flex flex-col sm:flex-row items-center justify-between gap-3 transition-opacity duration-500 ${
-            isControlsVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          className={`flex items-end justify-between gap-3 transition-opacity duration-500 ${
+            isControlsVisible || isCleanScreen
+              ? 'opacity-100 pointer-events-auto'
+              : 'opacity-0 pointer-events-none'
           }`}
         >
-          {/* CENTER: Dokununca Genişleyen Lüks Medya Kontrol Barı (User requested) */}
-          <div className="flex-1 flex justify-center sm:justify-start">
-            <LuxuryMediaBar
-            mediaType={activeMediaInfo.type}
-            title={activeMediaInfo.title}
-            counterText={activeMediaInfo.counter}
-            isPlaying={isPlaying}
-            onTogglePlay={handleTogglePlay}
-            onPrevious={handlePreviousMedia}
-            onNext={handleNextMedia}
-            isMuted={isMuted}
-            onToggleMute={
-              config.audioTrack !== 'none'
-                ? () => setIsMuted((prev) => !prev)
-                : undefined
-            }
-          />
-        </div>
-
-          {/* Right Toolbar: Brightness Slider, Fullscreen & Exit */}
-          <div className="flex items-center gap-2 bg-black/60 backdrop-blur-2xl px-3 py-1.5 rounded-2xl border border-white/20 shadow-2xl">
-            {/* Interactive Brightness Slider */}
-            <div
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-slate-300 bg-white/5 rounded-xl border border-white/10"
-              title={`Ekran Aydınlığı: %${config.brightnessPercent || 85}`}
-            >
-              <Sun className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-              <input
-                type="range"
-                min="10"
-                max="100"
-                step="5"
-                value={config.brightnessPercent || 85}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  onUpdateConfig({ brightnessPercent: Number(e.target.value) });
+          {/* Sliding Media Bar & Controls Pill (Slides down off-screen when clean screen mode is active) */}
+          <div
+            className={`flex-1 flex flex-col sm:flex-row items-center justify-between gap-3 transition-all duration-700 ease-in-out ${
+              isCleanScreen
+                ? 'translate-y-36 opacity-0 pointer-events-none'
+                : 'translate-y-0 opacity-100'
+            }`}
+          >
+            {/* Left: Dokununca Genişleyen Lüks Medya Kontrol Barı (TV simgesi, play butonu, yukarı açılan ses barı, loop toggle, video ismi yazmaz) */}
+            <div className="flex justify-center sm:justify-start">
+              <LuxuryMediaBar
+                mediaType={activeMediaInfo.type}
+                isPlaying={isPlaying}
+                onTogglePlay={handleTogglePlay}
+                onPrevious={handlePreviousMedia}
+                onNext={handleNextMedia}
+                isMuted={isMuted}
+                onToggleMute={
+                  config.audioTrack !== 'none'
+                    ? () => setIsMuted((prev) => !prev)
+                    : undefined
+                }
+                volume={config.audioVolume ?? 0.8}
+                onVolumeChange={(newVol) => {
+                  onUpdateConfig({ audioVolume: newVol });
+                  ambientAudio.setVolume(newVol);
                 }}
-                className="w-16 sm:w-20 accent-amber-400 cursor-pointer h-1 rounded-lg"
+                isLoop={config.isLoop !== false}
+                onToggleLoop={() => {
+                  onUpdateConfig({ isLoop: !(config.isLoop !== false) });
+                }}
               />
-              <span className="font-mono text-[10px] w-7 text-right">
-                %{config.brightnessPercent || 85}
-              </span>
             </div>
 
-            {/* Fullscreen Toggle */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleFullscreen();
-              }}
-              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-90 text-white transition-all cursor-pointer"
-              title={isFullscreen ? 'Tam Ekrandan Çık' : 'Tam Ekran Yap (Kiosk)'}
-            >
-              {isFullscreen ? (
-                <Minimize2 className="w-4 h-4" />
-              ) : (
-                <Maximize2 className="w-4 h-4" />
-              )}
-            </button>
+            {/* Right: Minimized Sun/Fullscreen/Red X Pill (Expands on Click) */}
+            <div className="flex items-center">
+              <SmartDisplayControlsPill
+                brightnessPercent={config.brightnessPercent || 85}
+                onBrightnessChange={(val) => onUpdateConfig({ brightnessPercent: val })}
+                isFullscreen={isFullscreen}
+                onToggleFullscreen={toggleFullscreen}
+                onClose={() => {
+                  if (document.fullscreenElement) {
+                    document.exitFullscreen().catch(() => {});
+                  }
+                  onClose();
+                }}
+              />
+            </div>
+          </div>
 
-            {/* Exit / Return */}
+          {/* Standalone Clean Screen (Zen Mode) Button ("harici olark buraya temiz ekran butonu koyalım ama aynı cerceve ıcınde olmasın. ve en sagda dursun aynı hızada. fırça gibi bir simge olabilir. burada temiz fırca simgemiz kalsın sadece. ama bu sımge de biraz soluk hale gelsin.") */}
+          <div className="shrink-0 flex items-center">
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                if (document.fullscreenElement) {
-                  document.exitFullscreen().catch(() => {});
-                }
-                onClose();
+                setIsCleanScreen((prev) => !prev);
               }}
-              className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
-              title="Ambiyans modunu kapat ve termostata dön"
+              className={`p-2.5 sm:p-3 rounded-full backdrop-blur-2xl border transition-all duration-500 cursor-pointer pointer-events-auto ${
+                isCleanScreen
+                  ? 'bg-black/30 border-white/10 text-white/40 hover:text-white hover:bg-black/60 hover:border-amber-400/40 hover:scale-110 shadow-lg'
+                  : 'bg-black/60 hover:bg-black/80 active:scale-95 border-white/20 hover:border-amber-400/40 text-white shadow-2xl'
+              }`}
+              title={
+                isCleanScreen
+                  ? 'Ekranı Geri Getir (Temiz Ekrandan Çık)'
+                  : 'Temiz Ekran Modu (Tüm Bilgileri Gizle)'
+              }
             >
-              <X className="w-4 h-4" />
-              <span>Çıkış</span>
+              <Paintbrush
+                className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${
+                  isCleanScreen ? 'text-amber-400/50' : 'text-amber-400'
+                }`}
+              />
             </button>
           </div>
         </div>

@@ -21,6 +21,7 @@ interface AmbientVisualCanvasProps {
   slideTransition: SlideTransition;
   slideIndex: number;
   isPlaying?: boolean;
+  isLoop?: boolean;
   onVideoEnded?: () => void;
 }
 
@@ -100,6 +101,7 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
   slideTransition,
   slideIndex,
   isPlaying = true,
+  isLoop = true,
   onVideoEnded,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -134,13 +136,17 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
     };
 
     const handleVideoEnded = () => {
-      if (customVideos.length <= 1) {
-        // Single video: seamlessly loop without stopping
-        v.currentTime = 0;
-        v.play().catch(() => {});
+      if (isLoop) {
+        if (customVideos.length <= 1) {
+          // Single video: seamlessly loop without stopping
+          v.currentTime = 0;
+          v.play().catch(() => {});
+        } else {
+          // Multi-video playlist: advance to next track
+          onVideoEnded?.();
+        }
       } else {
-        // Multi-video playlist: advance to next track
-        onVideoEnded?.();
+        v.pause();
       }
     };
 
@@ -222,7 +228,7 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
           key={effectiveVideoUrl}
           src={effectiveVideoUrl}
           autoPlay
-          loop={customVideos.length <= 1}
+          loop={isLoop && customVideos.length <= 1}
           muted
           playsInline
           preload="auto"
