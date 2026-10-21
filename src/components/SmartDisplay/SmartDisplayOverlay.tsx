@@ -488,12 +488,12 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
         </div>
 
         {/* ── CENTER / MAIN: Digital Clock + Equalizer + Temp Capsule ── */}
-        {/* Temiz Ekran modunda sağ üste süzülerek küçülür, kullanıcı hareketin gidişini görür */}
+        {/* Temiz Ekran modunda sağ üstteki derece ve ikonun yerine süzülerek küçülür, %5 saydamlaşır (opacity-95) */}
         <div
-          className={`my-auto flex flex-col items-center justify-center text-center transition-all duration-700 ease-in-out origin-top-right transform ${
+          className={`absolute pointer-events-auto flex flex-col items-center justify-center text-center transition-all duration-700 ease-in-out origin-top-right select-none ${
             isCleanScreen
-              ? 'translate-x-[calc(50vw-140px)] -translate-y-[calc(40vh-20px)] scale-[0.32] sm:scale-[0.36] md:scale-[0.4] opacity-90'
-              : 'translate-x-0 translate-y-0 scale-100 opacity-100'
+              ? 'top-0 sm:top-1 md:top-1.5 left-full -translate-x-full translate-y-0 scale-[0.32] sm:scale-[0.25] md:scale-[0.22] opacity-95'
+              : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-100 opacity-100'
           }`}
           style={{
             transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
