@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -62,6 +62,66 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
   const [isThermostatWheelOpen, setIsThermostatWheelOpen] = useState(false);
   const [isThermostatClosing, setIsThermostatClosing] = useState(false);
   const [isCleanScreen, setIsCleanScreen] = useState(false);
+  const centerGroupRef = useRef<HTMLDivElement | null>(null);
+  const targetAreaRef = useRef<HTMLDivElement | null>(null);
+  const [cleanCoords, setCleanCoords] = useState<{ x: number; y: number; scale: number } | null>(null);
+
+  const updateCleanCoords = useCallback(() => {
+    if (centerGroupRef.current && targetAreaRef.current) {
+      const centerRect = centerGroupRef.current.getBoundingClientRect();
+      const targetRect = targetAreaRef.current.getBoundingClientRect();
+      if (centerRect.width > 0 && targetRect.width > 0) {
+        const deltaX = targetRect.right - centerRect.right;
+        const deltaY = targetRect.top - centerRect.top;
+        const targetScale = Math.min(0.36, Math.max(0.24, (targetRect.height * 1.1) / centerRect.height));
+        setCleanCoords({ x: deltaX, y: deltaY, scale: targetScale });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const t = setTimeout(updateCleanCoords, 100);
+    const handleResize = () => {
+      if (!isCleanScreen) updateCleanCoords();
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isOpen, isCleanScreen, updateCleanCoords]);
+
+  const toggleCleanScreen = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!isCleanScreen) {
+      updateCleanCoords();
+      setIsCleanScreen(true);
+    } else {
+      setIsCleanScreen(false);
+    }
+  };
+
+  const cleanTransformStyle = useMemo(() => {
+    if (!isCleanScreen) {
+      return {
+        transform: 'translate3d(0, 0, 0) scale(1)',
+        opacity: 1,
+      };
+    }
+    if (cleanCoords) {
+      return {
+        transform: `translate3d(${cleanCoords.x}px, ${cleanCoords.y}px, 0) scale(${cleanCoords.scale})`,
+        opacity: 0.95,
+      };
+    }
+    const fallbackX = typeof window !== 'undefined' ? window.innerWidth / 2 - 200 : 700;
+    const fallbackY = typeof window !== 'undefined' ? -(window.innerHeight / 2 - 70) : -450;
+    return {
+      transform: `translate3d(${fallbackX}px, ${fallbackY}px, 0) scale(0.28)`,
+      opacity: 0.95,
+    };
+  }, [isCleanScreen, cleanCoords]);
 
   // Playlist navigation indices
   const [slideIndex, setSlideIndex] = useState(0);
@@ -440,7 +500,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
           )}
 
           {/* RIGHT: Dokun ve Kontrol Et Termostat Butonu + Hava Durumu Çerçevesi */}
-          <div className="flex items-center gap-2 sm:gap-2.5 pointer-events-auto">
+          <div ref={targetAreaRef} className="flex items-center gap-2 sm:gap-2.5 pointer-events-auto">
             {/* Dokun ve Kontrol Et: Termostat Görseli & Tekerlek Açma Butonu */}
             <button
               type="button"
@@ -487,39 +547,15 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
           </div>
         </div>
 
-        {/* ── CENTER / MAIN: Digital Clock + Equalizer + Temp Capsule ── */}
-        {/* Temiz Ekran modunda sağ üstteki derece ve ikonun yerine süzülerek küçülür, %5 saydamlaşır (opacity-95) */}
-        <div
-          className={`absolute pointer-events-auto flex flex-col items-center justify-center text-center transition-all duration-700 ease-in-out origin-top-right select-none ${
-            isCleanScreen
-              ? 'top-0 sm:top-1 md:top-1.5 left-full -translate-x-full translate-y-0 scale-[0.32] sm:scale-[0.25] md:scale-[0.22] opacity-95'
-              : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-100 opacity-100'
-          }`}
-          style={{
-            transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
-          }}
-        >
-          {/* Large Clock */}
-          <div className="flex items-baseline font-mono tracking-tight font-black drop-shadow-2xl text-white">
-            <span className="text-6xl sm:text-8xl md:text-[10rem] lg:text-[11.5rem] leading-none">
-              {hours}:{minutes}
-            </span>
-            <span className="text-xl sm:text-3xl md:text-4xl text-slate-400 font-bold ml-2 sm:ml-4">
-              {seconds}
-            </span>
-          </div>
-
-          <p className="mt-2 sm:mt-4 text-xs sm:text-base md:text-lg font-medium tracking-widest text-slate-300 uppercase drop-shadow-md">
-            {dateStr}
-          </p>
-
-          {/* Reactive Music Equalizer Visualizer (User requested: no label text, blurs out in clean screen mode) */}
+        {/* ── CENTER AREA: Digital Clock + Equalizer + Temp Capsule ── */}
+        <div className="my-auto flex flex-col items-center justify-center text-center">
+          {/* Reactive Music Equalizer Visualizer: Sits in center and smoothly fades out in place ("sönerek kaybolmalıydı") */}
           {isEqualizerActive && (
             <div
-              className={`mt-3 pointer-events-auto w-full flex flex-col items-center justify-center transition-all duration-700 ${
+              className={`my-3 flex flex-col items-center justify-center transition-all duration-700 ease-out pointer-events-auto ${
                 isCleanScreen
-                  ? 'opacity-0 blur-md pointer-events-none'
-                  : 'opacity-100 blur-none'
+                  ? 'opacity-0 scale-90 blur-xs pointer-events-none'
+                  : 'opacity-100 scale-100 blur-none'
               }`}
             >
               <MusicEqualizer
@@ -530,42 +566,67 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
             </div>
           )}
 
-          {/* Quick Temperature Capsule */}
-          <div className="mt-4 sm:mt-6 flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl pointer-events-auto">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] sm:text-xs text-slate-400">Oda:</span>
-              <span className="text-base sm:text-lg font-bold font-mono text-emerald-400">
-                {currentTemp}°C
+          {/* Clock, Date, and Temperature Capsule: Glides and shrinks to top-right thermostat & weather section, never leaves screen, opacity drops 5% (0.95) */}
+          <div
+            ref={centerGroupRef}
+            className="flex flex-col items-center justify-center text-center pointer-events-auto select-none"
+            style={{
+              ...cleanTransformStyle,
+              transformOrigin: 'top right',
+              transition: 'transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.7s ease-out',
+            }}
+          >
+            {/* Large Clock */}
+            <div className="flex items-baseline font-mono tracking-tight font-black drop-shadow-2xl text-white">
+              <span className="text-6xl sm:text-8xl md:text-[10rem] lg:text-[11.5rem] leading-none">
+                {hours}:{minutes}
+              </span>
+              <span className="text-xl sm:text-3xl md:text-4xl text-slate-400 font-bold ml-2 sm:ml-4">
+                {seconds}
               </span>
             </div>
-            <div className="w-px h-4 sm:h-5 bg-white/20" />
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] sm:text-xs text-slate-400">Hedef:</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSetTargetTemp(Math.max(10, +(targetTemp - 0.5).toFixed(1)));
-                }}
-                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
-                title="Hedef Sıcaklığı Azalt"
-              >
-                <Minus className="w-3.5 h-3.5" />
-              </button>
-              <span className="text-base sm:text-lg font-bold font-mono text-amber-400">
-                {targetTemp}°C
-              </span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSetTargetTemp(Math.min(32, +(targetTemp + 0.5).toFixed(1)));
-                }}
-                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
-                title="Hedef Sıcaklığı Artır"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
+
+            <p className="mt-2 sm:mt-4 text-xs sm:text-base md:text-lg font-medium tracking-widest text-slate-300 uppercase drop-shadow-md">
+              {dateStr}
+            </p>
+
+            {/* Quick Temperature Capsule */}
+            <div className="mt-4 sm:mt-6 flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl pointer-events-auto">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] sm:text-xs text-slate-400">Oda:</span>
+                <span className="text-base sm:text-lg font-bold font-mono text-emerald-400">
+                  {currentTemp}°C
+                </span>
+              </div>
+              <div className="w-px h-4 sm:h-5 bg-white/20" />
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] sm:text-xs text-slate-400">Hedef:</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSetTargetTemp(Math.max(10, +(targetTemp - 0.5).toFixed(1)));
+                  }}
+                  className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
+                  title="Hedef Sıcaklığı Azalt"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-base sm:text-lg font-bold font-mono text-amber-400">
+                  {targetTemp}°C
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSetTargetTemp(Math.min(32, +(targetTemp + 0.5).toFixed(1)));
+                  }}
+                  className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
+                  title="Hedef Sıcaklığı Artır"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -633,10 +694,7 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
           <div className="shrink-0 flex items-center">
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsCleanScreen((prev) => !prev);
-              }}
+              onClick={toggleCleanScreen}
               className={`p-2.5 sm:p-3 rounded-full backdrop-blur-2xl border transition-all duration-500 cursor-pointer pointer-events-auto ${
                 isCleanScreen
                   ? 'bg-black/30 border-white/10 text-white/40 hover:text-white hover:bg-black/60 hover:border-amber-400/40 hover:scale-110 shadow-lg'
