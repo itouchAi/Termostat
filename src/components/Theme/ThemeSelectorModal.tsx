@@ -18,6 +18,7 @@ import type { ThemeMode, PerformanceMode } from '../../types.ts';
 import type { WeatherCondition } from '../../utils/weather.ts';
 import { translations, type Language } from '../../utils/i18n.ts';
 import { ObsidianLavenderPreviewCard } from './ObsidianLavenderPreviewCard.tsx';
+import { OBSIDIAN_PALETTES } from '../../utils/obsidianPalettes.ts';
 
 interface ThemeSelectorModalProps {
   isOpen: boolean;
@@ -31,6 +32,8 @@ interface ThemeSelectorModalProps {
   weatherConditionOverride?: WeatherCondition | null;
   cityName?: string;
   lang?: Language;
+  obsidianPaletteIdx?: number;
+  onSelectObsidianPaletteIdx?: (idx: number) => void;
 }
 
 export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
@@ -45,6 +48,8 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
   weatherConditionOverride,
   cityName = 'İstanbul',
   lang = 'tr',
+  obsidianPaletteIdx = 3,
+  onSelectObsidianPaletteIdx,
 }) => {
   const t = translations[lang] || translations.tr;
   if (!isOpen) return null;
@@ -238,6 +243,56 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug line-clamp-2">
                         {t.description}
                       </p>
+
+                      {/* Sub-color swatches for Obsidian Lavender */}
+                      {t.id === 'obsidian_lavender' && (
+                        <div
+                          className="mt-2.5 pt-2 border-t border-white/[0.08] flex items-center justify-between gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-[#c8b7f8]">
+                              Alt Renk Paleti:
+                            </span>
+                            <span className="text-[9px] text-[#9a93b5]">
+                              {OBSIDIAN_PALETTES[obsidianPaletteIdx ?? 3]?.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {OBSIDIAN_PALETTES.map((p, pIdx) => {
+                              const isPaletteActive = (obsidianPaletteIdx ?? 3) === pIdx;
+                              return (
+                                <button
+                                  key={p.id}
+                                  type="button"
+                                  onClick={() => {
+                                    onSelectTheme('obsidian_lavender');
+                                    onSelectObsidianPaletteIdx?.(pIdx);
+                                  }}
+                                  style={{
+                                    backgroundColor: p.hex,
+                                    borderTop: '1px solid rgba(255, 255, 255, 0.45)',
+                                    borderLeft: '1px solid rgba(255, 255, 255, 0.3)',
+                                    borderRight: '1px solid rgba(0, 0, 0, 0.6)',
+                                    borderBottom: '1.5px solid rgba(0, 0, 0, 0.8)',
+                                    boxShadow: isPaletteActive
+                                      ? `0 0 12px ${p.hex}, 0 4px 8px rgba(0,0,0,0.8)`
+                                      : '0 2px 6px rgba(0,0,0,0.5)',
+                                  }}
+                                  className={`w-6 h-6 rounded-full cursor-pointer flex items-center justify-center transition-all ${
+                                    isPaletteActive
+                                      ? 'scale-120 ring-2 ring-white ring-offset-1 ring-offset-[#12101b]'
+                                      : 'opacity-70 hover:opacity-100 hover:scale-110'
+                                  }`}
+                                  title={p.name}
+                                >
+                                  {isPaletteActive && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Radio Check Indicator */}
@@ -267,8 +322,13 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                 </p>
               </div>
               <ObsidianLavenderPreviewCard
-                onApplyTheme={() => onSelectTheme('obsidian_lavender')}
+                onApplyTheme={(_hex, paletteIdx) => {
+                  onSelectTheme('obsidian_lavender');
+                  if (paletteIdx !== undefined) onSelectObsidianPaletteIdx?.(paletteIdx);
+                }}
                 isActiveTheme={currentTheme === 'obsidian_lavender'}
+                selectedColorIdx={obsidianPaletteIdx}
+                onSelectColorIdx={onSelectObsidianPaletteIdx}
               />
             </div>
           </div>

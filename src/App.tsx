@@ -49,6 +49,7 @@ import {
   calculateFlameModulation,
   resolveEffectiveTheme,
 } from './utils/thermostatRules.ts';
+import { getObsidianPalette } from './utils/obsidianPalettes.ts';
 import { SecureVault, encryptData } from './utils/crypto.ts';
 import {
   DEFAULT_LOCATIONS,
@@ -124,8 +125,35 @@ export default function App() {
       const saved = localStorage.getItem('theme_preference') as ThemeMode;
       if (saved === 'glass' || saved === 'light' || saved === 'dark' || saved === 'system' || saved === 'obsidian_lavender') return saved;
     }
-    return 'glass';
+    return 'obsidian_lavender';
   });
+
+  // ── Obsidian Palette Sub-color Option (0: Pastel Lavanta, 1: Kül Leylak, 2: Kraliyet İndigo, 3: Derin Obsidyen Dumanı) ──
+  const [obsidianPaletteIdx, setObsidianPaletteIdx] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('smart_thermostat_obsidian_palette');
+        if (saved !== null) {
+          const num = parseInt(saved, 10);
+          if (num >= 0 && num <= 3) return num;
+        }
+      } catch {}
+    }
+    return 3; // Default to 'Derin Obsidyen Dumanı' as favored by user
+  });
+
+  const handleSelectObsidianPalette = (idx: number) => {
+    setObsidianPaletteIdx(idx);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('smart_thermostat_obsidian_palette', String(idx));
+      } catch {}
+    }
+  };
+
+  const activeObsidianPalette = useMemo(() => {
+    return getObsidianPalette(obsidianPaletteIdx);
+  }, [obsidianPaletteIdx]);
 
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [weatherConditionOverride, setWeatherConditionOverride] = useState<WeatherCondition | null>(null);
@@ -886,13 +914,39 @@ export default function App() {
   return (
     <div
       className={`h-[100dvh] max-h-[100dvh] w-screen relative ${
-        themeMode === 'glass'
+        themeMode === 'obsidian_lavender'
+          ? 'bg-[#0c0a13] text-slate-100'
+          : themeMode === 'glass'
           ? 'bg-transparent text-slate-100'
           : effectiveTheme === 'dark'
           ? 'dark bg-radial-[at_top] from-slate-900 via-slate-950 to-black text-slate-100'
           : 'bg-radial-[at_top] from-slate-100 via-sky-50/40 to-slate-200/80 text-slate-800'
-      } font-sans transition-colors duration-500 flex flex-col selection:bg-blue-500 selection:text-white overflow-hidden`}
+      } font-sans transition-colors duration-500 flex flex-col selection:bg-[#8261e6] selection:text-white overflow-hidden`}
     >
+      {/* ── VOLUMETRIC OBSIDIAN LAVENDER NEON AMBIENT TRAILS (Full App Backlighting) ── */}
+      {themeMode === 'obsidian_lavender' && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div
+            className="absolute top-0 right-1/4 w-[520px] h-[520px] rounded-full blur-3xl transition-all duration-700"
+            style={{
+              background: `radial-gradient(circle, ${activeObsidianPalette.glow.replace('0.6', '0.28')} 0%, ${activeObsidianPalette.glow.replace('0.6', '0.07')} 50%, transparent 75%)`,
+            }}
+          />
+          <div
+            className="absolute -bottom-20 -left-20 w-[450px] h-[450px] rounded-full blur-2xl transition-all duration-700"
+            style={{
+              background: `radial-gradient(circle, ${activeObsidianPalette.glow.replace('0.6', '0.14')} 0%, transparent 70%)`,
+            }}
+          />
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[750px] h-[480px] rounded-full blur-[140px] transition-all duration-700"
+            style={{
+              background: `radial-gradient(circle, ${activeObsidianPalette.glow.replace('0.6', '0.18')} 0%, transparent 70%)`,
+            }}
+          />
+        </div>
+      )}
+
       {/* ── ATMOSPHERIC LIVE WEATHER CANVAS (Hareketli Bulut, Yağmur, Kar, Sis & Güneş Arka Planı) ── */}
       {(themeMode === 'glass' || themeMode === 'system') && (
         <AtmosphericWeatherBackground
@@ -925,7 +979,9 @@ export default function App() {
       {/* ── TOP NAV HEADER ── */}
       <header
         className={`relative z-40 h-14 sm:h-16 px-3 sm:px-6 md:px-8 flex items-center justify-between border-b transition-all ${
-          themeMode === 'glass'
+          themeMode === 'obsidian_lavender'
+            ? 'border-white/[0.08] bg-[#0c0a13]/90 text-white backdrop-blur-2xl shadow-[0_4px_25px_rgba(0,0,0,0.8)]'
+            : themeMode === 'glass'
             ? 'border-white/15 bg-slate-950/30 text-white backdrop-blur-2xl shadow-sm'
             : 'border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md'
         }`}
@@ -965,7 +1021,9 @@ export default function App() {
             type="button"
             onClick={() => setLang((prev) => (prev === 'tr' ? 'en' : 'tr'))}
             className={`h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl border flex items-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer ${
-              themeMode === 'glass'
+              themeMode === 'obsidian_lavender'
+                ? 'bg-[#151322] hover:bg-[#1f1b2f] border-t border-l border-white/[0.14] border-r border-black/60 border-b border-black/80 text-white shadow-[0_4px_12px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.12)]'
+                : themeMode === 'glass'
                 ? 'bg-white/10 hover:bg-white/20 border-white/25 text-white backdrop-blur-md shadow-white/5'
                 : 'bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
             }`}
@@ -981,7 +1039,11 @@ export default function App() {
             type="button"
             onClick={() => setPerformanceMode((p) => (p === 'ultra' ? 'eco' : 'ultra'))}
             className={`p-1.5 sm:px-2.5 sm:py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border cursor-pointer ${
-              performanceMode === 'ultra'
+              themeMode === 'obsidian_lavender'
+                ? performanceMode === 'ultra'
+                  ? 'bg-[#1e1930] border-amber-500/50 text-amber-300 shadow-md'
+                  : 'bg-[#151322] border-emerald-500/50 text-emerald-300 shadow-md'
+                : performanceMode === 'ultra'
                 ? 'bg-amber-500/15 border-amber-500/40 text-amber-500 dark:text-amber-400 shadow-sm'
                 : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-sm'
             }`}
@@ -1057,7 +1119,11 @@ export default function App() {
           <button
             type="button"
             onClick={() => setIsCustomizerOpen(true)}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer"
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer ${
+              themeMode === 'obsidian_lavender'
+                ? 'bg-[#151322] hover:bg-[#1f1b2f] border-t border-l border-white/[0.14] border-r border-black/60 border-b border-black/80 text-white shadow-[0_4px_12px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.12)]'
+                : 'bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+            }`}
             aria-label={t.customizeWidgets}
             title={t.customizeWidgets}
           >
@@ -1081,7 +1147,11 @@ export default function App() {
           <button
             type="button"
             onClick={() => setIsSettingsOpen(true)}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer"
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer ${
+              themeMode === 'obsidian_lavender'
+                ? 'bg-[#151322] hover:bg-[#1f1b2f] border-t border-l border-white/[0.14] border-r border-black/60 border-b border-black/80 text-white shadow-[0_4px_12px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.12)]'
+                : 'bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+            }`}
             aria-label={t.settingsTitle}
             title={t.settingsTitle}
           >
@@ -1385,7 +1455,7 @@ export default function App() {
                             onClick={() => handleSetTarget(Math.min(32, Math.round((targetTemp + 0.5) * 2) / 2))}
                             className={`w-8 h-8 rounded-xl font-black flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer ${
                               themeMode === 'obsidian_lavender'
-                                ? 'bg-gradient-to-tr from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white border-t border-l border-white/30 border-r border-[#3b1c8a] border-b border-[#230e58] shadow-[0_6px_16px_rgba(0,0,0,0.7),0_2px_10px_rgba(133,99,232,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)]'
+                                ? `bg-gradient-to-tr ${activeObsidianPalette.gradient} text-white border-t border-l border-white/30 border-r border-[#3b1c8a] border-b border-[#230e58] shadow-[0_6px_16px_rgba(0,0,0,0.7),0_2px_10px_rgba(133,99,232,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)]`
                                 : 'bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/30 border border-orange-400/50'
                             }`}
                             title="Hedef sıcaklığı 0.5°C artır"
@@ -1412,7 +1482,7 @@ export default function App() {
                                 className={`flex flex-col items-center justify-center py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-xl sm:rounded-2xl text-center transition-all duration-200 cursor-pointer w-full min-w-0 ${
                                   isActive
                                     ? themeMode === 'obsidian_lavender'
-                                      ? 'bg-gradient-to-tr from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white font-extrabold border-t border-l border-white/30 border-r border-[#3b1c8a] border-b-2 border-b-[#230e58] shadow-[0_10px_22px_-3px_rgba(0,0,0,0.8),0_4px_14px_rgba(133,99,232,0.45),inset_0_1px_1px_rgba(255,255,255,0.35)] scale-[1.03]'
+                                      ? `bg-gradient-to-tr ${activeObsidianPalette.gradient} text-white font-extrabold border-t border-l border-white/30 border-r border-[#3b1c8a] border-b-2 border-b-[#230e58] shadow-[0_10px_22px_-3px_rgba(0,0,0,0.8),0_4px_14px_rgba(133,99,232,0.45),inset_0_1px_1px_rgba(255,255,255,0.35)] scale-[1.03]`
                                       : 'bg-gradient-to-tr from-orange-500 to-amber-500 text-white font-extrabold shadow-lg shadow-orange-500/35 border border-orange-400/80 scale-[1.03]'
                                     : themeMode === 'obsidian_lavender'
                                     ? 'bg-[#14121e]/90 hover:bg-[#1c1929] text-[#c8b7f8] border-t border-l border-white/[0.12] border-r border-black/60 border-b-2 border-b-black/80 shadow-[0_8px_18px_-2px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-1.5px_1.5px_rgba(0,0,0,0.5)]'
@@ -1533,7 +1603,7 @@ export default function App() {
                 className={`relative px-2 xs:px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full text-[10px] xs:text-[11px] sm:text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer min-w-0 whitespace-nowrap ${
                   isActive
                     ? themeMode === 'obsidian_lavender'
-                      ? 'bg-gradient-to-r from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white border-t border-l border-white/30 border-r border-[#3b1c8a] border-b border-b-[#230e58] shadow-[0_8px_18px_rgba(0,0,0,0.7),0_2px_12px_rgba(133,99,232,0.4),inset_0_1px_1px_rgba(255,255,255,0.3)] scale-105'
+                      ? `bg-gradient-to-r ${activeObsidianPalette.gradient} text-white border-t border-l border-white/30 border-r border-[#3b1c8a] border-b border-b-[#230e58] shadow-[0_8px_18px_rgba(0,0,0,0.7),0_2px_12px_rgba(133,99,232,0.4),inset_0_1px_1px_rgba(255,255,255,0.3)] scale-105`
                       : 'bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-orange-500 text-white shadow-md shadow-blue-500/30 dark:shadow-orange-500/30 scale-105'
                     : themeMode === 'obsidian_lavender'
                     ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d] border border-transparent hover:border-white/[0.06]'
@@ -1556,7 +1626,7 @@ export default function App() {
           onClick={() => setIsVoiceAssistantOpen(true)}
           className={`relative p-2 xs:p-2.5 sm:p-3 rounded-2xl sm:rounded-full backdrop-blur-2xl transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 shadow-lg group shrink-0 ${
             themeMode === 'obsidian_lavender'
-              ? 'bg-gradient-to-tr from-[#7352d4] to-[#9979f5] border-t border-l border-white/35 border-r border-[#3b1c8a] border-b border-b-[#230e58] text-white shadow-[0_8px_22px_rgba(0,0,0,0.7),0_0_15px_rgba(130,97,230,0.35),inset_0_1px_1px_rgba(255,255,255,0.35)]'
+              ? `bg-gradient-to-tr ${activeObsidianPalette.gradient} border-t border-l border-white/35 border-r border-[#3b1c8a] border-b border-b-[#230e58] text-white shadow-[0_8px_22px_rgba(0,0,0,0.7),0_0_15px_rgba(130,97,230,0.35),inset_0_1px_1px_rgba(255,255,255,0.35)]`
               : themeMode === 'glass'
               ? 'bg-gradient-to-tr from-blue-600/80 to-indigo-600/80 hover:from-blue-500 hover:to-indigo-500 border border-white/30 text-white shadow-blue-500/30'
               : 'bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 border border-blue-400/40'
@@ -1582,6 +1652,8 @@ export default function App() {
         weatherConditionOverride={weatherConditionOverride}
         cityName={activeLocation.cityName}
         lang={lang}
+        obsidianPaletteIdx={obsidianPaletteIdx}
+        onSelectObsidianPaletteIdx={handleSelectObsidianPalette}
       />
 
       <WidgetCustomizerModal

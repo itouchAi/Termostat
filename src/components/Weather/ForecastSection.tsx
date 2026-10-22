@@ -50,6 +50,7 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
   lang = 'tr',
 }) => {
   const t = translations[lang] || translations.tr;
+  const isObsidian = themeMode === 'obsidian_lavender';
   const isGlass = themeMode === 'glass';
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -74,7 +75,9 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
 
   return (
     <div className={`w-full flex flex-col justify-between h-full rounded-2xl p-3 sm:p-4 transition-all ${
-      isGlass
+      isObsidian
+        ? 'bg-transparent text-slate-100'
+        : isGlass
         ? 'bg-slate-950/35 border border-white/20 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.25),0_20px_45px_rgba(0,0,0,0.35)] backdrop-blur-lg text-slate-100'
         : 'bg-slate-50/90 dark:bg-slate-900/90 border-t border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100'
     }`}>
@@ -86,7 +89,11 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
             type="button"
             onClick={() => setIsDropdownOpen((prev) => !prev)}
             aria-label="Konum Seç"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs hover:border-blue-400 transition-all text-xs font-bold text-slate-800 dark:text-white"
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              isObsidian
+                ? 'bg-[#151322] hover:bg-[#1f1b2f] border-t border-l border-white/[0.14] border-r border-black/60 border-b border-black/80 text-white shadow-[0_4px_12px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.12)]'
+                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs hover:border-blue-400 text-slate-800 dark:text-white'
+            }`}
           >
             <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
             <span className="truncate max-w-[120px] sm:max-w-[180px]">
@@ -97,7 +104,11 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
 
           {/* Location Dropdown Menu */}
           {isDropdownOpen && (
-            <div className="absolute top-full left-0 mt-1.5 w-60 z-30 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-1.5 text-xs">
+            <div className={`absolute top-full left-0 mt-1.5 w-60 z-30 border rounded-2xl shadow-xl p-1.5 text-xs ${
+              isObsidian
+                ? 'bg-[#12101b] border-white/10 text-white shadow-2xl'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+            }`}>
               <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 Kayıtlı Konumlar (Cihaz Yönetimi)
               </div>
@@ -151,7 +162,11 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
             onClick={() => onToggleNotifications?.(!notificationsEnabled)}
             className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all ${
               notificationsEnabled
-                ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 shadow-xs'
+                ? isObsidian
+                  ? 'bg-[#1e1930] border-amber-500/50 text-amber-300 shadow-md'
+                  : 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 shadow-xs'
+                : isObsidian
+                ? 'bg-[#151322] border-t border-l border-white/[0.12] border-r border-black/60 border-b border-black/80 text-[#9a93b5] hover:text-white shadow-[0_4px_12px_rgba(0,0,0,0.6)]'
                 : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
             }`}
             title="3 saatlik hava durumu bildirimleri ve ani yağmur/kar önlem uyarıları"
@@ -196,7 +211,11 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
             type="button"
             onClick={() => setSelectedDayForHourly(day)}
             className={`p-2 sm:p-2.5 rounded-xl flex flex-col items-center justify-between text-center transition-all duration-200 cursor-pointer text-left w-full ${
-              idx === 0
+              isObsidian
+                ? idx === 0
+                  ? 'bg-gradient-to-tr from-[#7352d4] via-[#8563e8] to-[#9979f5] border-t border-l border-white/30 border-r border-[#3b1c8a] border-b-2 border-b-[#230e58] shadow-[0_10px_22px_-3px_rgba(0,0,0,0.8),0_4px_14px_rgba(133,99,232,0.45),inset_0_1px_1px_rgba(255,255,255,0.35)] scale-[1.03] text-white'
+                  : 'bg-[#14121e]/90 hover:bg-[#1c1929] border-t border-l border-white/[0.12] border-r border-black/60 border-b-2 border-b-black/80 shadow-[0_8px_18px_-2px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.12)] text-slate-200'
+                : idx === 0
                 ? 'bg-white dark:bg-slate-800 border-2 border-blue-400/80 dark:border-orange-500/80 shadow-md shadow-blue-500/10 dark:shadow-orange-500/15'
                 : 'bg-white/80 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-xs hover:border-blue-400 dark:hover:border-slate-600 hover:shadow-sm'
             }`}

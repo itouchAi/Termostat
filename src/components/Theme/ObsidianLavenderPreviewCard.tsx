@@ -15,68 +15,33 @@ import {
   Headphones,
 } from 'lucide-react';
 
+import { OBSIDIAN_PALETTES, type ObsidianPalette } from '../../utils/obsidianPalettes.ts';
+
 interface ObsidianLavenderPreviewCardProps {
-  onApplyTheme?: (colorHex?: string) => void;
+  onApplyTheme?: (colorHex?: string, paletteIdx?: number) => void;
   isActiveTheme?: boolean;
+  selectedColorIdx?: number;
+  onSelectColorIdx?: (idx: number) => void;
 }
 
 export const ObsidianLavenderPreviewCard: React.FC<ObsidianLavenderPreviewCardProps> = ({
   onApplyTheme,
   isActiveTheme = false,
+  selectedColorIdx: externalColorIdx,
+  onSelectColorIdx,
 }) => {
-  const [selectedColorIdx, setSelectedColorIdx] = useState<number>(0);
+  const [internalColorIdx, setInternalColorIdx] = useState<number>(3); // Default to Derin Obsidyen Dumanı as favored by user
   const [selectedMode, setSelectedMode] = useState<string>('KONFOR');
   const [isLiked, setIsLiked] = useState(false);
 
-  // 4 Distinct High-End Pastel Palettes matching the reference image swatches
-  const colorPalettes = [
-    {
-      id: 0,
-      name: 'Pastel Lavanta (Varsayılan)',
-      hex: '#8261e6',
-      gradient: 'from-[#7352d4] via-[#8563e8] to-[#9979f5]',
-      borderUnder: '#3b1c8a',
-      glow: 'rgba(130,97,230,0.6)',
-      ringColor: '#a786ff',
-      textColor: '#d8caff',
-      badgeBg: 'bg-[#8261e6]/25 border-[#8261e6]/50 text-[#d8caff]',
-    },
-    {
-      id: 1,
-      name: 'Kül Leylak (Dusty Lilac)',
-      hex: '#b388eb',
-      gradient: 'from-[#9b6cd8] via-[#af7fe8] to-[#c79bf2]',
-      borderUnder: '#532685',
-      glow: 'rgba(175,127,232,0.6)',
-      ringColor: '#d8b4fe',
-      textColor: '#f3e8ff',
-      badgeBg: 'bg-[#b388eb]/25 border-[#b388eb]/50 text-[#f3e8ff]',
-    },
-    {
-      id: 2,
-      name: 'Kraliyet İndigo (Royal Violet)',
-      hex: '#5c55dc',
-      gradient: 'from-[#473ecc] via-[#5c55dc] to-[#7871f0]',
-      borderUnder: '#27207e',
-      glow: 'rgba(92,85,220,0.6)',
-      ringColor: '#9993ff',
-      textColor: '#e0e7ff',
-      badgeBg: 'bg-[#5c55dc]/25 border-[#5c55dc]/50 text-[#e0e7ff]',
-    },
-    {
-      id: 3,
-      name: 'Derin Obsidyen Dumanı',
-      hex: '#3f3856',
-      gradient: 'from-[#2e293f] via-[#433b5c] to-[#5a507a]',
-      borderUnder: '#1a1626',
-      glow: 'rgba(110,95,145,0.5)',
-      ringColor: '#8a7ea8',
-      textColor: '#e6e4f0',
-      badgeBg: 'bg-[#3f3856]/30 border-[#3f3856]/60 text-[#e6e4f0]',
-    },
-  ];
+  const selectedColorIdx = externalColorIdx !== undefined ? externalColorIdx : internalColorIdx;
+  const colorPalettes = OBSIDIAN_PALETTES;
+  const activePalette = colorPalettes[selectedColorIdx] || colorPalettes[0];
 
-  const activePalette = colorPalettes[selectedColorIdx];
+  const handleColorChange = (idx: number) => {
+    setInternalColorIdx(idx);
+    onSelectColorIdx?.(idx);
+  };
 
   const modes = [
     { id: 'EKO', label: 'EKO' },
@@ -354,7 +319,7 @@ export const ObsidianLavenderPreviewCard: React.FC<ObsidianLavenderPreviewCardPr
                   <button
                     key={c.id}
                     type="button"
-                    onClick={() => setSelectedColorIdx(idx)}
+                    onClick={() => handleColorChange(idx)}
                     style={{
                       backgroundColor: c.hex,
                       /* Dokunsal 3D daire buton efekti */
@@ -441,7 +406,7 @@ export const ObsidianLavenderPreviewCard: React.FC<ObsidianLavenderPreviewCardPr
           <div className="relative z-10 flex items-center gap-2.5 mt-3 pt-2.5 border-t border-white/[0.05]">
             <button
               type="button"
-              onClick={() => onApplyTheme?.(activePalette.hex)}
+              onClick={() => onApplyTheme?.(activePalette.hex, selectedColorIdx)}
               className={`flex-1 py-3 sm:py-3.5 px-5 rounded-[26px] bg-gradient-to-b ${activePalette.gradient} text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 active:translate-y-1 active:scale-[0.98]`}
               style={{
                 border: '1px solid rgba(255, 255, 255, 0.28)',

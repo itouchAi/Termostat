@@ -73,6 +73,7 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
 }) => {
   const t = translations[lang] || translations.tr;
   const isGlass = themeMode === 'glass';
+  const isObsidian = themeMode === 'obsidian_lavender';
 
   // Active 3D window layer: 0 = Sıcaklık Haritası, 1 = Doğalgaz Faturası, 2 = Kombi & Sensörler
   const [activeLayer, setActiveLayer] = useState<0 | 1 | 2>(0);
@@ -285,12 +286,16 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
     return totalLength * (1 - ratio);
   };
 
-  // Glass 2nd layer container styles
-  const windowBaseClass = isGlass
+  // Glass/Obsidian 2nd layer container styles
+  const windowBaseClass = isObsidian
+    ? 'bg-[#12101b]/95 border-t border-l border-white/[0.12] border-r border-black/70 border-b-2 border-b-black/85 shadow-[0_20px_45px_rgba(0,0,0,0.85),inset_0_1.5px_2px_rgba(255,255,255,0.14)] text-slate-100'
+    : isGlass
     ? 'bg-slate-950/35 border border-white/20 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.25),0_20px_45px_rgba(0,0,0,0.35)] backdrop-blur-lg text-slate-100'
     : 'bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-slate-100 shadow-sm';
 
-  const subBoxClass = isGlass
+  const subBoxClass = isObsidian
+    ? 'bg-[#151322] border-t border-l border-white/[0.12] border-r border-black/60 border-b border-black/80 text-slate-100 shadow-[0_8px_18px_-2px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.12)]'
+    : isGlass
     ? 'bg-white/[0.08] border border-white/12 text-slate-100 backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]'
     : 'bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-slate-800 dark:text-slate-200';
 
@@ -304,7 +309,9 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
       {/* ── TOP LAYER SWITCHER PILLS (3 Pencere: Sıcaklık Haritası, Doğalgaz Faturası, Kombi & Sensörler) ── */}
       <div className="shrink-0 flex items-center justify-center mb-1.5 sm:mb-2">
         <div className={`flex items-center gap-1 sm:gap-1.5 p-1 rounded-2xl border transition-all ${
-          isGlass
+          isObsidian
+            ? 'bg-[#12101b]/95 border-t border-l border-white/[0.12] border-r border-black/70 border-b-2 border-b-black/85 shadow-[0_12px_26px_-4px_rgba(0,0,0,0.8),inset_0_1px_1.5px_rgba(255,255,255,0.12)]'
+            : isGlass
             ? 'bg-white/[0.10] border-white/20 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3)]'
             : 'bg-slate-100/90 dark:bg-slate-800/90 border-slate-200/80 dark:border-slate-700/80 shadow-xs'
         }`}>
@@ -313,7 +320,11 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
             onClick={() => setActiveLayer(0)}
             className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
               activeLayer === 0
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
+                ? isObsidian
+                  ? 'bg-gradient-to-tr from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white border-t border-l border-white/30 border-r border-[#3b1c8a] border-b-2 border-b-[#230e58] shadow-[0_8px_18px_rgba(0,0,0,0.7),0_2px_12px_rgba(133,99,232,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)] scale-[1.02]'
+                  : 'bg-blue-600 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
+                : isObsidian
+                ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
                 : isGlass
                 ? 'text-slate-300 hover:text-white'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -327,7 +338,11 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
             onClick={() => setActiveLayer(1)}
             className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
               activeLayer === 1
-                ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25 scale-[1.02]'
+                ? isObsidian
+                  ? 'bg-gradient-to-tr from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white border-t border-l border-white/30 border-r border-[#3b1c8a] border-b-2 border-b-[#230e58] shadow-[0_8px_18px_rgba(0,0,0,0.7),0_2px_12px_rgba(133,99,232,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)] scale-[1.02]'
+                  : 'bg-orange-500 text-white shadow-md shadow-orange-500/25 scale-[1.02]'
+                : isObsidian
+                ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
                 : isGlass
                 ? 'text-slate-300 hover:text-white'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -341,7 +356,11 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
             onClick={() => setActiveLayer(2)}
             className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
               activeLayer === 2
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/25 scale-[1.02]'
+                ? isObsidian
+                  ? 'bg-gradient-to-tr from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white border-t border-l border-white/30 border-r border-[#3b1c8a] border-b-2 border-b-[#230e58] shadow-[0_8px_18px_rgba(0,0,0,0.7),0_2px_12px_rgba(133,99,232,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)] scale-[1.02]'
+                  : 'bg-emerald-600 text-white shadow-md shadow-emerald-500/25 scale-[1.02]'
+                : isObsidian
+                ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
                 : isGlass
                 ? 'text-slate-300 hover:text-white'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
