@@ -337,42 +337,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
 
-                {/* 2. Slayt Ayarları (Sadece Slayt Gösterisi seçiliyse) */}
-                {smartDisplayConfig.mode === 'slideshow' && (
+                {/* 2. Slayt & Görsel Geçiş Ayarları */}
+                {(smartDisplayConfig.mode === 'slideshow' || smartDisplayConfig.mode === 'image') && (
                   <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-300 dark:border-purple-800/60 flex flex-col gap-2">
                     <span className="font-bold text-[11px] text-purple-700 dark:text-purple-300">
-                      Slayt Süresi & Geçiş Efekti
+                      {smartDisplayConfig.mode === 'slideshow' ? 'Slayt Süresi & Geçiş Efekti' : 'Görsel Geçiş Efekti'}
                     </span>
-                    <div className="grid grid-cols-2 gap-2 text-[10px]">
-                      <div>
-                        <span className="text-slate-500 dark:text-slate-400 block mb-1">
-                          Slayt Değişim Süresi:
-                        </span>
-                        <div className="flex gap-1">
-                          {[5, 10, 15, 30].map((sec) => (
-                            <button
-                              key={sec}
-                              type="button"
-                              onClick={() =>
-                                onUpdateSmartDisplayConfig?.({
-                                  slideshowIntervalSec: sec,
-                                })
-                              }
-                              className={`flex-1 py-1 rounded-lg font-bold ${
-                                smartDisplayConfig.slideshowIntervalSec === sec
-                                  ? 'bg-purple-600 text-white'
-                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                              }`}
-                            >
-                              {sec}s
-                            </button>
-                          ))}
+                    <div className={smartDisplayConfig.mode === 'slideshow' ? 'grid grid-cols-2 gap-2 text-[10px]' : 'flex flex-col text-[10px]'}>
+                      {smartDisplayConfig.mode === 'slideshow' && (
+                        <div>
+                          <span className="text-slate-500 dark:text-slate-400 block mb-1">
+                            Slayt Değişim Süresi:
+                          </span>
+                          <div className="flex gap-1">
+                            {[5, 10, 15, 30].map((sec) => (
+                              <button
+                                key={sec}
+                                type="button"
+                                onClick={() =>
+                                  onUpdateSmartDisplayConfig?.({
+                                    slideshowIntervalSec: sec,
+                                  })
+                                }
+                                className={`flex-1 py-1 rounded-lg font-bold ${
+                                  smartDisplayConfig.slideshowIntervalSec === sec
+                                    ? 'bg-purple-600 text-white'
+                                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                                }`}
+                              >
+                                {sec}s
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       <div>
                         <span className="text-slate-500 dark:text-slate-400 block mb-1">
-                          Geçiş Efekti:
+                          Geçiş Efekti (Fade / Kayma / Zoom):
                         </span>
                         <div className="flex gap-1">
                           {[
@@ -388,10 +390,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                   slideTransition: eff.id as any,
                                 })
                               }
-                              className={`flex-1 py-1 rounded-lg font-bold ${
+                              className={`flex-1 py-1 rounded-lg font-bold cursor-pointer transition-all ${
                                 smartDisplayConfig.slideTransition === eff.id
-                                  ? 'bg-purple-600 text-white'
-                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                                  ? 'bg-purple-600 text-white shadow-xs'
+                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
                               }`}
                             >
                               {eff.label}
@@ -565,8 +567,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                           ...(smartDisplayConfig.customVideos || []),
                                           ...newVideos,
                                         ],
+                                        mode: 'video',
                                         presetTheme: 'custom',
                                       });
+                                      e.target.value = '';
                                     }
                                   }}
                                 />
@@ -642,29 +646,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                   multiple
                                   accept="image/*"
                                   className="hidden"
-                                  onChange={(e) => {
-                                    const files = e.target.files;
-                                    if (files && files.length > 0) {
-                                      Array.from(files).forEach((file) => {
-                                        const reader = new FileReader();
-                                        reader.onload = (ev) => {
-                                          const dataUrl = ev.target?.result as string;
-                                          if (dataUrl) {
-                                            onUpdateSmartDisplayConfig?.({
-                                              customImages: [
-                                                ...(smartDisplayConfig.customImages || []),
-                                                {
-                                                  id: Math.random().toString(36).substring(2, 9),
-                                                  name: file.name,
-                                                  url: dataUrl,
-                                                },
-                                              ],
-                                              presetTheme: 'custom',
+                                  onChange={async (e) => {
+                                    const fileList = e.target.files;
+                                    if (fileList && fileList.length > 0) {
+                                      const files = Array.from(fileList);
+                                      const readPromises = files.map((file) => {
+                                        return new Promise<{ id: string; name: string; url: string }>((resolve) => {
+                                          const reader = new FileReader();
+                                          reader.onload = (ev) => {
+                                            const dataUrl = ev.target?.result as string;
+                                            resolve({
+                                              id: Math.random().toString(36).substring(2, 9),
+                                              name: file.name,
+                                              url: dataUrl || URL.createObjectURL(file),
                                             });
-                                          }
-                                        };
-                                        reader.readAsDataURL(file);
+                                          };
+                                          reader.onerror = () => {
+                                            resolve({
+                                              id: Math.random().toString(36).substring(2, 9),
+                                              name: file.name,
+                                              url: URL.createObjectURL(file),
+                                            });
+                                          };
+                                          reader.readAsDataURL(file);
+                                        });
                                       });
+
+                                      const newItems = await Promise.all(readPromises);
+                                      onUpdateSmartDisplayConfig?.({
+                                        customImages: [
+                                          ...(smartDisplayConfig.customImages || []),
+                                          ...newItems,
+                                        ],
+                                        mode: 'slideshow',
+                                        presetTheme: 'custom',
+                                      });
+                                      e.target.value = '';
                                     }
                                   }}
                                 />
@@ -793,7 +810,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     ...(smartDisplayConfig.customAudioTracks || []),
                                     ...newTracks,
                                   ],
+                                  audioTrack: 'custom',
                                 });
+                                e.target.value = '';
                               }
                             }}
                           />

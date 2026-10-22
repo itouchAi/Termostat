@@ -53,6 +53,7 @@ interface ReportDeckViewProps {
   humidity: number;
   targetTemp: number;
   dailyRunMinutes?: number;
+  lastIgnitionTime?: number;
   themeMode?: ThemeMode;
   lang?: Language;
 }
@@ -66,6 +67,7 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
   humidity,
   targetTemp,
   dailyRunMinutes = 0,
+  lastIgnitionTime,
   themeMode = 'glass',
   lang = 'tr',
 }) => {
@@ -135,26 +137,54 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
       const activeMin = typeof dailyRunMinutes === 'number' ? dailyRunMinutes : 0;
       // Real formula: 24kW boiler at modulated flame consumes ~1.8 m3/h at max flame
       const m3 = activeMin > 0 ? Math.round(((activeMin / 60) * 1.8 * (Math.max(20, flameLevelPercent) / 100)) * 100) / 100 : 0;
+
+      const now = new Date();
+      const currentHour = now.getHours();
+      // Current slot index (0 to 5) for 4-hour intervals
+      const currentSlotIndex = Math.min(5, Math.floor(currentHour / 4));
+
+      // Determine which slot kombi ignited in or is active in
+      const ignitionHour = lastIgnitionTime ? new Date(lastIgnitionTime).getHours() : currentHour;
+      const ignitionSlotIndex = Math.min(5, Math.floor(ignitionHour / 4));
+
+      const slotLabels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'];
+
+      const hours: TelemetryHour[] = slotLabels.map((hourLabel, idx) => {
+        // A slot is active ONLY if kombi is active in the current slot OR if it actually ran during this slot today
+        const isCurrentSlot = idx === currentSlotIndex;
+        const isIgnitionSlot = idx === ignitionSlotIndex;
+
+        let isSlotActive = false;
+        if (isKombiActive && isCurrentSlot) {
+          isSlotActive = true;
+        } else if (activeMin > 0 && isIgnitionSlot) {
+          isSlotActive = true;
+        }
+
+        return {
+          hourLabel,
+          temp: isSlotActive ? currentTemp : 0,
+          target: targetTemp,
+          isActive: isSlotActive,
+          flameLevelPercent: isSlotActive ? (isKombiActive && isCurrentSlot ? flameLevelPercent : 45) : 0,
+          powerKw: isSlotActive ? Math.round((24 * (isKombiActive && isCurrentSlot ? flameLevelPercent : 45)) / 10) / 10 : 0,
+          gasM3: isSlotActive ? m3 : 0,
+        };
+      });
+
       return {
         dateKey: todayStr,
         dateTitle: lang === 'tr' ? `${selectedDate} (Bugün)` : `${selectedDate} (Today)`,
         totalActiveMinutes: activeMin,
         totalGasM3: m3,
         avgTemp: currentTemp,
-        hours: [
-          { hourLabel: '00:00', temp: currentTemp, target: targetTemp, isActive: false, flameLevelPercent: 0, powerKw: 0, gasM3: 0 },
-          { hourLabel: '04:00', temp: currentTemp, target: targetTemp, isActive: false, flameLevelPercent: 0, powerKw: 0, gasM3: 0 },
-          { hourLabel: '08:00', temp: currentTemp, target: targetTemp, isActive: false, flameLevelPercent: 0, powerKw: 0, gasM3: 0 },
-          { hourLabel: '12:00', temp: currentTemp, target: targetTemp, isActive: false, flameLevelPercent: 0, powerKw: 0, gasM3: 0 },
-          { hourLabel: '16:00', temp: currentTemp, target: targetTemp, isActive: isKombiActive, flameLevelPercent: isKombiActive ? flameLevelPercent : 0, powerKw: isKombiActive ? Math.round((24 * flameLevelPercent) / 10) / 10 : 0, gasM3: activeMin > 0 ? Math.round((m3 * 0.4) * 100) / 100 : 0 },
-          { hourLabel: '20:00', temp: currentTemp, target: targetTemp, isActive: isKombiActive, flameLevelPercent: isKombiActive ? flameLevelPercent : 0, powerKw: isKombiActive ? Math.round((24 * flameLevelPercent) / 10) / 10 : 0, gasM3: activeMin > 0 ? Math.round((m3 * 0.6) * 100) / 100 : 0 },
-        ],
+        hours,
       };
     }
 
     // Any past day with no real data returns null!
     return null;
-  }, [selectedDate, todayStr, storageDb, dailyRunMinutes, isKombiActive, flameLevelPercent, currentTemp, targetTemp, lang]);
+  }, [selectedDate, todayStr, storageDb, dailyRunMinutes, isKombiActive, flameLevelPercent, currentTemp, targetTemp, lastIgnitionTime, lang]);
 
   // Aggregate stats based on timeframe
   const aggregatedStats = useMemo(() => {
@@ -485,17 +515,27 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
                       onClick={() => setSelectedHour(item)}
                       className={`flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border transition-all cursor-pointer hover:scale-105 active:scale-95 ${
                         item.isActive
-                          ? 'border-orange-500/50 bg-orange-500/15 shadow-sm'
-                          : 'border-white/10 bg-white/[0.05]'
+                          ? 'border-orange-500/70 bg-gradient-to-b from-orange-500/25 to-amber-500/15 shadow-[0_0_12px_rgba(249,115,22,0.3)] ring-1 ring-orange-400/50'
+                          : 'border-white/10 bg-white/[0.04] opacity-80 hover:opacity-100'
                       }`}
                       title={`${item.hourLabel} Detaylarını Aç`}
                     >
                       <span className="text-[9px] font-mono text-slate-400">{item.hourLabel}</span>
-                      <span className={`text-[11px] sm:text-xs font-bold font-mono my-0.5 px-1 py-0.2 rounded border ${getTempColorClass(item.temp)}`}>
-                        {item.temp.toFixed(1)}°
-                      </span>
+                      {item.isActive ? (
+                        <span className={`text-[11px] sm:text-xs font-bold font-mono my-0.5 px-1.5 py-0.5 rounded border ${getTempColorClass(item.temp)}`}>
+                          {item.temp.toFixed(1)}°
+                        </span>
+                      ) : (
+                        <span className="text-[11px] sm:text-xs font-mono my-0.5 px-1.5 py-0.5 text-slate-500">
+                          —
+                        </span>
+                      )}
                       <span className="text-[9px]">
-                        {item.isActive ? '🔥' : '❄️'}
+                        {item.isActive ? (
+                          <span className="text-orange-400 font-bold flex items-center gap-0.5">🔥 Aktif</span>
+                        ) : (
+                          <span className="text-slate-400">❄️ Bekleme</span>
+                        )}
                       </span>
                     </button>
                   ))}
@@ -768,18 +808,20 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
 
             <div className="space-y-2 text-xs">
               <div className="flex justify-between p-2 rounded-xl bg-white/5">
-                <span className="text-slate-400">Oda Sıcaklığı:</span>
-                <span className="font-bold font-mono text-sky-400">{selectedHour.temp}°C</span>
+                <span className="text-slate-400">Brülör Durumu:</span>
+                <span className={`font-bold flex items-center gap-1 ${selectedHour.isActive ? 'text-orange-400' : 'text-slate-400'}`}>
+                  {selectedHour.isActive ? `🔥 Aktif (%${selectedHour.flameLevelPercent} Alev)` : '❄️ Beklemede (Ateşleme Yok)'}
+                </span>
+              </div>
+              <div className="flex justify-between p-2 rounded-xl bg-white/5">
+                <span className="text-slate-400">Çalışma Sıcaklığı:</span>
+                <span className="font-bold font-mono text-sky-400">
+                  {selectedHour.isActive ? `${selectedHour.temp.toFixed(1)}°C` : '— (Kombi Çalışmadı)'}
+                </span>
               </div>
               <div className="flex justify-between p-2 rounded-xl bg-white/5">
                 <span className="text-slate-400">Hedef Sıcaklık:</span>
-                <span className="font-bold font-mono text-orange-400">{selectedHour.target}°C</span>
-              </div>
-              <div className="flex justify-between p-2 rounded-xl bg-white/5">
-                <span className="text-slate-400">Brülör Durumu:</span>
-                <span className={`font-bold ${selectedHour.isActive ? 'text-orange-400' : 'text-slate-400'}`}>
-                  {selectedHour.isActive ? `Aktif (%${selectedHour.flameLevelPercent})` : 'Beklemede'}
-                </span>
+                <span className="font-bold font-mono text-orange-400">{selectedHour.target.toFixed(1)}°C</span>
               </div>
               <div className="flex justify-between p-2 rounded-xl bg-white/5">
                 <span className="text-slate-400">{t.powerKwLabel}:</span>

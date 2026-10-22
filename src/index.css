@@ -89,3 +89,50 @@ html:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   animation-play-state: paused;
 }
 
+/* Slideshow & Image Transition Keyframes (Fade, Kayma / Slide, Zoom) */
+@keyframes slideFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0.2;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideZoomIn {
+  from {
+    transform: scale(1.22);
+    opacity: 0.15;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.anim-slide-fade {
+  animation: slideFadeIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity;
+}
+
+.anim-slide-slide {
+  animation: slideSlideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.anim-slide-zoom {
+  animation: slideZoomIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+

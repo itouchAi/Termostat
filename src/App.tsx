@@ -122,7 +122,7 @@ export default function App() {
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('theme_preference') as ThemeMode;
-      if (saved === 'glass' || saved === 'light' || saved === 'dark' || saved === 'system') return saved;
+      if (saved === 'glass' || saved === 'light' || saved === 'dark' || saved === 'system' || saved === 'obsidian_lavender') return saved;
     }
     return 'glass';
   });
@@ -1169,7 +1169,9 @@ export default function App() {
                   pointerEvents: isCenter ? 'auto' : 'none',
                 }}
                 className={`absolute inset-0 w-full h-full rounded-[30px] sm:rounded-[36px] overflow-hidden flex flex-col transition-all duration-500 ${
-                  themeMode === 'glass'
+                  themeMode === 'obsidian_lavender'
+                    ? 'bg-[#12101b]/95 border border-white/[0.08] shadow-[0_25px_65px_-15px_rgba(0,0,0,0.9),0_0_35px_rgba(130,97,230,0.14),inset_0_1px_1px_rgba(255,255,255,0.18)] backdrop-blur-2xl text-white'
+                    : themeMode === 'glass'
                     ? 'bg-slate-950/20 border border-white/30 shadow-[0_25px_60px_rgba(0,0,0,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.45),inset_0_-1.5px_2px_rgba(255,255,255,0.15)] backdrop-blur-md backdrop-saturate-150 text-white'
                     : effectiveTheme === 'dark'
                     ? 'bg-slate-900/90 border border-slate-700/70 shadow-[0_25px_65px_-15px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.06),0_12px_36px_-10px_rgba(249,115,22,0.18)] backdrop-blur-2xl'
@@ -1177,8 +1179,12 @@ export default function App() {
                 }`}
               >
                 {/* Frosted Glass Top Sheen & Curved Bevel Glare */}
-                {themeMode === 'glass' && (
-                  <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-white/[0.14] via-white/[0.03] to-transparent pointer-events-none rounded-t-[30px] sm:rounded-t-[36px]" />
+                {(themeMode === 'glass' || themeMode === 'obsidian_lavender') && (
+                  <div className={`absolute inset-x-0 top-0 h-36 bg-gradient-to-b ${
+                    themeMode === 'obsidian_lavender'
+                      ? 'from-[#8261e6]/10 via-[#8261e6]/[0.02] to-transparent'
+                      : 'from-white/[0.14] via-white/[0.03] to-transparent'
+                  } pointer-events-none rounded-t-[30px] sm:rounded-t-[36px]`} />
                 )}
 
                 {/* Floating Window Top Header Bar */}
@@ -1374,7 +1380,11 @@ export default function App() {
                                 onClick={() => handleSetTarget(preset.temp)}
                                 className={`flex flex-col items-center justify-center py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-xl sm:rounded-2xl text-center transition-all duration-200 cursor-pointer w-full min-w-0 border ${
                                   isActive
-                                    ? 'bg-gradient-to-tr from-orange-500 to-amber-500 text-white font-extrabold shadow-lg shadow-orange-500/35 border-orange-400/80 scale-[1.03]'
+                                    ? themeMode === 'obsidian_lavender'
+                                      ? 'bg-gradient-to-tr from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white font-extrabold shadow-lg shadow-[#8563e8]/40 border-[#a786ff] scale-[1.03]'
+                                      : 'bg-gradient-to-tr from-orange-500 to-amber-500 text-white font-extrabold shadow-lg shadow-orange-500/35 border-orange-400/80 scale-[1.03]'
+                                    : themeMode === 'obsidian_lavender'
+                                    ? 'bg-[#1a1727] hover:bg-[#252138] text-white border-white/10'
                                     : themeMode === 'glass'
                                     ? 'bg-white/[0.09] hover:bg-white/[0.18] text-white border-white/20 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35)]'
                                     : 'bg-white/90 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 hover:border-orange-400'
@@ -1386,7 +1396,7 @@ export default function App() {
                                 </span>
                                 <span
                                   className={`text-[10px] sm:text-xs font-mono font-extrabold ${
-                                    isActive ? 'text-white' : themeMode === 'glass' ? 'text-slate-300' : 'text-slate-400 dark:text-slate-400'
+                                    isActive ? 'text-white' : themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-[#c8b7f8]' : 'text-slate-400 dark:text-slate-400'
                                   }`}
                                 >
                                   {preset.temp}°
@@ -1433,6 +1443,7 @@ export default function App() {
                         humidity={humidity}
                         targetTemp={targetTemp}
                         dailyRunMinutes={dailyRunMinutes}
+                        lastIgnitionTime={lastIgnitionTime}
                         themeMode={themeMode}
                         lang={lang}
                       />
@@ -1474,7 +1485,9 @@ export default function App() {
           onTouchEnd={handleDockTouchEnd}
           onTouchCancel={handleDockTouchEnd}
           className={`flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2.5 p-1 sm:p-2 rounded-2xl sm:rounded-full backdrop-blur-2xl transition-all touch-pan-x ${
-            themeMode === 'glass'
+            themeMode === 'obsidian_lavender'
+              ? 'bg-[#12101b]/95 border border-white/10 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.85),0_0_20px_rgba(130,97,230,0.18)]'
+              : themeMode === 'glass'
               ? 'bg-slate-950/40 border border-white/20 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]'
               : 'bg-white/85 dark:bg-slate-900/85 border border-slate-200/90 dark:border-slate-700/80 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.25)]'
           }`}
@@ -1488,7 +1501,11 @@ export default function App() {
                 onClick={() => navigateToTab(idx)}
                 className={`relative px-2 xs:px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full text-[10px] xs:text-[11px] sm:text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer min-w-0 whitespace-nowrap ${
                   isActive
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-orange-500 text-white shadow-md shadow-blue-500/30 dark:shadow-orange-500/30 scale-105'
+                    ? themeMode === 'obsidian_lavender'
+                      ? 'bg-gradient-to-r from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white shadow-md shadow-[#8563e8]/40 border-t border-white/30 scale-105'
+                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-orange-500 text-white shadow-md shadow-blue-500/30 dark:shadow-orange-500/30 scale-105'
+                    : themeMode === 'obsidian_lavender'
+                    ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'
                 }`}
               >

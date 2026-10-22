@@ -127,7 +127,7 @@ export function resolveEffectiveTheme(
   minute = 0,
   osPrefersDark = false
 ): 'light' | 'dark' {
-  if (mode === 'dark') return 'dark';
+  if (mode === 'dark' || mode === 'obsidian_lavender') return 'dark';
   if (mode === 'light') return 'light';
   if (mode === 'glass') {
     // Glass mode uses translucent dark/contrast palette for maximum Apple visionOS clarity

@@ -17,6 +17,7 @@ import {
 import type { ThemeMode, PerformanceMode } from '../../types.ts';
 import type { WeatherCondition } from '../../utils/weather.ts';
 import { translations, type Language } from '../../utils/i18n.ts';
+import { ObsidianLavenderPreviewCard } from './ObsidianLavenderPreviewCard.tsx';
 
 interface ThemeSelectorModalProps {
   isOpen: boolean;
@@ -131,6 +132,25 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
         </div>
       ),
     },
+    {
+      id: 'obsidian_lavender',
+      title: 'Obsidian Lavender (Pastel Lila & Kadife)',
+      badge: 'Deneysel Lüks',
+      description:
+        'FitVibe stili mat obsidyen cam, lüks pastel lavanta/kül leylak auraları ve 3D LED kaide derinliği.',
+      renderPreview: () => (
+        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl relative overflow-hidden flex items-center justify-center p-1.5 shadow-md border border-[#8261e6]/40 bg-gradient-to-b from-[#181524] to-[#0a0910]">
+          {/* Volumetric Purple Glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(138,43,226,0.45),transparent_70%)]" />
+          {/* Glowing Ring Base */}
+          <div className="absolute bottom-1.5 w-10 h-3 rounded-full border border-[#a786ff] shadow-[0_0_8px_#8a65f0]" />
+          {/* Floating Pill Centerpiece */}
+          <div className="relative z-10 w-6 h-6 rounded-lg bg-gradient-to-tr from-[#6846c9] to-[#9979f5] shadow-[0_0_12px_rgba(130,97,230,0.7)] flex items-center justify-center text-white">
+            <Sparkles className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      ),
+    },
   ];
 
   const weatherOptions: Array<{ id: WeatherCondition | null; label: string; icon: React.ReactNode }> = [
@@ -233,6 +253,23 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                   </button>
                 );
               })}
+            </div>
+
+            {/* ── İZOLE DENEME: Obsidian Lavender (FitVibe Lüks Mor) Canlı Vitrini ── */}
+            <div className="mt-4 pt-3 border-t border-slate-200/80 dark:border-slate-800/80">
+              <div className="mb-2.5">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#a786ff] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#a786ff]" />
+                  <span>Özel Tasarım Laboratuvarı • FitVibe Lüks Konsept</span>
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Görseldeki pastel tonlar, 3D kaide ışıltısı ve difüze derinlik simülasyonunu burada canlı test edebilirsiniz.
+                </p>
+              </div>
+              <ObsidianLavenderPreviewCard
+                onApplyTheme={() => onSelectTheme('obsidian_lavender')}
+                isActiveTheme={currentTheme === 'obsidian_lavender'}
+              />
             </div>
           </div>
 

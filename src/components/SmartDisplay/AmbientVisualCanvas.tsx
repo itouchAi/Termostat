@@ -280,8 +280,14 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
     return (
       <div className="absolute inset-0 overflow-hidden bg-black" style={blurFilterStyle}>
         <div
-          key={photoUrl}
-          className="absolute inset-0 bg-no-repeat bg-center transition-all duration-1000 animate-in fade-in"
+          key={`${photoUrl}_${slideIndex}_${slideTransition}`}
+          className={`absolute inset-0 bg-no-repeat bg-center ${
+            slideTransition === 'zoom'
+              ? 'anim-slide-zoom'
+              : slideTransition === 'slide'
+              ? 'anim-slide-slide'
+              : 'anim-slide-fade'
+          }`}
           style={{
             backgroundImage: `url(${photoUrl})`,
             backgroundSize: bgSizeStyle,
@@ -314,13 +320,13 @@ export const AmbientVisualCanvas: React.FC<AmbientVisualCanvasProps> = ({
     return (
       <div className="absolute inset-0 overflow-hidden bg-black" style={blurFilterStyle}>
         <div
-          key={`${currentPhotoUrl}_${slideIndex}`}
-          className={`absolute inset-0 bg-no-repeat bg-center transition-all duration-1000 ${
+          key={`${currentPhotoUrl}_${slideIndex}_${slideTransition}`}
+          className={`absolute inset-0 bg-no-repeat bg-center ${
             slideTransition === 'zoom'
-              ? 'animate-in zoom-in-105 duration-1000'
+              ? 'anim-slide-zoom'
               : slideTransition === 'slide'
-              ? 'animate-in slide-in-from-right duration-700'
-              : 'animate-in fade-in duration-1000'
+              ? 'anim-slide-slide'
+              : 'anim-slide-fade'
           }`}
           style={{
             backgroundImage: `url(${currentPhotoUrl})`,
