@@ -1006,13 +1006,17 @@ export default function App() {
             type="button"
             onClick={() => setIsThemeModalOpen(true)}
             className={`h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl border flex items-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer ${
-              themeMode === 'glass'
+              themeMode === 'obsidian_lavender'
+                ? 'bg-[#151322] hover:bg-[#1f1b2f] border-t border-l border-white/[0.14] border-r border-black/60 border-b border-black/80 text-[#d8caff] shadow-[0_4px_12px_rgba(0,0,0,0.6)]'
+                : themeMode === 'glass'
                 ? 'bg-blue-600/30 hover:bg-blue-600/45 border-blue-400/50 text-white backdrop-blur-md shadow-blue-500/10'
                 : 'bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
             }`}
             aria-label="Tema ve görsel efekt ayarları"
             title={`${t.themeMenuTitle}: ${
-              themeMode === 'glass'
+              themeMode === 'obsidian_lavender'
+                ? 'Obsidian Lavender'
+                : themeMode === 'glass'
                 ? t.themeGlass
                 : themeMode === 'system'
                 ? t.themeAuto
@@ -1021,7 +1025,12 @@ export default function App() {
                 : t.themeLight
             }`}
           >
-            {themeMode === 'glass' ? (
+            {themeMode === 'obsidian_lavender' ? (
+              <>
+                <Sparkles className="w-3.5 h-3.5 text-[#a786ff] animate-pulse" />
+                <span className="text-[10px] font-bold hidden sm:inline">Obsidian</span>
+              </>
+            ) : themeMode === 'glass' ? (
               <>
                 <Layers className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
                 <span className="text-[10px] font-bold hidden sm:inline">{t.themeGlass}</span>
@@ -1189,7 +1198,9 @@ export default function App() {
 
                 {/* Floating Window Top Header Bar */}
                 <div className={`px-4 sm:px-6 py-3 border-b flex items-center justify-between shrink-0 relative z-10 ${
-                  themeMode === 'glass'
+                  themeMode === 'obsidian_lavender'
+                    ? 'border-white/[0.08] bg-[#14121e]/85 backdrop-blur-md'
+                    : themeMode === 'glass'
                     ? 'border-white/15 bg-white/[0.08] backdrop-blur-md'
                     : 'border-slate-200/70 dark:border-slate-800/80 bg-white/40 dark:bg-slate-800/40'
                 }`}>
@@ -1218,7 +1229,9 @@ export default function App() {
                       {/* Top Badges (Compact Frosted Glass) */}
                       <div className="w-full flex items-center justify-between mb-1 shrink-0">
                         <div className={`px-2.5 py-1 rounded-full border shadow-xs flex items-center gap-1.5 sm:gap-2 backdrop-blur-md ${
-                          themeMode === 'glass'
+                          themeMode === 'obsidian_lavender'
+                            ? 'bg-[#151322] border-white/[0.08] shadow-[0_6px_16px_-3px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.12)] text-white'
+                            : themeMode === 'glass'
                             ? 'bg-white/[0.12] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35)] text-white'
                             : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60'
                         }`}>
@@ -1227,22 +1240,24 @@ export default function App() {
                               isKombiActive ? 'bg-orange-500 animate-pulse' : 'bg-slate-400'
                             }`}
                           />
-                          <span className={`text-xs font-bold ${themeMode === 'glass' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>
+                          <span className={`text-xs font-bold ${themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>
                             {isKombiActive ? t.activeHeating : t.standby}
                           </span>
-                          <span className={`text-[10px] font-mono ${themeMode === 'glass' ? 'text-slate-300' : 'text-slate-500'}`}>
+                          <span className={`text-[10px] font-mono ${themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-[#c8b7f8]' : 'text-slate-500'}`}>
                             (%{flameLevelPercent} {t.modulation})
                           </span>
                         </div>
 
                         <div className={`text-[11px] font-semibold flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md ${
-                          themeMode === 'glass'
+                          themeMode === 'obsidian_lavender'
+                            ? 'bg-[#151322] border-white/[0.08] shadow-[0_6px_16px_-3px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.12)] text-white'
+                            : themeMode === 'glass'
                             ? 'bg-white/[0.12] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35)] text-white'
                             : 'bg-white/70 dark:bg-slate-800/60 border-slate-200/60 dark:border-slate-700/60 text-slate-500 dark:text-slate-400'
                         }`}>
-                          <span className={themeMode === 'glass' ? 'text-slate-300' : 'text-slate-400'}>{t.liveRoom}</span>
-                          <span className={`font-mono font-bold ${themeMode === 'glass' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>{currentTemp}°C</span>
-                          <span className={themeMode === 'glass' ? 'text-slate-300' : 'text-slate-400'}>• %{humidity}</span>
+                          <span className={themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-[#a89dc7]' : 'text-slate-400'}>{t.liveRoom}</span>
+                          <span className={`font-mono font-bold ${themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>{currentTemp}°C</span>
+                          <span className={themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-[#a89dc7]' : 'text-slate-400'}>• %{humidity}</span>
                         </div>
                       </div>
 
@@ -1262,7 +1277,9 @@ export default function App() {
 
                       {/* ── TERMOSTAT ALTI CANLI ÇİFTLİ SAYAÇ BARI (Tek bar, iki açıklama: Bugün Açık Kalma + En Son Ateşleme Durumu) ── */}
                       <div className={`w-full flex items-center justify-between px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border backdrop-blur-md shadow-2xs my-1 sm:my-1.5 transition-all ${
-                        themeMode === 'glass'
+                        themeMode === 'obsidian_lavender'
+                          ? 'bg-[#13111c]/95 border-white/[0.08] shadow-[0_12px_26px_-4px_rgba(0,0,0,0.8),inset_0_1px_1.5px_rgba(255,255,255,0.12),inset_0_-1.5px_2px_rgba(0,0,0,0.4)] text-white'
+                          : themeMode === 'glass'
                           ? 'bg-white/[0.10] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3),0_6px_20px_rgba(0,0,0,0.25)] text-white'
                           : 'bg-white/85 dark:bg-slate-800/80 border-slate-200/90 dark:border-slate-700/80 shadow-xs'
                       }`}>
@@ -1323,19 +1340,23 @@ export default function App() {
 
                       {/* Bottom: Target Stepper + Horizontal Preset Buttons */}
                       <div className="w-full shrink-0 flex flex-col gap-1.5 sm:gap-2 mt-auto">
-                        {/* Target Stepper Strip (Compact Horizontal Frosted Glass) */}
-                        <div className={`w-full flex items-center justify-between px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border backdrop-blur-md shadow-2xs ${
-                          themeMode === 'glass'
+                        {/* Target Stepper Strip (Compact Horizontal Frosted Glass / Obsidian Lavender) */}
+                        <div className={`w-full flex items-center justify-between px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border backdrop-blur-md transition-all ${
+                          themeMode === 'obsidian_lavender'
+                            ? 'bg-[#13111c]/95 border-t border-l border-white/[0.12] border-r border-black/60 border-b-2 border-b-black/80 shadow-[0_12px_26px_-4px_rgba(0,0,0,0.8),inset_0_1px_1.5px_rgba(255,255,255,0.12),inset_0_-1.5px_2px_rgba(0,0,0,0.4)] text-white'
+                            : themeMode === 'glass'
                             ? 'bg-white/[0.10] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35),0_8px_24px_rgba(0,0,0,0.3)] text-white'
-                            : 'bg-slate-50/90 dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700/70'
+                            : 'bg-slate-50/90 dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700/70 shadow-2xs'
                         }`}>
                           <button
                             type="button"
                             onClick={() => handleSetTarget(Math.max(10, Math.round((targetTemp - 0.5) * 2) / 2))}
-                            className={`w-8 h-8 rounded-xl font-black flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer shadow-2xs ${
-                              themeMode === 'glass'
+                            className={`w-8 h-8 rounded-xl font-black flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer ${
+                              themeMode === 'obsidian_lavender'
+                                ? 'bg-[#1a1727] hover:bg-[#252138] text-[#e2d9f3] border-t border-l border-white/[0.14] border-r border-black/60 border-b border-black/80 shadow-[0_4px_12px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-1px_1px_rgba(0,0,0,0.4)]'
+                                : themeMode === 'glass'
                                 ? 'bg-white/20 hover:bg-white/30 text-white border border-white/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'
-                                : 'bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-white'
+                                : 'bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-white shadow-2xs'
                             }`}
                             title="Hedef sıcaklığı 0.5°C azalt"
                           >
@@ -1344,11 +1365,17 @@ export default function App() {
 
                           <div className="flex items-center gap-2">
                             <span className={`text-[11px] font-semibold uppercase tracking-wider hidden xs:inline ${
-                              themeMode === 'glass' ? 'text-slate-300' : 'text-slate-400'
+                              themeMode === 'obsidian_lavender'
+                                ? 'text-[#9f94bf]'
+                                : themeMode === 'glass'
+                                ? 'text-slate-300'
+                                : 'text-slate-400'
                             }`}>
                               {t.targetTemp}
                             </span>
-                            <span className="text-lg sm:text-xl font-black font-mono text-orange-500 drop-shadow-sm">
+                            <span className={`text-lg sm:text-xl font-black font-mono drop-shadow-sm ${
+                              themeMode === 'obsidian_lavender' ? 'text-[#d8caff]' : 'text-orange-500'
+                            }`}>
                               {targetTemp.toFixed(1)}°C
                             </span>
                           </div>
@@ -1356,7 +1383,11 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => handleSetTarget(Math.min(32, Math.round((targetTemp + 0.5) * 2) / 2))}
-                            className="w-8 h-8 rounded-xl bg-orange-500 hover:bg-orange-600 font-black text-white flex items-center justify-center transition-all active:scale-95 text-base shadow-md shadow-orange-500/30 cursor-pointer border border-orange-400/50"
+                            className={`w-8 h-8 rounded-xl font-black flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer ${
+                              themeMode === 'obsidian_lavender'
+                                ? 'bg-gradient-to-tr from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white border-t border-l border-white/30 border-r border-[#3b1c8a] border-b border-[#230e58] shadow-[0_6px_16px_rgba(0,0,0,0.7),0_2px_10px_rgba(133,99,232,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)]'
+                                : 'bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/30 border border-orange-400/50'
+                            }`}
                             title="Hedef sıcaklığı 0.5°C artır"
                           >
                             +
@@ -1378,15 +1409,15 @@ export default function App() {
                                 key={preset.label}
                                 type="button"
                                 onClick={() => handleSetTarget(preset.temp)}
-                                className={`flex flex-col items-center justify-center py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-xl sm:rounded-2xl text-center transition-all duration-200 cursor-pointer w-full min-w-0 border ${
+                                className={`flex flex-col items-center justify-center py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-xl sm:rounded-2xl text-center transition-all duration-200 cursor-pointer w-full min-w-0 ${
                                   isActive
                                     ? themeMode === 'obsidian_lavender'
-                                      ? 'bg-gradient-to-tr from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white font-extrabold shadow-lg shadow-[#8563e8]/40 border-[#a786ff] scale-[1.03]'
-                                      : 'bg-gradient-to-tr from-orange-500 to-amber-500 text-white font-extrabold shadow-lg shadow-orange-500/35 border-orange-400/80 scale-[1.03]'
+                                      ? 'bg-gradient-to-tr from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white font-extrabold border-t border-l border-white/30 border-r border-[#3b1c8a] border-b-2 border-b-[#230e58] shadow-[0_10px_22px_-3px_rgba(0,0,0,0.8),0_4px_14px_rgba(133,99,232,0.45),inset_0_1px_1px_rgba(255,255,255,0.35)] scale-[1.03]'
+                                      : 'bg-gradient-to-tr from-orange-500 to-amber-500 text-white font-extrabold shadow-lg shadow-orange-500/35 border border-orange-400/80 scale-[1.03]'
                                     : themeMode === 'obsidian_lavender'
-                                    ? 'bg-[#1a1727] hover:bg-[#252138] text-white border-white/10'
+                                    ? 'bg-[#14121e]/90 hover:bg-[#1c1929] text-[#c8b7f8] border-t border-l border-white/[0.12] border-r border-black/60 border-b-2 border-b-black/80 shadow-[0_8px_18px_-2px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-1.5px_1.5px_rgba(0,0,0,0.5)]'
                                     : themeMode === 'glass'
-                                    ? 'bg-white/[0.09] hover:bg-white/[0.18] text-white border-white/20 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35)]'
+                                    ? 'bg-white/[0.09] hover:bg-white/[0.18] text-white border border-white/20 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35)]'
                                     : 'bg-white/90 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 hover:border-orange-400'
                                 }`}
                               >
@@ -1486,7 +1517,7 @@ export default function App() {
           onTouchCancel={handleDockTouchEnd}
           className={`flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2.5 p-1 sm:p-2 rounded-2xl sm:rounded-full backdrop-blur-2xl transition-all touch-pan-x ${
             themeMode === 'obsidian_lavender'
-              ? 'bg-[#12101b]/95 border border-white/10 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.85),0_0_20px_rgba(130,97,230,0.18)]'
+              ? 'bg-[#12101b]/95 border-t border-l border-white/[0.12] border-r border-black/70 border-b-2 border-b-black/85 shadow-[0_16px_40px_-5px_rgba(0,0,0,0.85),0_0_20px_rgba(130,97,230,0.18),inset_0_1px_1.5px_rgba(255,255,255,0.12),inset_0_-1.5px_2px_rgba(0,0,0,0.5)]'
               : themeMode === 'glass'
               ? 'bg-slate-950/40 border border-white/20 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]'
               : 'bg-white/85 dark:bg-slate-900/85 border border-slate-200/90 dark:border-slate-700/80 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.25)]'
@@ -1502,10 +1533,10 @@ export default function App() {
                 className={`relative px-2 xs:px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full text-[10px] xs:text-[11px] sm:text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer min-w-0 whitespace-nowrap ${
                   isActive
                     ? themeMode === 'obsidian_lavender'
-                      ? 'bg-gradient-to-r from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white shadow-md shadow-[#8563e8]/40 border-t border-white/30 scale-105'
+                      ? 'bg-gradient-to-r from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white border-t border-l border-white/30 border-r border-[#3b1c8a] border-b border-b-[#230e58] shadow-[0_8px_18px_rgba(0,0,0,0.7),0_2px_12px_rgba(133,99,232,0.4),inset_0_1px_1px_rgba(255,255,255,0.3)] scale-105'
                       : 'bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-orange-500 text-white shadow-md shadow-blue-500/30 dark:shadow-orange-500/30 scale-105'
                     : themeMode === 'obsidian_lavender'
-                    ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
+                    ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d] border border-transparent hover:border-white/[0.06]'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'
                 }`}
               >
@@ -1524,7 +1555,9 @@ export default function App() {
           type="button"
           onClick={() => setIsVoiceAssistantOpen(true)}
           className={`relative p-2 xs:p-2.5 sm:p-3 rounded-2xl sm:rounded-full backdrop-blur-2xl transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 shadow-lg group shrink-0 ${
-            themeMode === 'glass'
+            themeMode === 'obsidian_lavender'
+              ? 'bg-gradient-to-tr from-[#7352d4] to-[#9979f5] border-t border-l border-white/35 border-r border-[#3b1c8a] border-b border-b-[#230e58] text-white shadow-[0_8px_22px_rgba(0,0,0,0.7),0_0_15px_rgba(130,97,230,0.35),inset_0_1px_1px_rgba(255,255,255,0.35)]'
+              : themeMode === 'glass'
               ? 'bg-gradient-to-tr from-blue-600/80 to-indigo-600/80 hover:from-blue-500 hover:to-indigo-500 border border-white/30 text-white shadow-blue-500/30'
               : 'bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 border border-blue-400/40'
           }`}
