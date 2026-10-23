@@ -23,6 +23,7 @@ import { calculateComfortIndex } from '../../utils/thermostatRules.ts';
 import type { ThemeMode } from '../../types.ts';
 import { translations, type Language } from '../../utils/i18n.ts';
 import { getObsidianPalette, type ObsidianPalette } from '../../utils/obsidianPalettes.ts';
+import { triggerHaptic } from '../../utils/haptics.ts';
 
 export type TimeframeMode = 'daily' | 'weekly' | 'monthly';
 
@@ -247,8 +248,10 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
     const deltaY = touchEndY - touchStartY.current;
 
     if (deltaY < -24) {
+      triggerHaptic('selection');
       setActiveLayer((prev) => (prev < 2 ? ((prev + 1) as 0 | 1 | 2) : prev));
     } else if (deltaY > 24) {
+      triggerHaptic('selection');
       setActiveLayer((prev) => (prev > 0 ? ((prev - 1) as 0 | 1 | 2) : prev));
     }
     touchStartY.current = null;
@@ -262,13 +265,19 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
     if (e.deltaY > 20) {
       setActiveLayer((prev) => {
         const next = prev < 2 ? ((prev + 1) as 0 | 1 | 2) : prev;
-        if (next !== prev) lastWheelTime.current = now;
+        if (next !== prev) {
+          triggerHaptic('selection');
+          lastWheelTime.current = now;
+        }
         return next;
       });
     } else if (e.deltaY < -20) {
       setActiveLayer((prev) => {
         const next = prev > 0 ? ((prev - 1) as 0 | 1 | 2) : prev;
-        if (next !== prev) lastWheelTime.current = now;
+        if (next !== prev) {
+          triggerHaptic('selection');
+          lastWheelTime.current = now;
+        }
         return next;
       });
     }
@@ -321,7 +330,10 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
         }`}>
           <button
             type="button"
-            onClick={() => setActiveLayer(0)}
+            onClick={() => {
+              triggerHaptic('light');
+              setActiveLayer(0);
+            }}
             style={activeLayer === 0 && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
             className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
               activeLayer === 0
@@ -340,7 +352,10 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => setActiveLayer(1)}
+            onClick={() => {
+              triggerHaptic('light');
+              setActiveLayer(1);
+            }}
             style={activeLayer === 1 && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
             className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
               activeLayer === 1
@@ -359,7 +374,10 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => setActiveLayer(2)}
+            onClick={() => {
+              triggerHaptic('light');
+              setActiveLayer(2);
+            }}
             style={activeLayer === 2 && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
             className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
               activeLayer === 2
@@ -423,7 +441,10 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
             <div className={`grid grid-cols-3 w-full p-0.5 rounded-xl text-xs font-bold text-center ${subBoxClass}`}>
               <button
                 type="button"
-                onClick={() => setTimeframe('daily')}
+                onClick={() => {
+                  triggerHaptic('light');
+                  setTimeframe('daily');
+                }}
                 style={timeframe === 'daily' && isObsidian ? { background: palette.activePillGradient } : undefined}
                 className={`py-1 rounded-lg transition-all cursor-pointer ${
                   timeframe === 'daily'
@@ -437,7 +458,10 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setTimeframe('weekly')}
+                onClick={() => {
+                  triggerHaptic('light');
+                  setTimeframe('weekly');
+                }}
                 style={timeframe === 'weekly' && isObsidian ? { background: palette.activePillGradient } : undefined}
                 className={`py-1 rounded-lg transition-all cursor-pointer ${
                   timeframe === 'weekly'
@@ -451,7 +475,10 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setTimeframe('monthly')}
+                onClick={() => {
+                  triggerHaptic('light');
+                  setTimeframe('monthly');
+                }}
                 style={timeframe === 'monthly' && isObsidian ? { background: palette.activePillGradient } : undefined}
                 className={`py-1 rounded-lg transition-all cursor-pointer ${
                   timeframe === 'monthly'

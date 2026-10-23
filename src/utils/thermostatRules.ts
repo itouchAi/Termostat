@@ -21,6 +21,7 @@ export function calculateRelayStatus(
 
 /**
  * Calculate modulating burner flame power from 0% to 100%
+ * Scales smoothly across the user's adjustable heating range (22.5°C to 32.0°C)
  */
 export function calculateFlameModulation(
   currentTemp: number,
@@ -28,12 +29,23 @@ export function calculateFlameModulation(
   isRelayActive: boolean
 ): number {
   if (!isRelayActive) return 0;
-  const delta = targetTemp - currentTemp;
-  if (delta <= 0) return 15; // Minimum pilot flame modulation
-  if (delta >= 2.5) return 100; // Full blast
-  // Linear ramp between 20% and 100%
-  const pct = 20 + (delta / 2.5) * 80;
-  return Math.min(100, Math.max(20, Math.round(pct)));
+  
+  // Smooth progressive growth across dial heating range (22.5°C up to maximum 32.0°C)
+  // Ensures flame starts compactly at 22.5°C (~20%) and smoothly expands continuously up to 100% at 32.0°C
+  const minHeat = 22.5;
+  const maxHeat = 32.0;
+
+  if (targetTemp <= minHeat) {
+    return 20; // Compact starting flame
+  }
+  if (targetTemp >= maxHeat) {
+    return 100; // Maximum blazing flame
+  }
+
+  const progress = (targetTemp - minHeat) / (maxHeat - minHeat);
+  // Linear smooth ramp from 20% to 100%
+  const pct = Math.round(20 + progress * 80);
+  return Math.min(100, Math.max(20, pct));
 }
 
 /**

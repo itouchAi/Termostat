@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { ThemeMode, MorphMode } from '../../types.ts';
+import { triggerHaptic } from '../../utils/haptics.ts';
 
 interface ThreeSceneProps {
   theme: ThemeMode;
@@ -9,6 +10,7 @@ interface ThreeSceneProps {
   targetTemp: number;
   currentTemp: number;
   isKombiActive: boolean;
+  flameLevelPercent?: number;
   performanceMode: boolean;
   reducedMotion: boolean;
   onSelectComponent?: (name: string, description: string) => void;
@@ -21,6 +23,7 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
   targetTemp,
   currentTemp,
   isKombiActive,
+  flameLevelPercent = 50,
   performanceMode,
   reducedMotion,
   onSelectComponent,
@@ -34,6 +37,7 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
     targetTemp,
     currentTemp,
     isKombiActive,
+    flameLevelPercent,
     performanceMode,
     reducedMotion,
     onSelectComponent,
@@ -47,12 +51,13 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
       targetTemp,
       currentTemp,
       isKombiActive,
+      flameLevelPercent,
       performanceMode,
       reducedMotion,
       onSelectComponent,
       onSetTarget,
     };
-  }, [theme, morphMode, targetTemp, currentTemp, isKombiActive, performanceMode, reducedMotion, onSelectComponent, onSetTarget]);
+  }, [theme, morphMode, targetTemp, currentTemp, isKombiActive, flameLevelPercent, performanceMode, reducedMotion, onSelectComponent, onSetTarget]);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -118,7 +123,8 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
       targ: number,
       isHeating: boolean,
       isDark: boolean,
-      animTime: number
+      animTime: number,
+      flamePercent: number = 50
     ) {
       dialCtx.clearRect(0, 0, 1024, 1024);
 
@@ -257,110 +263,123 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
       const flameBaseX = cx;
 
       if (isHeating) {
-        // Natural flickering wave offsets based on animation time
-        const flicker1 = Math.sin(animTime * 12) * 12;
-        const flicker2 = Math.cos(animTime * 15) * 8;
-        const flickerTipX = Math.sin(animTime * 9) * 14;
-        const flameHeight = 190 + Math.sin(animTime * 10) * 20;
+        // Natural flickering wave offsets based on animation time & modulated dynamically from small to large by flameLevelPercent
+        const flameRatio = Math.max(0.15, Math.min(1.0, flamePercent / 100));
+        const scale = 0.50 + flameRatio * 0.75; // Scales proportionally from compact (0.65 at 22.5°C) up to majestic (1.25 at 32°C)
+        const flicker1 = Math.sin(animTime * 12) * (12 * scale);
+        const flicker2 = Math.cos(animTime * 15) * (9 * scale);
+        const flickerTipX = Math.sin(animTime * 9) * (14 * scale);
+        // At max (100% / 32°C), flame reaches ~335px, licking right up beneath the temperature digits
+        const baseHeight = 95 + flameRatio * 220;
+        const flameHeight = baseHeight + Math.sin(animTime * 10) * (18 * scale);
 
-        // 1. Outer Warm Amber Flame Aura
+        // 1. Outer Warm Amber Flame Aura (Proportionally scaled)
+        const w1 = 85 * scale;
+        const w1b = 110 * scale;
+        const w1c = 60 * scale;
         dialCtx.save();
         dialCtx.beginPath();
-        dialCtx.moveTo(flameBaseX - 85, flameBaseY);
+        dialCtx.moveTo(flameBaseX - w1, flameBaseY);
         dialCtx.bezierCurveTo(
-          flameBaseX - 110 + flicker2,
-          flameBaseY - 80,
-          flameBaseX - 60 + flicker1,
+          flameBaseX - w1b + flicker2,
+          flameBaseY - 80 * scale,
+          flameBaseX - w1c + flicker1,
           flameBaseY - flameHeight * 0.7,
           flameBaseX + flickerTipX,
           flameBaseY - flameHeight
         );
         dialCtx.bezierCurveTo(
-          flameBaseX + 60 - flicker1,
+          flameBaseX + w1c - flicker1,
           flameBaseY - flameHeight * 0.7,
-          flameBaseX + 110 - flicker2,
-          flameBaseY - 80,
-          flameBaseX + 85,
+          flameBaseX + w1b - flicker2,
+          flameBaseY - 80 * scale,
+          flameBaseX + w1,
           flameBaseY
         );
         dialCtx.closePath();
 
         const outerFlameGrad = dialCtx.createRadialGradient(
           flameBaseX,
-          flameBaseY - 50,
-          20,
+          flameBaseY - 50 * scale,
+          15 * scale,
           flameBaseX,
-          flameBaseY - 100,
-          130
+          flameBaseY - 100 * scale,
+          140 * scale
         );
         outerFlameGrad.addColorStop(0, 'rgba(255, 120, 20, 0.95)');
         outerFlameGrad.addColorStop(0.5, 'rgba(249, 115, 22, 0.85)');
         outerFlameGrad.addColorStop(1, 'rgba(239, 68, 68, 0.15)');
         dialCtx.fillStyle = outerFlameGrad;
         dialCtx.shadowColor = '#ea580c';
-        dialCtx.shadowBlur = 40;
+        dialCtx.shadowBlur = Math.round(25 + flameRatio * 25);
         dialCtx.fill();
         dialCtx.restore();
 
         // 2. Middle Vibrant Yellow-Orange Core Tongue
+        const midHeight = flameHeight * 0.78;
+        const w2 = 55 * scale;
+        const w2b = 70 * scale;
+        const w2c = 40 * scale;
         dialCtx.save();
         dialCtx.beginPath();
-        const midHeight = flameHeight * 0.78;
-        dialCtx.moveTo(flameBaseX - 55, flameBaseY);
+        dialCtx.moveTo(flameBaseX - w2, flameBaseY);
         dialCtx.bezierCurveTo(
-          flameBaseX - 70 - flicker1 * 0.5,
-          flameBaseY - 60,
-          flameBaseX - 40 + flickerTipX * 0.5,
+          flameBaseX - w2b - flicker1 * 0.5,
+          flameBaseY - 60 * scale,
+          flameBaseX - w2c + flickerTipX * 0.5,
           flameBaseY - midHeight * 0.7,
           flameBaseX + flickerTipX * 0.7,
           flameBaseY - midHeight
         );
         dialCtx.bezierCurveTo(
-          flameBaseX + 40 - flickerTipX * 0.5,
+          flameBaseX + w2c - flickerTipX * 0.5,
           flameBaseY - midHeight * 0.7,
-          flameBaseX + 70 + flicker1 * 0.5,
-          flameBaseY - 60,
-          flameBaseX + 55,
+          flameBaseX + w2b + flicker1 * 0.5,
+          flameBaseY - 60 * scale,
+          flameBaseX + w2,
           flameBaseY
         );
         dialCtx.closePath();
 
         const midFlameGrad = dialCtx.createRadialGradient(
           flameBaseX,
-          flameBaseY - 40,
-          10,
+          flameBaseY - 40 * scale,
+          8 * scale,
           flameBaseX,
-          flameBaseY - 70,
-          90
+          flameBaseY - 70 * scale,
+          100 * scale
         );
         midFlameGrad.addColorStop(0, '#fef08a');
         midFlameGrad.addColorStop(0.6, '#facc15');
         midFlameGrad.addColorStop(1, '#f97316');
         dialCtx.fillStyle = midFlameGrad;
         dialCtx.shadowColor = '#f59e0b';
-        dialCtx.shadowBlur = 25;
+        dialCtx.shadowBlur = Math.round(18 + flameRatio * 15);
         dialCtx.fill();
         dialCtx.restore();
 
         // 3. Inner White-Hot Blue-Base Pilot Core
+        const innerHeight = flameHeight * 0.45;
+        const w3 = 30 * scale;
+        const w3b = 35 * scale;
+        const w3c = 20 * scale;
         dialCtx.save();
         dialCtx.beginPath();
-        const innerHeight = flameHeight * 0.45;
-        dialCtx.moveTo(flameBaseX - 30, flameBaseY);
+        dialCtx.moveTo(flameBaseX - w3, flameBaseY);
         dialCtx.bezierCurveTo(
-          flameBaseX - 35,
-          flameBaseY - 30,
-          flameBaseX - 20,
+          flameBaseX - w3b,
+          flameBaseY - 30 * scale,
+          flameBaseX - w3c,
           flameBaseY - innerHeight * 0.8,
           flameBaseX,
           flameBaseY - innerHeight
         );
         dialCtx.bezierCurveTo(
-          flameBaseX + 20,
+          flameBaseX + w3c,
           flameBaseY - innerHeight * 0.8,
-          flameBaseX + 35,
-          flameBaseY - 30,
-          flameBaseX + 30,
+          flameBaseX + w3b,
+          flameBaseY - 30 * scale,
+          flameBaseX + w3,
           flameBaseY
         );
         dialCtx.closePath();
@@ -378,36 +397,47 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
         // 4. Dancing Embers floating upward from flame
         for (let e = 0; e < 6; e++) {
           const eSeed = (animTime * 1.5 + e * 0.8) % 1;
-          const eY = flameBaseY - 60 - eSeed * 180;
-          const eX = flameBaseX + Math.sin(animTime * 4 + e) * (30 + e * 8);
+          const eY = flameBaseY - 60 - eSeed * 250 * scale;
+          const eX = flameBaseX + Math.sin(animTime * 4 + e) * ((26 + e * 8) * scale);
           const eAlpha = Math.sin(eSeed * Math.PI);
           dialCtx.fillStyle = `rgba(254, 240, 138, ${eAlpha})`;
           dialCtx.beginPath();
-          dialCtx.arc(eX, eY, 3 + (1 - eSeed) * 2, 0, Math.PI * 2);
+          dialCtx.arc(eX, eY, (2.5 + (1 - eSeed) * 2) * scale, 0, Math.PI * 2);
           dialCtx.fill();
         }
       } else {
-        // Standby Mode: Quiet gentle blue pilot flame resting cleanly at bottom
+        // Standby Mode: Quiet gentle blue pilot flame resting cleanly at bottom (no text underneath)
+        const pilotFlicker = Math.sin(animTime * 8) * 2.5;
         dialCtx.save();
         dialCtx.beginPath();
-        dialCtx.moveTo(flameBaseX - 24, flameBaseY);
-        dialCtx.bezierCurveTo(flameBaseX - 30, flameBaseY - 25, flameBaseX - 15, flameBaseY - 60, flameBaseX, flameBaseY - 75);
-        dialCtx.bezierCurveTo(flameBaseX + 15, flameBaseY - 60, flameBaseX + 30, flameBaseY - 25, flameBaseX + 24, flameBaseY);
+        dialCtx.moveTo(flameBaseX - 22, flameBaseY);
+        dialCtx.bezierCurveTo(
+          flameBaseX - 28 + pilotFlicker * 0.4,
+          flameBaseY - 25,
+          flameBaseX - 14 + pilotFlicker,
+          flameBaseY - 58,
+          flameBaseX + pilotFlicker * 0.6,
+          flameBaseY - 72
+        );
+        dialCtx.bezierCurveTo(
+          flameBaseX + 14 - pilotFlicker,
+          flameBaseY - 58,
+          flameBaseX + 28 - pilotFlicker * 0.4,
+          flameBaseY - 25,
+          flameBaseX + 22,
+          flameBaseY
+        );
         dialCtx.closePath();
 
-        const pilotGrad = dialCtx.createLinearGradient(flameBaseX, flameBaseY, flameBaseX, flameBaseY - 75);
+        const pilotGrad = dialCtx.createLinearGradient(flameBaseX, flameBaseY, flameBaseX, flameBaseY - 72);
         pilotGrad.addColorStop(0, '#0284c7');
         pilotGrad.addColorStop(0.5, '#38bdf8');
         pilotGrad.addColorStop(1, '#e0f2fe');
         dialCtx.fillStyle = pilotGrad;
         dialCtx.shadowColor = '#38bdf8';
-        dialCtx.shadowBlur = 15;
+        dialCtx.shadowBlur = 16;
         dialCtx.fill();
         dialCtx.restore();
-
-        dialCtx.fillStyle = 'rgba(148, 163, 184, 0.6)';
-        dialCtx.font = '600 24px "Plus Jakarta Sans", sans-serif';
-        dialCtx.fillText('PİLOT ALEVİ', cx, flameBaseY + 28);
       }
     }
 
@@ -519,7 +549,8 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
           state.targetTemp,
           state.isKombiActive,
           state.theme === 'dark',
-          time
+          time,
+          state.flameLevelPercent ?? 50
         );
         dialTexture.needsUpdate = true;
       }
@@ -619,7 +650,10 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
       const rawTemp = 10 + pct * (32 - 10);
       const rounded = Math.round(rawTemp * 2) / 2;
       const clamped = Math.max(10, Math.min(32, rounded));
-      stateRef.current.onSetTarget(clamped);
+      if (clamped !== stateRef.current.targetTemp) {
+        triggerHaptic('light');
+        stateRef.current.onSetTarget(clamped);
+      }
     };
 
     const handlePointerDown = (e: PointerEvent) => {
@@ -631,6 +665,7 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
       }
 
       isDraggingTarget = true;
+      triggerHaptic('medium');
       try {
         container.setPointerCapture(e.pointerId);
       } catch {}

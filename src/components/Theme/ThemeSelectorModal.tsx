@@ -19,6 +19,7 @@ import type { WeatherCondition } from '../../utils/weather.ts';
 import { translations, type Language } from '../../utils/i18n.ts';
 import { ObsidianLavenderPreviewCard } from './ObsidianLavenderPreviewCard.tsx';
 import { OBSIDIAN_PALETTES } from '../../utils/obsidianPalettes.ts';
+import { triggerHaptic } from '../../utils/haptics.ts';
 
 interface ThemeSelectorModalProps {
   isOpen: boolean;
@@ -219,10 +220,14 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                     key={t.id}
                     role="button"
                     tabIndex={0}
-                    onClick={() => onSelectTheme(t.id)}
+                    onClick={() => {
+                      triggerHaptic('selection');
+                      onSelectTheme(t.id);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
+                        triggerHaptic('selection');
                         onSelectTheme(t.id);
                       }
                     }}
@@ -273,6 +278,7 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                                   key={p.id}
                                   type="button"
                                   onClick={() => {
+                                    triggerHaptic('selection');
                                     onSelectTheme('obsidian_lavender');
                                     onSelectObsidianPaletteIdx?.(pIdx);
                                   }}

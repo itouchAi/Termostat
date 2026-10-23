@@ -23,6 +23,7 @@ import type { SmartDisplayConfig } from './types/smartDisplay.ts';
 import { DEFAULT_SMART_DISPLAY_CONFIG } from './types/smartDisplay.ts';
 import { translations, type Language } from './utils/i18n.ts';
 import { ThreeScene } from './components/ThreeCanvas/ThreeScene.tsx';
+import { triggerHaptic } from './utils/haptics.ts';
 import { AtmosphericWeatherBackground } from './components/Weather/AtmosphericWeatherBackground.tsx';
 import { ThemeSelectorModal } from './components/Theme/ThemeSelectorModal.tsx';
 import { ForecastSection } from './components/Weather/ForecastSection.tsx';
@@ -143,6 +144,7 @@ export default function App() {
   });
 
   const handleSelectObsidianPalette = (idx: number) => {
+    triggerHaptic('selection');
     setObsidianPaletteIdx(idx);
     if (typeof window !== 'undefined') {
       try {
@@ -582,6 +584,7 @@ export default function App() {
 
   // ── Infinite Horizontal Sliding Navigation ──
   const navigateToTab = useCallback((targetTabIdx: number) => {
+    triggerHaptic('light');
     const n = tabs.length;
     const currentTab = ((virtualIndex % n) + n) % n;
     let diff = targetTabIdx - currentTab;
@@ -591,10 +594,12 @@ export default function App() {
   }, [virtualIndex, tabs.length]);
 
   const slidePrev = useCallback(() => {
+    triggerHaptic('selection');
     setVirtualIndex((v) => v - 1);
   }, []);
 
   const slideNext = useCallback(() => {
+    triggerHaptic('selection');
     setVirtualIndex((v) => v + 1);
   }, []);
 
@@ -760,10 +765,12 @@ export default function App() {
 
   // Location handlers
   const handleSelectLocation = (loc: LocationItem) => {
+    triggerHaptic('light');
     setActiveLocation(loc);
   };
 
   const handleAddLocation = (name: string, cityName: string) => {
+    triggerHaptic('success');
     const cityCoords: Record<string, { lat: number; lon: number }> = {
       İstanbul: { lat: 41.0082, lon: 28.9784 },
       Ankara: { lat: 39.9334, lon: 32.8597 },
@@ -793,6 +800,7 @@ export default function App() {
 
   // Target Temp change handler
   const handleSetTarget = useCallback((newTarget: number) => {
+    triggerHaptic('medium');
     setTargetTemp(newTarget);
     SecureVault.setItem('targetTemp', newTarget);
     isUserInteractingRef.current = true;
@@ -1358,6 +1366,7 @@ export default function App() {
                           targetTemp={targetTemp}
                           currentTemp={currentTemp}
                           isKombiActive={isKombiActive}
+                          flameLevelPercent={flameLevelPercent}
                           performanceMode={performanceMode === 'eco'}
                           reducedMotion={reducedMotion}
                           onSetTarget={handleSetTarget}

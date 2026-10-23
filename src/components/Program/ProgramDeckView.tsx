@@ -16,6 +16,7 @@ import type { ScheduleItem, ThemeMode } from '../../types.ts';
 import { estimateGasConsumption, calculateEstimatedCost } from '../../utils/thermostatRules.ts';
 import { translations, type Language } from '../../utils/i18n.ts';
 import { type ObsidianPalette, getObsidianPalette } from '../../utils/obsidianPalettes.ts';
+import { triggerHaptic } from '../../utils/haptics.ts';
 
 interface ProgramDeckViewProps {
   schedules: ScheduleItem[];
@@ -72,8 +73,10 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
     const deltaY = touchEndY - touchStartY.current;
 
     if (deltaY < -24 && activeLayer === 0) {
+      triggerHaptic('selection');
       setActiveLayer(1);
     } else if (deltaY > 24 && activeLayer === 1) {
+      triggerHaptic('selection');
       setActiveLayer(0);
     }
     touchStartY.current = null;
@@ -85,15 +88,18 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
     if (now - lastWheelTime.current < 380) return;
 
     if (e.deltaY > 20 && activeLayer === 0) {
+      triggerHaptic('selection');
       setActiveLayer(1);
       lastWheelTime.current = now;
     } else if (e.deltaY < -20 && activeLayer === 1) {
+      triggerHaptic('selection');
       setActiveLayer(0);
       lastWheelTime.current = now;
     }
   };
 
   const toggleItem = (id: string) => {
+    triggerHaptic('light');
     setLocalList((prev) =>
       prev.map((item) => (item.id === id ? { ...item, enabled: !item.enabled } : item))
     );
@@ -106,12 +112,14 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
   };
 
   const updateTemp = (id: string, temp: number) => {
+    triggerHaptic('light');
     setLocalList((prev) =>
       prev.map((item) => (item.id === id ? { ...item, targetTemp: temp } : item))
     );
   };
 
   const handleSave = () => {
+    triggerHaptic('success');
     onSaveSchedules(localList);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2200);
@@ -148,7 +156,10 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
         }`}>
           <button
             type="button"
-            onClick={() => setActiveLayer(0)}
+            onClick={() => {
+              triggerHaptic('light');
+              setActiveLayer(0);
+            }}
             style={activeLayer === 0 && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
             className={`px-3.5 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeLayer === 0
@@ -167,7 +178,10 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => setActiveLayer(1)}
+            onClick={() => {
+              triggerHaptic('light');
+              setActiveLayer(1);
+            }}
             style={activeLayer === 1 && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
             className={`px-3.5 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeLayer === 1
