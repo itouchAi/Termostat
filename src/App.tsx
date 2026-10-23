@@ -913,35 +913,39 @@ export default function App() {
 
   return (
     <div
+      style={themeMode === 'obsidian_lavender' ? { background: activeObsidianPalette.bgStyle } : undefined}
       className={`h-[100dvh] max-h-[100dvh] w-screen relative ${
         themeMode === 'obsidian_lavender'
-          ? 'bg-[#0c0a13] text-slate-100'
+          ? 'text-slate-100'
           : themeMode === 'glass'
           ? 'bg-transparent text-slate-100'
           : effectiveTheme === 'dark'
           ? 'dark bg-radial-[at_top] from-slate-900 via-slate-950 to-black text-slate-100'
           : 'bg-radial-[at_top] from-slate-100 via-sky-50/40 to-slate-200/80 text-slate-800'
-      } font-sans transition-colors duration-500 flex flex-col selection:bg-[#8261e6] selection:text-white overflow-hidden`}
+      } font-sans transition-all duration-500 flex flex-col selection:bg-[#8261e6] selection:text-white overflow-hidden`}
     >
-      {/* ── VOLUMETRIC OBSIDIAN LAVENDER NEON AMBIENT TRAILS (Full App Backlighting) ── */}
+      {/* ── VOLUMETRIC OBSIDIAN NEON AMBIENT TRAILS (Full App Backlighting) ── */}
       {themeMode === 'obsidian_lavender' && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none transition-all duration-700">
+          {/* Central volumetric aura radiating from behind the stage cards */}
           <div
-            className="absolute top-0 right-1/4 w-[520px] h-[520px] rounded-full blur-3xl transition-all duration-700"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] sm:w-[980px] h-[550px] sm:h-[680px] rounded-full blur-[85px] sm:blur-[115px] transition-all duration-700 pointer-events-none"
             style={{
-              background: `radial-gradient(circle, ${activeObsidianPalette.glow.replace('0.6', '0.28')} 0%, ${activeObsidianPalette.glow.replace('0.6', '0.07')} 50%, transparent 75%)`,
+              background: `radial-gradient(ellipse 65% 55% at 50% 50%, ${activeObsidianPalette.volumetricGlow} 0%, ${activeObsidianPalette.cardGlow} 40%, transparent 75%)`,
             }}
           />
+          {/* Top-right corner neon plume */}
           <div
-            className="absolute -bottom-20 -left-20 w-[450px] h-[450px] rounded-full blur-2xl transition-all duration-700"
+            className="absolute -top-16 -right-16 w-[520px] h-[520px] rounded-full blur-[80px] transition-all duration-700"
             style={{
-              background: `radial-gradient(circle, ${activeObsidianPalette.glow.replace('0.6', '0.14')} 0%, transparent 70%)`,
+              background: `radial-gradient(circle, ${activeObsidianPalette.glow} 0%, transparent 68%)`,
             }}
           />
+          {/* Bottom-left corner neon plume */}
           <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[750px] h-[480px] rounded-full blur-[140px] transition-all duration-700"
+            className="absolute -bottom-24 -left-20 w-[480px] h-[480px] rounded-full blur-[75px] transition-all duration-700"
             style={{
-              background: `radial-gradient(circle, ${activeObsidianPalette.glow.replace('0.6', '0.18')} 0%, transparent 70%)`,
+              background: `radial-gradient(circle, ${activeObsidianPalette.glow} 0%, transparent 68%)`,
             }}
           />
         </div>
@@ -1246,10 +1250,16 @@ export default function App() {
                     : 'transform 0.5s cubic-bezier(0.2, 0.9, 0.35, 1), opacity 0.4s ease',
                   transformOrigin: '50% 50%',
                   pointerEvents: isCenter ? 'auto' : 'none',
+                  boxShadow:
+                    themeMode === 'obsidian_lavender'
+                      ? `0 28px 75px -15px rgba(0,0,0,0.95), 0 0 55px ${activeObsidianPalette.cardGlow}, inset 0 1px 1.5px rgba(255,255,255,0.18)`
+                      : undefined,
+                  borderColor:
+                    themeMode === 'obsidian_lavender' ? activeObsidianPalette.cardBorder : undefined,
                 }}
                 className={`absolute inset-0 w-full h-full rounded-[30px] sm:rounded-[36px] overflow-hidden flex flex-col transition-all duration-500 ${
                   themeMode === 'obsidian_lavender'
-                    ? 'bg-[#12101b]/95 border border-white/[0.08] shadow-[0_25px_65px_-15px_rgba(0,0,0,0.9),0_0_35px_rgba(130,97,230,0.14),inset_0_1px_1px_rgba(255,255,255,0.18)] backdrop-blur-2xl text-white'
+                    ? 'bg-[#12101b]/95 border backdrop-blur-2xl text-white'
                     : themeMode === 'glass'
                     ? 'bg-slate-950/20 border border-white/30 shadow-[0_25px_60px_rgba(0,0,0,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.45),inset_0_-1.5px_2px_rgba(255,255,255,0.15)] backdrop-blur-md backdrop-saturate-150 text-white'
                     : effectiveTheme === 'dark'
@@ -1259,11 +1269,20 @@ export default function App() {
               >
                 {/* Frosted Glass Top Sheen & Curved Bevel Glare */}
                 {(themeMode === 'glass' || themeMode === 'obsidian_lavender') && (
-                  <div className={`absolute inset-x-0 top-0 h-36 bg-gradient-to-b ${
-                    themeMode === 'obsidian_lavender'
-                      ? 'from-[#8261e6]/10 via-[#8261e6]/[0.02] to-transparent'
-                      : 'from-white/[0.14] via-white/[0.03] to-transparent'
-                  } pointer-events-none rounded-t-[30px] sm:rounded-t-[36px]`} />
+                  <div
+                    style={
+                      themeMode === 'obsidian_lavender'
+                        ? {
+                            background: `linear-gradient(to bottom, ${activeObsidianPalette.glow.replace(/[\d.]+\)$/, '0.18)')} 0%, transparent 100%)`,
+                          }
+                        : undefined
+                    }
+                    className={`absolute inset-x-0 top-0 h-36 pointer-events-none rounded-t-[30px] sm:rounded-t-[36px] ${
+                      themeMode === 'glass'
+                        ? 'bg-gradient-to-b from-white/[0.14] via-white/[0.03] to-transparent'
+                        : ''
+                    }`}
+                  />
                 )}
 
                 {/* Floating Window Top Header Bar */}
@@ -1547,6 +1566,7 @@ export default function App() {
                         lastIgnitionTime={lastIgnitionTime}
                         themeMode={themeMode}
                         lang={lang}
+                        obsidianPalette={activeObsidianPalette}
                       />
                     </div>
                   )}
@@ -1562,6 +1582,7 @@ export default function App() {
                         flameLevelPercent={flameLevelPercent}
                         themeMode={themeMode}
                         lang={lang}
+                        obsidianPalette={activeObsidianPalette}
                       />
                     </div>
                   )}
@@ -1585,9 +1606,16 @@ export default function App() {
           onTouchMove={handleDockTouchMove}
           onTouchEnd={handleDockTouchEnd}
           onTouchCancel={handleDockTouchEnd}
+          style={
+            themeMode === 'obsidian_lavender'
+              ? {
+                  boxShadow: `0 16px 40px -5px rgba(0,0,0,0.85), 0 0 25px ${activeObsidianPalette.cardGlow}, inset 0 1px 1.5px rgba(255,255,255,0.12), inset 0 -1.5px 2px rgba(0,0,0,0.5)`,
+                }
+              : undefined
+          }
           className={`flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2.5 p-1 sm:p-2 rounded-2xl sm:rounded-full backdrop-blur-2xl transition-all touch-pan-x ${
             themeMode === 'obsidian_lavender'
-              ? 'bg-[#12101b]/95 border-t border-l border-white/[0.12] border-r border-black/70 border-b-2 border-b-black/85 shadow-[0_16px_40px_-5px_rgba(0,0,0,0.85),0_0_20px_rgba(130,97,230,0.18),inset_0_1px_1.5px_rgba(255,255,255,0.12),inset_0_-1.5px_2px_rgba(0,0,0,0.5)]'
+              ? 'bg-[#12101b]/95 border-t border-l border-white/[0.12] border-r border-black/70 border-b-2 border-b-black/85'
               : themeMode === 'glass'
               ? 'bg-slate-950/40 border border-white/20 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]'
               : 'bg-white/85 dark:bg-slate-900/85 border border-slate-200/90 dark:border-slate-700/80 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.25)]'
@@ -1600,10 +1628,18 @@ export default function App() {
                 key={tab.id}
                 type="button"
                 onClick={() => navigateToTab(idx)}
+                style={
+                  isActive && themeMode === 'obsidian_lavender'
+                    ? {
+                        borderColor: activeObsidianPalette.borderUnder,
+                        boxShadow: `0 8px 18px rgba(0,0,0,0.7), 0 2px 14px ${activeObsidianPalette.glow}, inset 0 1px 1px rgba(255,255,255,0.35)`,
+                      }
+                    : undefined
+                }
                 className={`relative px-2 xs:px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full text-[10px] xs:text-[11px] sm:text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer min-w-0 whitespace-nowrap ${
                   isActive
                     ? themeMode === 'obsidian_lavender'
-                      ? `bg-gradient-to-r ${activeObsidianPalette.gradient} text-white border-t border-l border-white/30 border-r border-[#3b1c8a] border-b border-b-[#230e58] shadow-[0_8px_18px_rgba(0,0,0,0.7),0_2px_12px_rgba(133,99,232,0.4),inset_0_1px_1px_rgba(255,255,255,0.3)] scale-105`
+                      ? `bg-gradient-to-r ${activeObsidianPalette.gradient} text-white border-t border-l border-white/30 border-r border-b-2 scale-105`
                       : 'bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-orange-500 text-white shadow-md shadow-blue-500/30 dark:shadow-orange-500/30 scale-105'
                     : themeMode === 'obsidian_lavender'
                     ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d] border border-transparent hover:border-white/[0.06]'

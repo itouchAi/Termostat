@@ -15,6 +15,7 @@ import {
 import type { ScheduleItem, ThemeMode } from '../../types.ts';
 import { estimateGasConsumption, calculateEstimatedCost } from '../../utils/thermostatRules.ts';
 import { translations, type Language } from '../../utils/i18n.ts';
+import { type ObsidianPalette, getObsidianPalette } from '../../utils/obsidianPalettes.ts';
 
 interface ProgramDeckViewProps {
   schedules: ScheduleItem[];
@@ -24,6 +25,7 @@ interface ProgramDeckViewProps {
   flameLevelPercent: number;
   themeMode?: ThemeMode;
   lang?: Language;
+  obsidianPalette?: ObsidianPalette;
 }
 
 export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
@@ -34,10 +36,12 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
   flameLevelPercent,
   themeMode = 'glass',
   lang = 'tr',
+  obsidianPalette,
 }) => {
   const t = translations[lang] || translations.tr;
   const isGlass = themeMode === 'glass';
   const isObsidian = themeMode === 'obsidian_lavender';
+  const palette = obsidianPalette || getObsidianPalette(3);
 
   // 0: Akıllı Zamanlama & Haftalık Program (Front layer)
   // 1: Günlük Tüketim & Akıllı Modülasyon Tasarrufu (Back/Stacked layer)
@@ -145,10 +149,11 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveLayer(0)}
+            style={activeLayer === 0 && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
             className={`px-3.5 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeLayer === 0
                 ? isObsidian
-                  ? 'bg-gradient-to-tr from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white border-t border-l border-white/30 border-r border-[#3b1c8a] border-b-2 border-b-[#230e58] shadow-[0_8px_18px_rgba(0,0,0,0.7),0_2px_12px_rgba(133,99,232,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)] scale-[1.02]'
+                  ? 'text-white border-t border-l border-white/35 border-r border-b-2 shadow-[0_8px_18px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.4)] scale-[1.02]'
                   : 'bg-blue-600 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
                 : isObsidian
                 ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
@@ -163,10 +168,11 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveLayer(1)}
+            style={activeLayer === 1 && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
             className={`px-3.5 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeLayer === 1
                 ? isObsidian
-                  ? 'bg-gradient-to-tr from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white border-t border-l border-white/30 border-r border-[#3b1c8a] border-b-2 border-b-[#230e58] shadow-[0_8px_18px_rgba(0,0,0,0.7),0_2px_12px_rgba(133,99,232,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)] scale-[1.02]'
+                  ? 'text-white border-t border-l border-white/35 border-r border-b-2 shadow-[0_8px_18px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.4)] scale-[1.02]'
                   : 'bg-orange-500 text-white shadow-md shadow-orange-500/25 scale-[1.02]'
                 : isObsidian
                 ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
@@ -284,11 +290,12 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
             <button
               type="button"
               onClick={handleSave}
+              style={!saveSuccess && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
               className={`w-full py-2.5 sm:py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer active:scale-95 ${
                 saveSuccess
                   ? 'bg-emerald-600 text-white'
                   : isObsidian
-                  ? 'bg-gradient-to-tr from-[#7352d4] via-[#8563e8] to-[#9979f5] text-white border-t border-l border-white/30 border-r border-[#3b1c8a] border-b-2 border-b-[#230e58] shadow-[0_8px_18px_rgba(0,0,0,0.7),0_2px_12px_rgba(133,99,232,0.4)]'
+                  ? 'text-white border-t border-l border-white/35 border-r border-b-2 shadow-[0_8px_18px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.35)]'
                   : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/25'
               }`}
             >

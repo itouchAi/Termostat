@@ -215,10 +215,17 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
               {themes.map((t) => {
                 const isSelected = currentTheme === t.id;
                 return (
-                  <button
+                  <div
                     key={t.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => onSelectTheme(t.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSelectTheme(t.id);
+                      }
+                    }}
                     className={`w-full text-left p-3 sm:p-3.5 rounded-2xl border transition-all duration-200 flex items-center gap-3.5 cursor-pointer relative ${
                       isSelected
                         ? 'bg-blue-500/10 dark:bg-blue-500/15 border-blue-500 shadow-md ring-2 ring-blue-500/30'
@@ -305,7 +312,7 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                     >
                       {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
