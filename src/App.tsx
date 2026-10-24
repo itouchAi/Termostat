@@ -112,13 +112,62 @@ export default function App() {
 
   const t = translations[lang] || translations.tr;
 
-  // Dynamic tabs based on active language
-  const tabs: SlideDef[] = useMemo(() => [
-    { id: 'genel', label: t.tabThermostat, icon: '🏠', title: lang === 'tr' ? 'Termostat & Kombi Ana Kontrol' : 'Thermostat & Boiler Main Control' },
-    { id: 'hava', label: t.tabWeather, icon: '🌤️', title: lang === 'tr' ? 'Bölgesel Hava Durumu & 5 Günlük Tahmin' : 'Regional Weather & 5-Day Forecast' },
-    { id: 'rapor', label: t.tabReport, icon: '📊', title: lang === 'tr' ? '24s Sıcaklık & Tüketim Analitiği' : '24h Temperature & Usage Analytics' },
-    { id: 'program', label: t.tabProgram, icon: '⏰', title: lang === 'tr' ? 'Haftalık Zaman Planı & Tüketim' : 'Weekly Schedule & Consumption' },
-  ], [lang, t]);
+  // ── Reorderable Screens & Sub-menus State (Widget Customization) ──
+  const [tabsOrder, setTabsOrder] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('app_tabs_order');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length === 4 && parsed.every((p: string) => ['genel', 'hava', 'rapor', 'program'].includes(p))) {
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+    return ['genel', 'hava', 'rapor', 'program'];
+  });
+
+  const [reportSubOrder, setReportSubOrder] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('app_report_sub_order');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length === 3 && parsed.every((p: string) => ['heatmap', 'bill', 'sensors'].includes(p))) {
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+    return ['heatmap', 'bill', 'sensors'];
+  });
+
+  const [progSubOrder, setProgSubOrder] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('app_prog_sub_order');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length === 2 && parsed.every((p: string) => ['schedule', 'consumption'].includes(p))) {
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+    return ['schedule', 'consumption'];
+  });
+
+  // Dynamic tabs based on active language and custom user order
+  const tabs: SlideDef[] = useMemo(() => {
+    const tabMap: Record<string, SlideDef> = {
+      genel: { id: 'genel', label: t.tabThermostat, icon: '🏠', title: lang === 'tr' ? 'Termostat & Kombi Ana Kontrol' : 'Thermostat & Boiler Main Control' },
+      hava: { id: 'hava', label: t.tabWeather, icon: '🌤️', title: lang === 'tr' ? 'Bölgesel Hava Durumu & 5 Günlük Tahmin' : 'Regional Weather & 5-Day Forecast' },
+      rapor: { id: 'rapor', label: t.tabReport, icon: '📊', title: lang === 'tr' ? '24s Sıcaklık & Tüketim Analitiği' : '24h Temperature & Usage Analytics' },
+      program: { id: 'program', label: t.tabProgram, icon: '⏰', title: lang === 'tr' ? 'Haftalık Zaman Planı & Tüketim' : 'Weekly Schedule & Consumption' },
+    };
+    return tabsOrder.map((id) => tabMap[id]).filter(Boolean);
+  }, [lang, t, tabsOrder]);
 
   // ── Theme State: 'glass' | 'dark' | 'light' | 'system' ──
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
@@ -219,11 +268,11 @@ export default function App() {
   const isSwipeDirectionLockedRef = useRef<boolean | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
 
-  // Normalized active tab index in range [0 .. TABS.length - 1]
+  // Normalized active tab index in range [0 .. tabs.length - 1]
   const activeTabIndex = useMemo(() => {
-    const n = TABS.length;
+    const n = tabs.length || 4;
     return ((virtualIndex % n) + n) % n;
-  }, [virtualIndex]);
+  }, [virtualIndex, tabs.length]);
 
   // Thermostat vitals
   const [currentTemp, setCurrentTemp] = useState<number>(21.8);
@@ -841,27 +890,67 @@ export default function App() {
     SecureVault.setItem('widgets', newWidgets);
   }, []);
 
-  const handleToggleWidget = (id: string) => {
-    const updated = widgets.map((w) => (w.id === id ? { ...w, enabled: !w.enabled } : w));
-    handleSaveWidgets(updated);
+  // ── Tab & Sub-Menu Reordering Handlers (Active Screen Customizer) ──
+  const handleMoveTab = (tabId: string, direction: 'up' | 'down') => {
+    setTabsOrder((prev) => {
+      const idx = prev.indexOf(tabId);
+      if (idx === -1) return prev;
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(idx, 1);
+      next.splice(targetIdx, 0, moved);
+      try {
+        localStorage.setItem('app_tabs_order', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   };
 
-  const handleMoveWidget = (id: string, dir: 'up' | 'down') => {
-    const sorted = [...widgets].sort((a, b) => a.order - b.order);
-    const idx = sorted.findIndex((w) => w.id === id);
-    if (idx < 0) return;
-    const targetIdx = dir === 'up' ? idx - 1 : idx + 1;
-    if (targetIdx < 0 || targetIdx >= sorted.length) return;
-
-    const tempOrder = sorted[idx].order;
-    sorted[idx].order = sorted[targetIdx].order;
-    sorted[targetIdx].order = tempOrder;
-
-    handleSaveWidgets(sorted);
+  const handleMoveReportSub = (subId: string, direction: 'up' | 'down') => {
+    setReportSubOrder((prev) => {
+      const idx = prev.indexOf(subId);
+      if (idx === -1) return prev;
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(idx, 1);
+      next.splice(targetIdx, 0, moved);
+      try {
+        localStorage.setItem('app_report_sub_order', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   };
 
-  const handleResetWidgets = () => {
-    handleSaveWidgets(DEFAULT_WIDGETS);
+  const handleMoveProgSub = (subId: string, direction: 'up' | 'down') => {
+    setProgSubOrder((prev) => {
+      const idx = prev.indexOf(subId);
+      if (idx === -1) return prev;
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(idx, 1);
+      next.splice(targetIdx, 0, moved);
+      try {
+        localStorage.setItem('app_prog_sub_order', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleResetWidgetOrder = () => {
+    const defTabs = ['genel', 'hava', 'rapor', 'program'];
+    const defReport = ['heatmap', 'bill', 'sensors'];
+    const defProg = ['schedule', 'consumption'];
+    setTabsOrder(defTabs);
+    setReportSubOrder(defReport);
+    setProgSubOrder(defProg);
+    try {
+      localStorage.removeItem('app_tabs_order');
+      localStorage.removeItem('app_report_sub_order');
+      localStorage.removeItem('app_prog_sub_order');
+    } catch {}
   };
 
   // Security Vault Handlers
@@ -1128,13 +1217,18 @@ export default function App() {
           </button>
 
           {/* 3. Customize Widgets Button */}
+          {/* 3. Customize Widgets & Menu Order Button */}
           <button
             type="button"
             onClick={() => setIsCustomizerOpen(true)}
             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer ${
               themeMode === 'obsidian_lavender'
-                ? 'bg-[#151322] hover:bg-[#1f1b2f] border-t border-l border-white/[0.14] border-r border-black/60 border-b border-black/80 text-white shadow-[0_4px_12px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.12)]'
-                : 'bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+                ? 'bg-[#151322] hover:bg-[#201c32] border-t border-l border-white/[0.18] border-r border-black/70 border-b border-black/90 text-[#d8caff] hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.15)] ring-1 ring-[#8261e6]/20'
+                : themeMode === 'glass'
+                ? 'bg-slate-950/40 hover:bg-slate-900/60 border border-white/20 hover:border-white/35 text-white backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3)]'
+                : effectiveTheme === 'dark'
+                ? 'bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 shadow-sm'
+                : 'bg-white/85 hover:bg-slate-100 border border-slate-200/90 text-slate-700 shadow-sm'
             }`}
             aria-label={t.customizeWidgets}
             title={t.customizeWidgets}
@@ -1147,7 +1241,13 @@ export default function App() {
             <button
               type="button"
               onClick={() => setIsSmartDisplayOpen(true)}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-600 dark:text-purple-400 border border-purple-400/40 flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer animate-in fade-in"
+              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer animate-in fade-in ${
+                themeMode === 'obsidian_lavender'
+                  ? 'bg-[#151322] hover:bg-[#201c32] border-t border-l border-white/[0.18] border-r border-black/70 border-b border-black/90 text-purple-300 shadow-[0_4px_14px_rgba(0,0,0,0.7)]'
+                  : themeMode === 'glass'
+                  ? 'bg-purple-600/30 hover:bg-purple-600/45 border border-purple-400/40 text-white backdrop-blur-md'
+                  : 'bg-purple-500/15 hover:bg-purple-500/25 text-purple-600 dark:text-purple-400 border border-purple-400/40'
+              }`}
               aria-label="Smart Display / Ambiyans Modu"
               title="Smart Display / Ambiyans Modunu Başlat (Tablet & PC)"
             >
@@ -1155,19 +1255,23 @@ export default function App() {
             </button>
           )}
 
-          {/* 4. Cloud Settings */}
+          {/* 4. Settings Gear Button (Ayarlar Çarkı - Aktif Temaya Tam Uyumlu) */}
           <button
             type="button"
             onClick={() => setIsSettingsOpen(true)}
-            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer ${
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer group ${
               themeMode === 'obsidian_lavender'
-                ? 'bg-[#151322] hover:bg-[#1f1b2f] border-t border-l border-white/[0.14] border-r border-black/60 border-b border-black/80 text-white shadow-[0_4px_12px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.12)]'
-                : 'bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+                ? 'bg-[#151322] hover:bg-[#201c32] border-t border-l border-white/[0.18] border-r border-black/70 border-b border-black/90 text-[#d8caff] hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.15)] ring-1 ring-[#8261e6]/25'
+                : themeMode === 'glass'
+                ? 'bg-slate-950/40 hover:bg-slate-900/60 border border-white/20 hover:border-white/35 text-white backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3)]'
+                : effectiveTheme === 'dark'
+                ? 'bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 shadow-sm'
+                : 'bg-white/85 hover:bg-slate-100 border border-slate-200/90 text-slate-700 shadow-sm'
             }`}
             aria-label={t.settingsTitle}
             title={t.settingsTitle}
           >
-            <Settings className="w-3.5 h-3.5" />
+            <Settings className="w-3.5 h-3.5 transition-transform duration-300 group-hover:rotate-45" />
           </button>
         </div>
       </header>
@@ -1576,6 +1680,7 @@ export default function App() {
                         themeMode={themeMode}
                         lang={lang}
                         obsidianPalette={activeObsidianPalette}
+                        reportSubOrder={reportSubOrder}
                       />
                     </div>
                   )}
@@ -1592,6 +1697,7 @@ export default function App() {
                         themeMode={themeMode}
                         lang={lang}
                         obsidianPalette={activeObsidianPalette}
+                        progSubOrder={progSubOrder}
                       />
                     </div>
                   )}
@@ -1704,10 +1810,15 @@ export default function App() {
       <WidgetCustomizerModal
         isOpen={isCustomizerOpen}
         onClose={() => setIsCustomizerOpen(false)}
-        widgets={widgets}
-        onToggleWidget={handleToggleWidget}
-        onMoveWidget={handleMoveWidget}
-        onResetWidgets={handleResetWidgets}
+        tabsOrder={tabsOrder}
+        onMoveTab={handleMoveTab}
+        reportSubOrder={reportSubOrder}
+        onMoveReportSub={handleMoveReportSub}
+        progSubOrder={progSubOrder}
+        onMoveProgSub={handleMoveProgSub}
+        onResetOrder={handleResetWidgetOrder}
+        themeMode={themeMode}
+        obsidianPalette={activeObsidianPalette}
       />
 
       <SettingsModal

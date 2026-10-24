@@ -59,6 +59,7 @@ interface ReportDeckViewProps {
   themeMode?: ThemeMode;
   lang?: Language;
   obsidianPalette?: ObsidianPalette;
+  reportSubOrder?: string[];
 }
 
 export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
@@ -74,6 +75,7 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
   themeMode = 'glass',
   lang = 'tr',
   obsidianPalette,
+  reportSubOrder = ['heatmap', 'bill', 'sensors'],
 }) => {
   const t = translations[lang] || translations.tr;
   const isGlass = themeMode === 'glass';
@@ -328,72 +330,41 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
             ? 'bg-white/[0.10] border-white/20 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3)]'
             : 'bg-slate-100/90 dark:bg-slate-800/90 border-slate-200/80 dark:border-slate-700/80 shadow-xs'
         }`}>
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic('light');
-              setActiveLayer(0);
-            }}
-            style={activeLayer === 0 && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
-            className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
-              activeLayer === 0
-                ? isObsidian
-                  ? 'text-white border-t border-l border-white/35 border-r border-b-2 shadow-[0_8px_18px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.4)] scale-[1.02]'
-                  : 'bg-blue-600 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
-                : isObsidian
-                ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
-                : isGlass
-                ? 'text-slate-300 hover:text-white'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <span>🌡️</span>
-            <span>{t.repTabHeatmap}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic('light');
-              setActiveLayer(1);
-            }}
-            style={activeLayer === 1 && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
-            className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
-              activeLayer === 1
-                ? isObsidian
-                  ? 'text-white border-t border-l border-white/35 border-r border-b-2 shadow-[0_8px_18px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.4)] scale-[1.02]'
-                  : 'bg-orange-500 text-white shadow-md shadow-orange-500/25 scale-[1.02]'
-                : isObsidian
-                ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
-                : isGlass
-                ? 'text-slate-300 hover:text-white'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <span>💰</span>
-            <span>{t.repTabGasBill}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic('light');
-              setActiveLayer(2);
-            }}
-            style={activeLayer === 2 && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
-            className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
-              activeLayer === 2
-                ? isObsidian
-                  ? 'text-white border-t border-l border-white/35 border-r border-b-2 shadow-[0_8px_18px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.4)] scale-[1.02]'
-                  : 'bg-emerald-600 text-white shadow-md shadow-emerald-500/25 scale-[1.02]'
-                : isObsidian
-                ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
-                : isGlass
-                ? 'text-slate-300 hover:text-white'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <span>🔥</span>
-            <span>{t.repTabBoiler}</span>
-          </button>
+          {reportSubOrder.map((key) => {
+            const layerIndex = key === 'heatmap' ? 0 : key === 'bill' ? 1 : 2;
+            const label = key === 'heatmap' ? t.repTabHeatmap : key === 'bill' ? t.repTabGasBill : t.repTabBoiler;
+            const icon = key === 'heatmap' ? '🌡️' : key === 'bill' ? '💰' : '🔥';
+            const isSelected = activeLayer === layerIndex;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  triggerHaptic('light');
+                  setActiveLayer(layerIndex as 0 | 1 | 2);
+                }}
+                style={isSelected && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
+                className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
+                  isSelected
+                    ? isObsidian
+                      ? 'text-white border-t border-l border-white/35 border-r border-b-2 shadow-[0_8px_18px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.4)] scale-[1.02]'
+                      : layerIndex === 0
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
+                      : layerIndex === 1
+                      ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25 scale-[1.02]'
+                      : 'bg-emerald-600 text-white shadow-md shadow-emerald-500/25 scale-[1.02]'
+                    : isObsidian
+                    ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
+                    : isGlass
+                    ? 'text-slate-300 hover:text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <span>{icon}</span>
+                <span>{label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -857,12 +828,16 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
           aria-modal="true"
           className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
         >
-          <div className={`border rounded-3xl p-5 max-w-xs w-full shadow-2xl animate-in zoom-in-95 flex flex-col gap-3 ${
-            isGlass
-              ? 'bg-slate-950/85 border-white/20 text-white'
+          <div className={`border rounded-3xl p-5 max-w-xs w-full shadow-2xl animate-in zoom-in-95 flex flex-col gap-3 transition-all ${
+            isObsidian
+              ? 'bg-[#12101b]/95 border-t border-l border-white/[0.16] border-r border-black/70 border-b-2 border-b-black/85 text-white shadow-[0_25px_70px_rgba(0,0,0,0.95)]'
+              : isGlass
+              ? 'bg-slate-950/70 border-white/25 backdrop-blur-2xl text-white shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1.5px_2px_rgba(255,255,255,0.3)]'
               : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white'
           }`}>
-            <div className="flex items-center justify-between border-b border-white/10 pb-2">
+            <div className={`flex items-center justify-between pb-2 border-b ${
+              isObsidian ? 'border-white/[0.08]' : isGlass ? 'border-white/15' : 'border-slate-100 dark:border-slate-800'
+            }`}>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-blue-400" />
                 <span className="font-bold text-sm">
@@ -872,35 +847,51 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedHour(null)}
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 cursor-pointer"
+                className={`w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-all ${
+                  isObsidian
+                    ? 'bg-[#1e1a2f] hover:bg-[#2b2542] text-[#d8caff] border border-white/[0.12]'
+                    : isGlass
+                    ? 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                }`}
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="space-y-2 text-xs">
-              <div className="flex justify-between p-2 rounded-xl bg-white/5">
-                <span className="text-slate-400">Brülör Durumu:</span>
+              <div className={`flex justify-between p-2 rounded-xl border ${
+                isObsidian ? 'bg-[#181524] border-white/[0.08]' : isGlass ? 'bg-white/[0.08] border-white/10 text-white' : 'bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-slate-800'
+              }`}>
+                <span className={isObsidian ? 'text-[#a89dc7]' : 'text-slate-400'}>Brülör Durumu:</span>
                 <span className={`font-bold flex items-center gap-1 ${selectedHour.isActive ? 'text-orange-400' : 'text-slate-400'}`}>
                   {selectedHour.isActive ? `🔥 Aktif (%${selectedHour.flameLevelPercent} Alev)` : '❄️ Beklemede (Ateşleme Yok)'}
                 </span>
               </div>
-              <div className="flex justify-between p-2 rounded-xl bg-white/5">
-                <span className="text-slate-400">Çalışma Sıcaklığı:</span>
+              <div className={`flex justify-between p-2 rounded-xl border ${
+                isObsidian ? 'bg-[#181524] border-white/[0.08]' : isGlass ? 'bg-white/[0.08] border-white/10 text-white' : 'bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-slate-800'
+              }`}>
+                <span className={isObsidian ? 'text-[#a89dc7]' : 'text-slate-400'}>Çalışma Sıcaklığı:</span>
                 <span className="font-bold font-mono text-sky-400">
                   {selectedHour.isActive ? `${selectedHour.temp.toFixed(1)}°C` : '— (Kombi Çalışmadı)'}
                 </span>
               </div>
-              <div className="flex justify-between p-2 rounded-xl bg-white/5">
-                <span className="text-slate-400">Hedef Sıcaklık:</span>
+              <div className={`flex justify-between p-2 rounded-xl border ${
+                isObsidian ? 'bg-[#181524] border-white/[0.08]' : isGlass ? 'bg-white/[0.08] border-white/10 text-white' : 'bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-slate-800'
+              }`}>
+                <span className={isObsidian ? 'text-[#a89dc7]' : 'text-slate-400'}>Hedef Sıcaklık:</span>
                 <span className="font-bold font-mono text-orange-400">{selectedHour.target.toFixed(1)}°C</span>
               </div>
-              <div className="flex justify-between p-2 rounded-xl bg-white/5">
-                <span className="text-slate-400">{t.powerKwLabel}:</span>
+              <div className={`flex justify-between p-2 rounded-xl border ${
+                isObsidian ? 'bg-[#181524] border-white/[0.08]' : isGlass ? 'bg-white/[0.08] border-white/10 text-white' : 'bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-slate-800'
+              }`}>
+                <span className={isObsidian ? 'text-[#a89dc7]' : 'text-slate-400'}>{t.powerKwLabel}:</span>
                 <span className="font-bold font-mono text-amber-400">{selectedHour.powerKw} kW</span>
               </div>
-              <div className="flex justify-between p-2 rounded-xl bg-white/5">
-                <span className="text-slate-400">{t.gasM3Label}:</span>
+              <div className={`flex justify-between p-2 rounded-xl border ${
+                isObsidian ? 'bg-[#181524] border-white/[0.08]' : isGlass ? 'bg-white/[0.08] border-white/10 text-white' : 'bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-slate-800'
+              }`}>
+                <span className={isObsidian ? 'text-[#a89dc7]' : 'text-slate-400'}>{t.gasM3Label}:</span>
                 <span className="font-bold font-mono text-emerald-400">{selectedHour.gasM3} m³</span>
               </div>
             </div>
@@ -909,10 +900,12 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
               type="button"
               onClick={() => setSelectedHour(null)}
               style={isObsidian ? { background: palette.activePillGradient } : undefined}
-              className={`w-full py-2 rounded-xl text-white font-bold text-xs cursor-pointer active:scale-95 transition-all mt-1 ${
+              className={`w-full py-2 rounded-xl font-bold text-xs cursor-pointer active:scale-95 transition-all mt-1 ${
                 isObsidian
-                  ? 'border-t border-l border-white/25 border-r border-b border-black/60 shadow-[0_4px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]'
-                  : 'bg-blue-600 hover:bg-blue-700'
+                  ? 'text-white border-t border-l border-white/25 border-r border-b border-black/60 shadow-[0_4px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]'
+                  : isGlass
+                  ? 'bg-white/20 hover:bg-white/30 text-white border border-white/20'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
               }`}
             >
               {t.close}

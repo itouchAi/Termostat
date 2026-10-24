@@ -27,6 +27,7 @@ interface ProgramDeckViewProps {
   themeMode?: ThemeMode;
   lang?: Language;
   obsidianPalette?: ObsidianPalette;
+  progSubOrder?: string[];
 }
 
 export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
@@ -38,6 +39,7 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
   themeMode = 'glass',
   lang = 'tr',
   obsidianPalette,
+  progSubOrder = ['schedule', 'consumption'],
 }) => {
   const t = translations[lang] || translations.tr;
   const isGlass = themeMode === 'glass';
@@ -154,50 +156,39 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
             ? 'bg-white/[0.10] border-white/20 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3)]'
             : 'bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs'
         }`}>
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic('light');
-              setActiveLayer(0);
-            }}
-            style={activeLayer === 0 && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
-            className={`px-3.5 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeLayer === 0
-                ? isObsidian
-                  ? 'text-white border-t border-l border-white/35 border-r border-b-2 shadow-[0_8px_18px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.4)] scale-[1.02]'
-                  : 'bg-blue-600 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
-                : isObsidian
-                ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
-                : isGlass
-                ? 'text-slate-300 hover:text-white'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <span>⏰</span>
-            <span>{t.progTabSchedule}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic('light');
-              setActiveLayer(1);
-            }}
-            style={activeLayer === 1 && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
-            className={`px-3.5 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeLayer === 1
-                ? isObsidian
-                  ? 'text-white border-t border-l border-white/35 border-r border-b-2 shadow-[0_8px_18px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.4)] scale-[1.02]'
-                  : 'bg-orange-500 text-white shadow-md shadow-orange-500/25 scale-[1.02]'
-                : isObsidian
-                ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
-                : isGlass
-                ? 'text-slate-300 hover:text-white'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <span>💰</span>
-            <span>{t.progTabConsumption}</span>
-          </button>
+          {progSubOrder.map((key) => {
+            const layerIndex = key === 'schedule' ? 0 : 1;
+            const label = key === 'schedule' ? t.progTabSchedule : t.progTabConsumption;
+            const icon = key === 'schedule' ? '⏰' : '💰';
+            const isSelected = activeLayer === layerIndex;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  triggerHaptic('light');
+                  setActiveLayer(layerIndex as 0 | 1);
+                }}
+                style={isSelected && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
+                className={`px-3.5 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                  isSelected
+                    ? isObsidian
+                      ? 'text-white border-t border-l border-white/35 border-r border-b-2 shadow-[0_8px_18px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.4)] scale-[1.02]'
+                      : layerIndex === 0
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
+                      : 'bg-orange-500 text-white shadow-md shadow-orange-500/25 scale-[1.02]'
+                    : isObsidian
+                    ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
+                    : isGlass
+                    ? 'text-slate-300 hover:text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <span>{icon}</span>
+                <span>{label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
