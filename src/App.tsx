@@ -1842,6 +1842,8 @@ export default function App() {
         smartDisplayConfig={smartDisplayConfig}
         onUpdateSmartDisplayConfig={handleUpdateSmartDisplayConfig}
         onLaunchSmartDisplay={() => setIsSmartDisplayOpen(true)}
+        themeMode={themeMode}
+        obsidianPalette={activeObsidianPalette}
       />
 
       <VaultNotificationsModal
@@ -1857,6 +1859,7 @@ export default function App() {
         telegramToken={telegramToken}
         telegramChatId={telegramChatId}
         onSaveTelegram={handleSaveTelegram}
+        themeMode={themeMode}
       />
 
       {/* ── SESLİ KOMUT ASİSTANI MODALI ── */}
@@ -1872,6 +1875,7 @@ export default function App() {
         todayActiveText={todayActiveFormattedText}
         onSetTargetTemp={handleSetTarget}
         onNavigateToTab={(idx) => navigateToTab(idx)}
+        themeMode={themeMode}
       />
 
       {/* ── GOOGLE HOME & ASİSTAN ENTEGRASYON MODALI ── */}
@@ -1884,6 +1888,7 @@ export default function App() {
         targetTemp={targetTemp}
         isKombiActive={isKombiActive}
         onSetTargetTemp={handleSetTarget}
+        themeMode={themeMode}
       />
 
       {/* ── SMART DISPLAY & AMBİYANS MODU OVERLAY (Tablet & Masaüstü) ── */}

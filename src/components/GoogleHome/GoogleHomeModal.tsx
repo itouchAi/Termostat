@@ -13,6 +13,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { translations, type Language } from '../../utils/i18n.ts';
+import type { ThemeMode } from '../../types.ts';
 
 interface GoogleHomeModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ interface GoogleHomeModalProps {
   targetTemp: number;
   isKombiActive: boolean;
   onSetTargetTemp: (temp: number) => void;
+  themeMode?: ThemeMode;
 }
 
 export const GoogleHomeModal: React.FC<GoogleHomeModalProps> = ({
@@ -34,8 +36,11 @@ export const GoogleHomeModal: React.FC<GoogleHomeModalProps> = ({
   targetTemp,
   isKombiActive,
   onSetTargetTemp,
+  themeMode = 'glass',
 }) => {
   const t = translations[lang] || translations.tr;
+  const isObsidian = themeMode === 'obsidian_lavender';
+  const isGlass = themeMode === 'glass';
   const [copiedCode, setCopiedCode] = useState(false);
   const [simulationMsg, setSimulationMsg] = useState<string | null>(null);
 
@@ -131,26 +136,52 @@ exports.faketoken = functions.https.onRequest((req, res) => {
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-slate-100 max-h-[90vh]"
+        className={`relative w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 ${
+          isObsidian
+            ? 'bg-[#12101b]/95 border-t border-l border-white/[0.18] border-r border-black/70 border-b-2 border-b-black/85 text-white shadow-[0_25px_70px_rgba(0,0,0,0.95)] backdrop-blur-2xl'
+            : isGlass
+            ? 'bg-slate-950/75 border border-white/20 shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1.5px_2px_rgba(255,255,255,0.25)] backdrop-blur-2xl text-white'
+            : 'bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-100'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/40">
+        <div
+          className={`px-5 py-4 border-b flex items-center justify-between ${
+            isObsidian
+              ? 'border-white/[0.08] bg-[#161324]/80'
+              : isGlass
+              ? 'border-white/15 bg-white/[0.06]'
+              : 'border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40'
+          }`}
+        >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-500 via-amber-500 to-emerald-500 p-0.5 shadow-md">
-              <div className="w-full h-full bg-white dark:bg-slate-900 rounded-[10px] flex items-center justify-center">
+              <div
+                className={`w-full h-full rounded-[10px] flex items-center justify-center ${
+                  isObsidian ? 'bg-[#181427]' : isGlass ? 'bg-slate-900/60' : 'bg-white dark:bg-slate-900'
+                }`}
+              >
                 <span className="text-base">🏠</span>
               </div>
             </div>
             <div>
-              <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-2">
+              <h3
+                className={`font-black text-sm flex items-center gap-2 ${
+                  isObsidian || isGlass ? 'text-white' : 'text-slate-900 dark:text-white'
+                }`}
+              >
                 <span>Google Home & Asistan</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                   <Check className="w-3 h-3" />
                   {t.googleHomeBadge}
                 </span>
               </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              <p
+                className={`text-[11px] ${
+                  isObsidian ? 'text-[#c3b6e8]' : isGlass ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
+                }`}
+              >
                 {t.googleHomeSub}
               </p>
             </div>
@@ -159,7 +190,13 @@ exports.faketoken = functions.https.onRequest((req, res) => {
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+            className={`p-2 rounded-xl transition-all cursor-pointer ${
+              isObsidian
+                ? 'text-[#c3b6e8] hover:text-white hover:bg-white/[0.08]'
+                : isGlass
+                ? 'text-white/70 hover:text-white hover:bg-white/10'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
             aria-label="Kapat"
           >
             <X className="w-4 h-4" />

@@ -14,6 +14,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { translations, type Language } from '../../utils/i18n.ts';
+import type { ThemeMode } from '../../types.ts';
 
 interface VoiceAssistantModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ interface VoiceAssistantModalProps {
   todayActiveText: string;
   onSetTargetTemp: (temp: number) => void;
   onNavigateToTab: (tabIdx: number) => void;
+  themeMode?: ThemeMode;
 }
 
 export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
@@ -41,8 +43,11 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
   todayActiveText,
   onSetTargetTemp,
   onNavigateToTab,
+  themeMode = 'glass',
 }) => {
   const t = translations[lang] || translations.tr;
+  const isObsidian = themeMode === 'obsidian_lavender';
+  const isGlass = themeMode === 'glass';
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -403,23 +408,45 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-slate-100"
+        className={`relative w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 ${
+          isObsidian
+            ? 'bg-[#12101b]/95 border-t border-l border-white/[0.18] border-r border-black/70 border-b-2 border-b-black/85 text-white shadow-[0_25px_70px_rgba(0,0,0,0.95)] backdrop-blur-2xl'
+            : isGlass
+            ? 'bg-slate-950/75 border border-white/20 shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1.5px_2px_rgba(255,255,255,0.25)] backdrop-blur-2xl text-white'
+            : 'bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-100'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header */}
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/40">
+        <div
+          className={`px-5 py-4 border-b flex items-center justify-between ${
+            isObsidian
+              ? 'border-white/[0.08] bg-[#161324]/80'
+              : isGlass
+              ? 'border-white/15 bg-white/[0.06]'
+              : 'border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40'
+          }`}
+        >
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+              <h3
+                className={`font-black text-sm flex items-center gap-1.5 ${
+                  isObsidian || isGlass ? 'text-white' : 'text-slate-900 dark:text-white'
+                }`}
+              >
                 <span>{t.voiceAssistantTitle}</span>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300">
                   {lang === 'tr' ? 'Türkçe' : 'EN'}
                 </span>
               </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              <p
+                className={`text-[11px] ${
+                  isObsidian ? 'text-[#c3b6e8]' : isGlass ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
+                }`}
+              >
                 {t.voiceAssistantSub}
               </p>
             </div>
