@@ -35,6 +35,7 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
 
   const isObsidian = themeMode === 'obsidian_lavender';
   const isGlass = themeMode === 'glass';
+  const isTactile = themeMode === 'tactile_deck';
   const palette = obsidianPalette || getObsidianPalette(3);
 
   const tabDefs: Record<string, { title: string; subtitle: string; icon: string }> = {
@@ -79,9 +80,23 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
       className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-md animate-in fade-in duration-200"
     >
       <div
+        style={
+          isObsidian
+            ? {
+                boxShadow: `0 25px 70px rgba(0,0,0,0.95), 0 0 50px ${palette.cardGlow}`,
+                borderColor: palette.cardBorder,
+              }
+            : isTactile
+            ? {
+                boxShadow: '0 25px 70px rgba(0,0,0,0.98), 0 0 35px rgba(255,140,50,0.18)',
+              }
+            : undefined
+        }
         className={`relative w-full max-w-lg max-h-[90vh] flex flex-col rounded-3xl border shadow-2xl backdrop-blur-2xl overflow-hidden transition-all ${
           isObsidian
-            ? 'bg-[#12101b]/95 border-t border-l border-white/[0.16] border-r border-black/70 border-b-2 border-b-black/85 text-white shadow-[0_25px_70px_rgba(0,0,0,0.95)]'
+            ? 'bg-[#12101b]/95 border-t border-l border-white/[0.16] border-r border-black/70 border-b-2 border-b-black/85 text-white'
+            : isTactile
+            ? 'bg-[#161422]/98 border-t border-l border-white/[0.18] border-r border-black/80 border-b-2 border-b-black/95 text-white'
             : isGlass
             ? 'bg-slate-950/65 border border-white/25 shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1.5px_2px_rgba(255,255,255,0.3)] text-white'
             : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white shadow-2xl'
@@ -93,6 +108,8 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
           className={`px-5 py-4 border-b flex items-center justify-between shrink-0 ${
             isObsidian
               ? 'border-white/[0.08] bg-[#161324]/80'
+              : isTactile
+              ? 'border-white/[0.10] bg-[#1a1726]/90'
               : isGlass
               ? 'border-white/15 bg-white/[0.08]'
               : 'border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50'
@@ -100,9 +117,18 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
         >
           <div className="flex items-center gap-2.5">
             <div
+              style={
+                isObsidian
+                  ? {
+                      borderColor: palette.borderUnder,
+                      color: palette.textColor,
+                      background: `linear-gradient(135deg, ${palette.hex}25, ${palette.ringColor}15)`,
+                    }
+                  : undefined
+              }
               className={`p-2 rounded-xl ${
                 isObsidian
-                  ? 'bg-[#1e1930] text-[#c8b7f8] border border-white/[0.08]'
+                  ? 'border shadow-xs'
                   : isGlass
                   ? 'bg-white/10 text-sky-300 border border-white/15'
                   : 'bg-blue-50 dark:bg-blue-900/40 text-blue-500'
@@ -257,8 +283,16 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                         : 'border-slate-200 dark:border-slate-700'
                     }`}
                   >
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-sky-400 mb-1">
-                      <Layers className="w-3 h-3" />
+                    <div
+                      style={isObsidian ? { color: palette.textColor } : undefined}
+                      className={`flex items-center gap-1.5 text-[10px] font-bold mb-1 ${
+                        isObsidian ? '' : isGlass ? 'text-sky-300' : 'text-sky-400'
+                      }`}
+                    >
+                      <Layers
+                        style={isObsidian ? { color: palette.ringColor } : undefined}
+                        className="w-3 h-3"
+                      />
                       <span>Rapor Alt Sekmeleri (İç Sıralama):</span>
                     </div>
 
@@ -341,8 +375,16 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                         : 'border-slate-200 dark:border-slate-700'
                     }`}
                   >
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400 mb-1">
-                      <Layers className="w-3 h-3" />
+                    <div
+                      style={isObsidian ? { color: palette.textColor } : undefined}
+                      className={`flex items-center gap-1.5 text-[10px] font-bold mb-1 ${
+                        isObsidian ? '' : isGlass ? 'text-amber-300' : 'text-amber-400'
+                      }`}
+                    >
+                      <Layers
+                        style={isObsidian ? { color: palette.ringColor } : undefined}
+                        className="w-3 h-3"
+                      />
                       <span>Program Alt Sekmeleri (İç Sıralama):</span>
                     </div>
 
@@ -449,11 +491,29 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
           <button
             type="button"
             onClick={onClose}
+            style={
+              isObsidian
+                ? {
+                    background: `linear-gradient(135deg, ${palette.hex} 0%, ${palette.ringColor} 50%, ${palette.borderUnder} 100%)`,
+                    boxShadow: `0 8px 22px rgba(0,0,0,0.6), 0 2px 14px ${palette.glow}`,
+                    borderColor: palette.ringColor,
+                  }
+                : isTactile
+                ? {
+                    background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                    boxShadow: '0 4px 0 #0c0b10, 0 8px 16px rgba(0,0,0,0.8), 0 0 16px rgba(255,145,50,0.5), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                    border: '1px solid rgba(255, 200, 150, 0.45)',
+                    color: '#fff7ed',
+                  }
+                : undefined
+            }
             className={`px-5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer active:scale-95 ${
               isObsidian
-                ? 'bg-gradient-to-r from-[#8261e6] to-[#b18cf8] text-white shadow-[#8261e6]/30'
+                ? 'text-white border'
+                : isTactile
+                ? ''
                 : isGlass
-                ? 'bg-white/20 hover:bg-white/30 text-white border border-white/25'
+                ? 'bg-white/20 hover:bg-white/30 text-white border border-white/25 backdrop-blur-md'
                 : 'bg-blue-600 hover:bg-blue-700 text-white'
             }`}
           >

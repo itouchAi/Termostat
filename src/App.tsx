@@ -43,6 +43,8 @@ import { VaultNotificationsModal } from './components/VaultNotificationsModal.ts
 import { VoiceAssistantModal } from './components/VoiceAssistant/VoiceAssistantModal.tsx';
 import { GoogleHomeModal } from './components/GoogleHome/GoogleHomeModal.tsx';
 import { SmartDisplayOverlay } from './components/SmartDisplay/SmartDisplayOverlay.tsx';
+import { TactileTelemetryBar } from './components/Widgets/TactileTelemetryBar.tsx';
+import { TactileDialWidget } from './components/Widgets/TactileDialWidget.tsx';
 
 
 import {
@@ -688,7 +690,7 @@ export default function App() {
   // ── Touch Gesture Tracking (Parmakla Kaydırma & Gerçek Zamanlı 3D Deformasyon) ──
   const handleTouchStart = (e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('input, textarea, select, button, [role="slider"]')) {
+    if (target.closest('input, textarea, select, button, [role="slider"], [data-no-swipe], .no-swipe, [data-dial-widget]')) {
       return;
     }
     dragStartXRef.current = e.touches[0].clientX;
@@ -785,7 +787,7 @@ export default function App() {
   // ── Mouse Drag Gesture Tracking (Fareyle Parmak Gibi Kaydırma) ──
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('input, textarea, select, button, [role="slider"]')) {
+    if (target.closest('input, textarea, select, button, [role="slider"], [data-no-swipe], .no-swipe, [data-dial-widget]')) {
       return;
     }
     isPointerDownRef.current = true;
@@ -1008,11 +1010,42 @@ export default function App() {
     SecureVault.removeItem('telegram');
   };
 
+  // Thermal feeling variables (from user's HTML knob 3 hue & glow concept mapped to targetTemp)
+  const thermalProgress = Math.max(0, Math.min(1, (targetTemp - 16) / 14));
+  const thermalHue = Math.round((250 + thermalProgress * 140) % 360);
+  const thermalLit = 0.35 + thermalProgress * 0.55 + (isKombiActive ? 0.2 : 0);
+  const thermalFlameOpacity = Math.min(0.85, 0.10 + thermalProgress * 0.50 + (isKombiActive ? 0.25 : 0));
+
+  const currentModeName =
+    Math.abs(targetTemp - 20.0) < 0.25
+      ? 'EKO'
+      : Math.abs(targetTemp - 22.5) < 0.25
+      ? 'KONFOR'
+      : Math.abs(targetTemp - 18.5) < 0.25
+      ? 'GECE'
+      : Math.abs(targetTemp - 25.0) < 0.25
+      ? 'BOOST'
+      : targetTemp < 20
+      ? 'TASARRUF'
+      : 'MANUEL';
+
   return (
     <div
-      style={themeMode === 'obsidian_lavender' ? { background: activeObsidianPalette.bgStyle } : undefined}
+      style={
+        themeMode === 'tactile_deck'
+          ? {
+              background: `
+                radial-gradient(48% 42% at 78% 40%, hsl(${thermalHue} 55% 48% / 0.38), transparent 72%),
+                radial-gradient(42% 40% at 20% 78%, rgba(255, 140, 60, ${thermalFlameOpacity}), transparent 72%),
+                linear-gradient(215deg, #706e8e 0%, #47435a 42%, #262330 100%)
+              `,
+            }
+          : themeMode === 'obsidian_lavender'
+          ? { background: activeObsidianPalette.bgStyle }
+          : undefined
+      }
       className={`h-[100dvh] max-h-[100dvh] w-screen relative ${
-        themeMode === 'obsidian_lavender'
+        themeMode === 'obsidian_lavender' || themeMode === 'tactile_deck'
           ? 'text-slate-100'
           : themeMode === 'glass'
           ? 'bg-transparent text-slate-100'
@@ -1021,6 +1054,31 @@ export default function App() {
           : 'bg-radial-[at_top] from-slate-100 via-sky-50/40 to-slate-200/80 text-slate-800'
       } font-sans transition-all duration-500 flex flex-col selection:bg-[#8261e6] selection:text-white overflow-hidden`}
     >
+      {/* ── TACTILE DECK THERMAL HUE & FLAME AMBIENT TRAILS (Driven by targetTemp & knob 3 physics) ── */}
+      {themeMode === 'tactile_deck' && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none transition-all duration-700">
+          {/* Volumetric Thermal Hue Aura */}
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[760px] sm:w-[1050px] h-[580px] sm:h-[720px] rounded-full blur-[90px] sm:blur-[120px] transition-all duration-700 pointer-events-none"
+            style={{
+              background: `radial-gradient(ellipse 65% 55% at 50% 50%, hsl(${thermalHue} 60% 48% / ${thermalLit * 0.45}) 0%, transparent 72%)`,
+            }}
+          />
+          {/* Warm Flame Glow radiating from behind the stage cards */}
+          <div
+            className="absolute -top-16 -right-16 w-[560px] h-[560px] rounded-full blur-[85px] transition-all duration-700"
+            style={{
+              background: `radial-gradient(circle, rgba(255, 140, 60, ${thermalFlameOpacity * 0.75}) 0%, transparent 68%)`,
+            }}
+          />
+          <div
+            className="absolute -bottom-24 -left-20 w-[500px] h-[500px] rounded-full blur-[80px] transition-all duration-700"
+            style={{
+              background: `radial-gradient(circle, rgba(255, 110, 40, ${thermalFlameOpacity * 0.6}) 0%, transparent 68%)`,
+            }}
+          />
+        </div>
+      )}
       {/* ── VOLUMETRIC OBSIDIAN NEON AMBIENT TRAILS (Full App Backlighting) ── */}
       {themeMode === 'obsidian_lavender' && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none transition-all duration-700">
@@ -1221,9 +1279,18 @@ export default function App() {
           <button
             type="button"
             onClick={() => setIsCustomizerOpen(true)}
+            style={
+              themeMode === 'obsidian_lavender'
+                ? {
+                    borderColor: activeObsidianPalette.borderUnder,
+                    color: activeObsidianPalette.textColor,
+                    boxShadow: `0 4px 14px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.15), 0 0 12px ${activeObsidianPalette.glow.replace(/[\d.]+\)$/, '0.25)')}`,
+                  }
+                : undefined
+            }
             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer ${
               themeMode === 'obsidian_lavender'
-                ? 'bg-[#151322] hover:bg-[#201c32] border-t border-l border-white/[0.18] border-r border-black/70 border-b border-black/90 text-[#d8caff] hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.15)] ring-1 ring-[#8261e6]/20'
+                ? 'bg-[#151322] hover:bg-[#201c32] border-t border-l border-white/[0.18] border-r border-b text-white shadow-[0_4px_14px_rgba(0,0,0,0.7)]'
                 : themeMode === 'glass'
                 ? 'bg-slate-950/40 hover:bg-slate-900/60 border border-white/20 hover:border-white/35 text-white backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3)]'
                 : effectiveTheme === 'dark'
@@ -1241,9 +1308,17 @@ export default function App() {
             <button
               type="button"
               onClick={() => setIsSmartDisplayOpen(true)}
+              style={
+                themeMode === 'obsidian_lavender'
+                  ? {
+                      borderColor: activeObsidianPalette.borderUnder,
+                      color: activeObsidianPalette.ringColor,
+                    }
+                  : undefined
+              }
               className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer animate-in fade-in ${
                 themeMode === 'obsidian_lavender'
-                  ? 'bg-[#151322] hover:bg-[#201c32] border-t border-l border-white/[0.18] border-r border-black/70 border-b border-black/90 text-purple-300 shadow-[0_4px_14px_rgba(0,0,0,0.7)]'
+                  ? 'bg-[#151322] hover:bg-[#201c32] border-t border-l border-white/[0.18] border-r border-b shadow-[0_4px_14px_rgba(0,0,0,0.7)]'
                   : themeMode === 'glass'
                   ? 'bg-purple-600/30 hover:bg-purple-600/45 border border-purple-400/40 text-white backdrop-blur-md'
                   : 'bg-purple-500/15 hover:bg-purple-500/25 text-purple-600 dark:text-purple-400 border border-purple-400/40'
@@ -1259,9 +1334,18 @@ export default function App() {
           <button
             type="button"
             onClick={() => setIsSettingsOpen(true)}
+            style={
+              themeMode === 'obsidian_lavender'
+                ? {
+                    borderColor: activeObsidianPalette.borderUnder,
+                    color: activeObsidianPalette.textColor,
+                    boxShadow: `0 4px 14px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.15), 0 0 12px ${activeObsidianPalette.glow.replace(/[\d.]+\)$/, '0.25)')}`,
+                  }
+                : undefined
+            }
             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer group ${
               themeMode === 'obsidian_lavender'
-                ? 'bg-[#151322] hover:bg-[#201c32] border-t border-l border-white/[0.18] border-r border-black/70 border-b border-black/90 text-[#d8caff] hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.15)] ring-1 ring-[#8261e6]/25'
+                ? 'bg-[#151322] hover:bg-[#201c32] border-t border-l border-white/[0.18] border-r border-b text-white shadow-[0_4px_14px_rgba(0,0,0,0.7)]'
                 : themeMode === 'glass'
                 ? 'bg-slate-950/40 hover:bg-slate-900/60 border border-white/20 hover:border-white/35 text-white backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3)]'
                 : effectiveTheme === 'dark'
@@ -1372,6 +1456,8 @@ export default function App() {
                 className={`absolute inset-0 w-full h-full rounded-[30px] sm:rounded-[36px] overflow-hidden flex flex-col transition-all duration-500 ${
                   themeMode === 'obsidian_lavender'
                     ? 'bg-[#12101b]/95 border backdrop-blur-2xl text-white'
+                    : themeMode === 'tactile_deck'
+                    ? 'bg-[#1b1924]/95 border-t border-l border-white/[0.18] border-r border-black/80 border-b-2 border-b-black/90 shadow-[0_25px_70px_rgba(0,0,0,0.95)] backdrop-blur-2xl text-white'
                     : themeMode === 'glass'
                     ? 'bg-slate-950/20 border border-white/30 shadow-[0_25px_60px_rgba(0,0,0,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.45),inset_0_-1.5px_2px_rgba(255,255,255,0.15)] backdrop-blur-md backdrop-saturate-150 text-white'
                     : effectiveTheme === 'dark'
@@ -1380,12 +1466,16 @@ export default function App() {
                 }`}
               >
                 {/* Frosted Glass Top Sheen & Curved Bevel Glare */}
-                {(themeMode === 'glass' || themeMode === 'obsidian_lavender') && (
+                {(themeMode === 'glass' || themeMode === 'obsidian_lavender' || themeMode === 'tactile_deck') && (
                   <div
                     style={
                       themeMode === 'obsidian_lavender'
                         ? {
                             background: `linear-gradient(to bottom, ${activeObsidianPalette.glow.replace(/[\d.]+\)$/, '0.18)')} 0%, transparent 100%)`,
+                          }
+                        : themeMode === 'tactile_deck'
+                        ? {
+                            background: 'linear-gradient(to bottom, rgba(255, 140, 60, 0.12) 0%, transparent 100%)',
                           }
                         : undefined
                     }
@@ -1401,6 +1491,8 @@ export default function App() {
                 <div className={`px-4 sm:px-6 py-3 border-b flex items-center justify-between shrink-0 relative z-10 ${
                   themeMode === 'obsidian_lavender'
                     ? 'border-white/[0.08] bg-[#14121e]/85 backdrop-blur-md'
+                    : themeMode === 'tactile_deck'
+                    ? 'border-white/[0.10] bg-[#171520]/90 backdrop-blur-md'
                     : themeMode === 'glass'
                     ? 'border-white/15 bg-white/[0.08] backdrop-blur-md'
                     : 'border-slate-200/70 dark:border-slate-800/80 bg-white/40 dark:bg-slate-800/40'
@@ -1427,219 +1519,326 @@ export default function App() {
                   {/* ── CARD 1: GENEL (ÜSTTE STATÜ, ORTADA KÜÇÜLTÜLMÜŞ TERMOSTAT, ALTTA YATAY MOD BUTONLARI & STEPPER) ── */}
                   {tab.id === 'genel' && (
                     <div className="h-full w-full flex flex-col justify-between overflow-hidden select-none">
-                      {/* Top Badges (Compact Frosted Glass) */}
-                      <div className="w-full flex items-center justify-between mb-1 shrink-0">
-                        <div className={`px-2.5 py-1 rounded-full border shadow-xs flex items-center gap-1.5 sm:gap-2 backdrop-blur-md ${
-                          themeMode === 'obsidian_lavender'
-                            ? 'bg-[#151322] border-white/[0.08] shadow-[0_6px_16px_-3px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.12)] text-white'
-                            : themeMode === 'glass'
-                            ? 'bg-white/[0.12] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35)] text-white'
-                            : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60'
-                        }`}>
-                          <span
-                            className={`w-2 h-2 rounded-full ${
-                              isKombiActive ? 'bg-orange-500 animate-pulse' : 'bg-slate-400'
-                            }`}
+                      {/* Top Badges / Telemetry Bar */}
+                      {themeMode === 'tactile_deck' ? (
+                        <div className="w-full mb-1 shrink-0">
+                          {/* Image 2: Sleek compact dark tactile telemetry capsule */}
+                          <TactileTelemetryBar
+                            currentTemp={currentTemp}
+                            humidity={humidity}
+                            waterPressure={1.6}
+                            targetTemp={targetTemp}
+                            isKombiActive={isKombiActive}
+                            flameLevelPercent={flameLevelPercent}
+                            thermalHue={thermalHue}
                           />
-                          <span className={`text-xs font-bold ${themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>
-                            {isKombiActive ? t.activeHeating : t.standby}
-                          </span>
-                          <span className={`text-[10px] font-mono ${themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-[#c8b7f8]' : 'text-slate-500'}`}>
-                            (%{flameLevelPercent} {t.modulation})
-                          </span>
                         </div>
-
-                        <div className={`text-[11px] font-semibold flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md ${
-                          themeMode === 'obsidian_lavender'
-                            ? 'bg-[#151322] border-white/[0.08] shadow-[0_6px_16px_-3px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.12)] text-white'
-                            : themeMode === 'glass'
-                            ? 'bg-white/[0.12] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35)] text-white'
-                            : 'bg-white/70 dark:bg-slate-800/60 border-slate-200/60 dark:border-slate-700/60 text-slate-500 dark:text-slate-400'
-                        }`}>
-                          <span className={themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-[#a89dc7]' : 'text-slate-400'}>{t.liveRoom}</span>
-                          <span className={`font-mono font-bold ${themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>{currentTemp}°C</span>
-                          <span className={themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-[#a89dc7]' : 'text-slate-400'}>• %{humidity}</span>
-                        </div>
-                      </div>
-
-                      {/* Center: Scaled 3D Thermostat */}
-                      <div className="flex-1 w-full max-w-[340px] xs:max-w-[380px] sm:max-w-[440px] md:max-w-[480px] h-[220px] xs:h-[250px] sm:h-[300px] md:h-[350px] mx-auto flex items-center justify-center relative my-auto">
-                        <ThreeScene
-                          theme={effectiveTheme}
-                          morphMode={morphMode}
-                          targetTemp={targetTemp}
-                          currentTemp={currentTemp}
-                          isKombiActive={isKombiActive}
-                          flameLevelPercent={flameLevelPercent}
-                          performanceMode={performanceMode === 'eco'}
-                          reducedMotion={reducedMotion}
-                          onSetTarget={handleSetTarget}
-                        />
-                      </div>
-
-                      {/* ── TERMOSTAT ALTI CANLI ÇİFTLİ SAYAÇ BARI (Tek bar, iki açıklama: Bugün Açık Kalma + En Son Ateşleme Durumu) ── */}
-                      <div className={`w-full flex items-center justify-between px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border backdrop-blur-md shadow-2xs my-1 sm:my-1.5 transition-all ${
-                        themeMode === 'obsidian_lavender'
-                          ? 'bg-[#13111c]/95 border-white/[0.08] shadow-[0_12px_26px_-4px_rgba(0,0,0,0.8),inset_0_1px_1.5px_rgba(255,255,255,0.12),inset_0_-1.5px_2px_rgba(0,0,0,0.4)] text-white'
-                          : themeMode === 'glass'
-                          ? 'bg-white/[0.10] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3),0_6px_20px_rgba(0,0,0,0.25)] text-white'
-                          : 'bg-white/85 dark:bg-slate-800/80 border-slate-200/90 dark:border-slate-700/80 shadow-xs'
-                      }`}>
-                        {/* 1. Açıklama: Bugün Açık Kalma Sayacı */}
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-400/30 flex items-center justify-center shrink-0">
-                            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider truncate ${
-                              themeMode === 'glass' ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
-                            }`}>
-                              {t.todayActiveCounterLabel}
-                            </span>
-                            <span className={`font-mono font-black text-xs sm:text-sm tracking-tight ${
-                              themeMode === 'glass' ? 'text-white' : 'text-slate-900 dark:text-white'
-                            }`}>
-                              {todayActiveFormattedText}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Dikey İnce Ayırıcı Çizgi */}
-                        <div className={`h-7 w-[1px] mx-2 shrink-0 ${
-                          themeMode === 'glass' ? 'bg-white/15' : 'bg-slate-200 dark:bg-slate-700'
-                        }`} />
-
-                        {/* 2. Açıklama: En Son Ateşlemeden / Sönmeden Bu Yana Durum Sayacı */}
-                        <div className="flex items-center gap-2 min-w-0 flex-1 justify-end text-right">
-                          <div className="flex flex-col min-w-0 items-end">
-                            <span className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider truncate flex items-center gap-1 ${
-                              themeMode === 'glass' ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
-                            }`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${
-                                isKombiActive ? 'bg-orange-500 animate-pulse' : 'bg-sky-400'
-                              }`} />
-                              {t.lastIgnitionCounterLabel}
-                            </span>
-                            <span className={`font-mono font-black text-xs sm:text-sm tracking-tight ${
-                              isKombiActive
-                                ? 'text-orange-500 drop-shadow-xs'
-                                : themeMode === 'glass'
-                                ? 'text-sky-300'
-                                : 'text-sky-600 dark:text-sky-400'
-                            }`}>
-                              {ignitionStatusFormattedText}
-                            </span>
-                          </div>
-                          <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center shrink-0 border ${
-                            isKombiActive
-                              ? 'bg-orange-500/20 text-orange-400 border-orange-400/40 animate-pulse'
-                              : 'bg-sky-500/15 text-sky-400 border-sky-400/30'
+                      ) : (
+                        <div className="w-full flex items-center justify-between mb-1 shrink-0">
+                          <div className={`px-2.5 py-1 rounded-full border shadow-xs flex items-center gap-1.5 sm:gap-2 backdrop-blur-md ${
+                            themeMode === 'obsidian_lavender'
+                              ? 'bg-[#151322] border-white/[0.08] shadow-[0_6px_16px_-3px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.12)] text-white'
+                              : themeMode === 'glass'
+                              ? 'bg-white/[0.12] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35)] text-white'
+                              : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60'
                           }`}>
-                            {isKombiActive ? <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Bottom: Target Stepper + Horizontal Preset Buttons */}
-                      <div className="w-full shrink-0 flex flex-col gap-1.5 sm:gap-2 mt-auto">
-                        {/* Target Stepper Strip (Compact Horizontal Frosted Glass / Obsidian Lavender) */}
-                        <div className={`w-full flex items-center justify-between px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border backdrop-blur-md transition-all ${
-                          themeMode === 'obsidian_lavender'
-                            ? 'bg-[#13111c]/95 border-t border-l border-white/[0.12] border-r border-black/60 border-b-2 border-b-black/80 shadow-[0_12px_26px_-4px_rgba(0,0,0,0.8),inset_0_1px_1.5px_rgba(255,255,255,0.12),inset_0_-1.5px_2px_rgba(0,0,0,0.4)] text-white'
-                            : themeMode === 'glass'
-                            ? 'bg-white/[0.10] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35),0_8px_24px_rgba(0,0,0,0.3)] text-white'
-                            : 'bg-slate-50/90 dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700/70 shadow-2xs'
-                        }`}>
-                          <button
-                            type="button"
-                            onClick={() => handleSetTarget(Math.max(10, Math.round((targetTemp - 0.5) * 2) / 2))}
-                            className={`w-8 h-8 rounded-xl font-black flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer ${
-                              themeMode === 'obsidian_lavender'
-                                ? 'bg-[#1a1727] hover:bg-[#252138] text-[#e2d9f3] border-t border-l border-white/[0.14] border-r border-black/60 border-b border-black/80 shadow-[0_4px_12px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-1px_1px_rgba(0,0,0,0.4)]'
-                                : themeMode === 'glass'
-                                ? 'bg-white/20 hover:bg-white/30 text-white border border-white/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'
-                                : 'bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-white shadow-2xs'
-                            }`}
-                            title="Hedef sıcaklığı 0.5°C azalt"
-                          >
-                            -
-                          </button>
-
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[11px] font-semibold uppercase tracking-wider hidden xs:inline ${
-                              themeMode === 'obsidian_lavender'
-                                ? 'text-[#9f94bf]'
-                                : themeMode === 'glass'
-                                ? 'text-slate-300'
-                                : 'text-slate-400'
-                            }`}>
-                              {t.targetTemp}
+                            <span
+                              className={`w-2 h-2 rounded-full ${
+                                isKombiActive ? 'bg-orange-500 animate-pulse' : 'bg-slate-400'
+                              }`}
+                            />
+                            <span className={`text-xs font-bold ${themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>
+                              {isKombiActive ? t.activeHeating : t.standby}
                             </span>
-                            <span className={`text-lg sm:text-xl font-black font-mono drop-shadow-sm ${
-                              themeMode === 'obsidian_lavender' ? 'text-[#d8caff]' : 'text-orange-500'
-                            }`}>
-                              {targetTemp.toFixed(1)}°C
+                            <span className={`text-[10px] font-mono ${themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-[#c8b7f8]' : 'text-slate-500'}`}>
+                              (%{flameLevelPercent} {t.modulation})
                             </span>
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() => handleSetTarget(Math.min(32, Math.round((targetTemp + 0.5) * 2) / 2))}
-                            className={`w-8 h-8 rounded-xl font-black flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer ${
-                              themeMode === 'obsidian_lavender'
-                                ? `bg-gradient-to-tr ${activeObsidianPalette.gradient} text-white border-t border-l border-white/30 border-r border-[#3b1c8a] border-b border-[#230e58] shadow-[0_6px_16px_rgba(0,0,0,0.7),0_2px_10px_rgba(133,99,232,0.4),inset_0_1px_1px_rgba(255,255,255,0.35)]`
-                                : 'bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/30 border border-orange-400/50'
-                            }`}
-                            title="Hedef sıcaklığı 0.5°C artır"
-                          >
-                            +
-                          </button>
+                          <div className={`text-[11px] font-semibold flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md ${
+                            themeMode === 'obsidian_lavender'
+                              ? 'bg-[#151322] border-white/[0.08] shadow-[0_6px_16px_-3px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.12)] text-white'
+                              : themeMode === 'glass'
+                              ? 'bg-white/[0.12] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35)] text-white'
+                              : 'bg-white/70 dark:bg-slate-800/60 border-slate-200/60 dark:border-slate-700/60 text-slate-500 dark:text-slate-400'
+                          }`}>
+                            <span className={themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-[#a89dc7]' : 'text-slate-400'}>{t.liveRoom}</span>
+                            <span className={`font-mono font-bold ${themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>{currentTemp}°C</span>
+                            <span className={themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-[#a89dc7]' : 'text-slate-400'}>• %{humidity}</span>
+                          </div>
                         </div>
+                      )}
 
-                        {/* 5 Preset Mode Buttons */}
-                        <div className="grid grid-cols-5 gap-1.5 sm:gap-2 w-full">
-                          {[
-                            { label: t.presetNight, temp: 18.5, icon: '🌙' },
-                            { label: t.presetEco, temp: 20.0, icon: '🍃' },
-                            { label: t.presetComfort, temp: 22.5, icon: '🔥' },
-                            { label: t.presetAway, temp: 16.0, icon: '💼' },
-                            { label: t.presetBoost, temp: 25.0, icon: '⚡' },
-                          ].map((preset) => {
-                            const isActive = Math.abs(targetTemp - preset.temp) < 0.25;
-                            return (
-                              <button
-                                key={preset.label}
-                                type="button"
-                                onClick={() => handleSetTarget(preset.temp)}
-                                className={`flex flex-col items-center justify-center py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-xl sm:rounded-2xl text-center transition-all duration-200 cursor-pointer w-full min-w-0 ${
-                                  isActive
-                                    ? themeMode === 'obsidian_lavender'
-                                      ? `bg-gradient-to-tr ${activeObsidianPalette.gradient} text-white font-extrabold border-t border-l border-white/30 border-r border-[#3b1c8a] border-b-2 border-b-[#230e58] shadow-[0_10px_22px_-3px_rgba(0,0,0,0.8),0_4px_14px_rgba(133,99,232,0.45),inset_0_1px_1px_rgba(255,255,255,0.35)] scale-[1.03]`
-                                      : 'bg-gradient-to-tr from-orange-500 to-amber-500 text-white font-extrabold shadow-lg shadow-orange-500/35 border border-orange-400/80 scale-[1.03]'
-                                    : themeMode === 'obsidian_lavender'
-                                    ? 'bg-[#14121e]/90 hover:bg-[#1c1929] text-[#c8b7f8] border-t border-l border-white/[0.12] border-r border-black/60 border-b-2 border-b-black/80 shadow-[0_8px_18px_-2px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-1.5px_1.5px_rgba(0,0,0,0.5)]'
+                      {/* Center: Scaled 3D Thermostat or Tactile Dial (Image 3) */}
+                      {themeMode === 'tactile_deck' ? (
+                        <div className="flex-1 w-full flex items-center justify-center relative my-auto">
+                          {/* Image 3: Exact 3D Rotary Thermostat with Glowing Marker and [-] ±0.5°C [+] */}
+                          <TactileDialWidget
+                            targetTemp={targetTemp}
+                            currentTemp={currentTemp}
+                            isKombiActive={isKombiActive}
+                            onSetTarget={handleSetTarget}
+                            activeModeName={currentModeName}
+                            thermalHue={thermalHue}
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex-1 w-full max-w-[340px] xs:max-w-[380px] sm:max-w-[440px] md:max-w-[480px] h-[220px] xs:h-[250px] sm:h-[300px] md:h-[350px] mx-auto flex items-center justify-center relative my-auto">
+                          <ThreeScene
+                            theme={effectiveTheme}
+                            morphMode={morphMode}
+                            targetTemp={targetTemp}
+                            currentTemp={currentTemp}
+                            isKombiActive={isKombiActive}
+                            flameLevelPercent={flameLevelPercent}
+                            performanceMode={performanceMode === 'eco'}
+                            reducedMotion={reducedMotion}
+                            onSetTarget={handleSetTarget}
+                          />
+                        </div>
+                      )}
+
+                      {/* Non-tactile deck only: Dual Counter Bar + Stepper Strip */}
+                      {themeMode !== 'tactile_deck' && (
+                        <>
+                          {/* ── TERMOSTAT ALTI CANLI ÇİFTLİ SAYAÇ BARI ── */}
+                          <div className={`w-full flex items-center justify-between px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border backdrop-blur-md shadow-2xs my-1 sm:my-1.5 transition-all ${
+                            themeMode === 'obsidian_lavender'
+                              ? 'bg-[#13111c]/95 border-white/[0.08] shadow-[0_12px_26px_-4px_rgba(0,0,0,0.8),inset_0_1px_1.5px_rgba(255,255,255,0.12),inset_0_-1.5px_2px_rgba(0,0,0,0.4)] text-white'
+                              : themeMode === 'glass'
+                              ? 'bg-white/[0.10] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3),0_6px_20px_rgba(0,0,0,0.25)] text-white'
+                              : 'bg-white/85 dark:bg-slate-800/80 border-slate-200/90 dark:border-slate-700/80 shadow-xs'
+                          }`}>
+                            {/* 1. Açıklama: Bugün Açık Kalma Sayacı */}
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-400/30 flex items-center justify-center shrink-0">
+                                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider truncate ${
+                                  themeMode === 'glass' ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
+                                }`}>
+                                  {t.todayActiveCounterLabel}
+                                </span>
+                                <span className={`font-mono font-black text-xs sm:text-sm tracking-tight ${
+                                  themeMode === 'glass' ? 'text-white' : 'text-slate-900 dark:text-white'
+                                }`}>
+                                  {todayActiveFormattedText}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Dikey İnce Ayırıcı Çizgi */}
+                            <div className={`h-7 w-[1px] mx-2 shrink-0 ${
+                              themeMode === 'glass' ? 'bg-white/15' : 'bg-slate-200 dark:bg-slate-700'
+                            }`} />
+
+                            {/* 2. Açıklama: En Son Ateşlemeden / Sönmeden Bu Yana Durum Sayacı */}
+                            <div className="flex items-center gap-2 min-w-0 flex-1 justify-end text-right">
+                              <div className="flex flex-col min-w-0 items-end">
+                                <span className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider truncate flex items-center gap-1 ${
+                                  themeMode === 'glass' ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${
+                                    isKombiActive ? 'bg-orange-500 animate-pulse' : 'bg-sky-400'
+                                  }`} />
+                                  {t.lastIgnitionCounterLabel}
+                                </span>
+                                <span className={`font-mono font-black text-xs sm:text-sm tracking-tight ${
+                                  isKombiActive
+                                    ? 'text-orange-500 drop-shadow-xs'
                                     : themeMode === 'glass'
-                                    ? 'bg-white/[0.09] hover:bg-white/[0.18] text-white border border-white/20 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35)]'
-                                    : 'bg-white/90 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 hover:border-orange-400'
+                                    ? 'text-sky-300'
+                                    : 'text-sky-600 dark:text-sky-400'
+                                }`}>
+                                  {ignitionStatusFormattedText}
+                                </span>
+                              </div>
+                              <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center shrink-0 border ${
+                                isKombiActive
+                                  ? 'bg-orange-500/20 text-orange-400 border-orange-400/40 animate-pulse'
+                                  : 'bg-sky-500/15 text-sky-400 border-sky-400/30'
+                              }`}>
+                                {isKombiActive ? <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Target Stepper Strip (Compact Horizontal Frosted Glass / Obsidian Lavender) */}
+                          <div className={`w-full flex items-center justify-between px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border backdrop-blur-md transition-all ${
+                            themeMode === 'obsidian_lavender'
+                              ? 'bg-[#13111c]/95 border-t border-l border-white/[0.12] border-r border-black/60 border-b-2 border-b-black/80 shadow-[0_12px_26px_-4px_rgba(0,0,0,0.8),inset_0_1px_1.5px_rgba(255,255,255,0.12),inset_0_-1.5px_2px_rgba(0,0,0,0.4)] text-white'
+                              : themeMode === 'glass'
+                              ? 'bg-white/[0.10] border-white/20 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35),0_8px_24px_rgba(0,0,0,0.3)] text-white'
+                              : 'bg-slate-50/90 dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700/70 shadow-2xs'
+                          }`}>
+                            <button
+                              type="button"
+                              onClick={() => handleSetTarget(Math.max(10, Math.round((targetTemp - 0.5) * 2) / 2))}
+                              className={`w-8 h-8 rounded-xl font-black flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer ${
+                                themeMode === 'obsidian_lavender'
+                                  ? 'bg-[#1a1727] hover:bg-[#252138] text-[#e2d9f3] border-t border-l border-white/[0.14] border-r border-black/60 border-b border-black/80 shadow-[0_4px_12px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-1px_1px_rgba(0,0,0,0.4)]'
+                                  : themeMode === 'glass'
+                                  ? 'bg-white/20 hover:bg-white/30 text-white border border-white/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'
+                                  : 'bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-white shadow-2xs'
+                              }`}
+                              title="Hedef sıcaklığı 0.5°C azalt"
+                            >
+                              -
+                            </button>
+
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[11px] font-semibold uppercase tracking-wider hidden xs:inline ${
+                                themeMode === 'obsidian_lavender'
+                                  ? 'text-[#9f94bf]'
+                                  : themeMode === 'glass'
+                                  ? 'text-slate-300'
+                                  : 'text-slate-400'
+                              }`}>
+                                {t.targetTemp}
+                              </span>
+                              <span
+                                style={themeMode === 'obsidian_lavender' ? { color: activeObsidianPalette.textColor } : undefined}
+                                className={`text-lg sm:text-xl font-black font-mono drop-shadow-sm ${
+                                  themeMode === 'obsidian_lavender' ? '' : 'text-orange-500'
                                 }`}
                               >
-                                <span className="text-sm sm:text-base leading-none mb-0.5 drop-shadow-xs">{preset.icon}</span>
-                                <span className="text-[11px] sm:text-xs font-bold leading-tight truncate w-full">
-                                  {preset.label}
-                                </span>
-                                <span
-                                  className={`text-[10px] sm:text-xs font-mono font-extrabold ${
-                                    isActive ? 'text-white' : themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-[#c8b7f8]' : 'text-slate-400 dark:text-slate-400'
+                                {targetTemp.toFixed(1)}°C
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleSetTarget(Math.min(32, Math.round((targetTemp + 0.5) * 2) / 2))}
+                              style={
+                                themeMode === 'obsidian_lavender'
+                                  ? {
+                                      background: `linear-gradient(135deg, ${activeObsidianPalette.hex} 0%, ${activeObsidianPalette.ringColor} 50%, ${activeObsidianPalette.borderUnder} 100%)`,
+                                      borderColor: activeObsidianPalette.borderUnder,
+                                      boxShadow: `0 6px 16px rgba(0,0,0,0.7), 0 2px 10px ${activeObsidianPalette.glow}, inset 0 1px 1px rgba(255,255,255,0.35)`,
+                                    }
+                                  : undefined
+                              }
+                              className={`w-8 h-8 rounded-xl font-black flex items-center justify-center transition-all active:scale-95 text-base cursor-pointer ${
+                                themeMode === 'obsidian_lavender'
+                                  ? 'text-white border-t border-l border-white/30 border-r border-b'
+                                  : themeMode === 'glass'
+                                  ? 'bg-white/20 hover:bg-white/30 text-white border border-white/30 shadow-xs'
+                                  : 'bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/30 border border-orange-400/50'
+                              }`}
+                              title="Hedef sıcaklığı 0.5°C artır"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Bottom: Preset Mode Buttons */}
+                      <div className="w-full shrink-0 mt-auto pt-1">
+                        {themeMode === 'tactile_deck' ? (
+                          /* ── EXACT 4 CAPSULE BUTTONS FROM USER'S IMAGE 1 (BOMBELİ 3D + DERECE GÖSTERGELİ) ── */
+                          <div className="grid grid-cols-4 gap-2 sm:gap-3 w-full">
+                            {[
+                              { id: 'EKO', label: 'EKO', temp: 20.0, icon: '🍃' },
+                              { id: 'KONFOR', label: 'KONFOR', temp: 22.5, icon: '🔥' },
+                              { id: 'GECE', label: 'GECE', temp: 18.5, icon: '🌙' },
+                              { id: 'BOOST', label: 'BOOST', temp: 25.0, icon: '⚡' },
+                            ].map((preset) => {
+                              const isActive = Math.abs(targetTemp - preset.temp) < 0.25;
+                              return (
+                                <button
+                                  key={preset.id}
+                                  type="button"
+                                  onClick={() => handleSetTarget(preset.temp)}
+                                  className="py-2 sm:py-2.5 px-1 sm:px-2 rounded-full flex flex-col items-center justify-center gap-0.5 cursor-pointer font-bold transition-all duration-150 active:translate-y-1"
+                                  style={{
+                                    border: isActive
+                                      ? '1px solid rgba(255, 200, 150, 0.45)'
+                                      : '1px solid rgba(255, 255, 255, 0.16)',
+                                    background: isActive
+                                      ? 'linear-gradient(172deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.06) 38%, transparent 60%), radial-gradient(ellipse 75% 100% at 50% 50%, rgba(255,140,50,0.92) 0%, rgba(210,80,20,0.65) 55%, transparent 85%), #2e2420'
+                                      : 'linear-gradient(172deg, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0.04) 40%, transparent 60%), radial-gradient(ellipse 70% 90% at 50% 45%, rgba(255,255,255,0.11) 0%, transparent 70%), #2a2734',
+                                    boxShadow: isActive
+                                      ? '0 3px 0 #0c0b10, 0 6px 14px rgba(0,0,0,0.8), 0 0 24px rgba(255,140,50,0.6), inset 0 1.5px 2px rgba(255,255,255,0.5), inset 0 -2px 3px rgba(0,0,0,0.7)'
+                                      : '0 6px 0 #0c0b10, 0 12px 18px rgba(0,0,0,0.7), inset 0 1.5px 2px rgba(255,255,255,0.3), inset 0 -2px 3px rgba(0,0,0,0.6)',
+                                    transform: isActive ? 'translateY(3px)' : 'none',
+                                    color: isActive ? '#fff7ed' : '#cfc9da',
+                                    textShadow: isActive
+                                      ? '0 0 4px #fff, 0 0 12px #ff9a4a, 0 0 20px #ff8a3a'
+                                      : 'none',
+                                  }}
+                                >
+                                  <span className={`text-xs sm:text-sm leading-none ${isActive ? 'drop-shadow-[0_0_8px_#ff9a4a]' : ''}`}>
+                                    {preset.icon}
+                                  </span>
+                                  <span className="text-[11px] sm:text-xs font-black tracking-wide leading-tight">
+                                    {preset.label}
+                                  </span>
+                                  <span className={`text-[10px] sm:text-[11px] font-mono font-black ${isActive ? 'text-amber-200' : 'text-slate-400'}`}>
+                                    {preset.temp.toFixed(1)}°
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          /* Original 5 presets for other themes */
+                          <div className="grid grid-cols-5 gap-1.5 sm:gap-2 w-full">
+                            {[
+                              { label: t.presetNight, temp: 18.5, icon: '🌙' },
+                              { label: t.presetEco, temp: 20.0, icon: '🍃' },
+                              { label: t.presetComfort, temp: 22.5, icon: '🔥' },
+                              { label: t.presetAway, temp: 16.0, icon: '💼' },
+                              { label: t.presetBoost, temp: 25.0, icon: '⚡' },
+                            ].map((preset) => {
+                              const isActive = Math.abs(targetTemp - preset.temp) < 0.25;
+                              return (
+                                <button
+                                  key={preset.label}
+                                  type="button"
+                                  onClick={() => handleSetTarget(preset.temp)}
+                                  style={
+                                    isActive && themeMode === 'obsidian_lavender'
+                                      ? {
+                                          background: `linear-gradient(135deg, ${activeObsidianPalette.hex} 0%, ${activeObsidianPalette.ringColor} 50%, ${activeObsidianPalette.borderUnder} 100%)`,
+                                          borderColor: activeObsidianPalette.borderUnder,
+                                          boxShadow: `0 10px 22px -3px rgba(0,0,0,0.8), 0 4px 14px ${activeObsidianPalette.glow}, inset 0 1px 1px rgba(255,255,255,0.35)`,
+                                        }
+                                      : undefined
+                                  }
+                                  className={`flex flex-col items-center justify-center py-1.5 sm:py-2.5 px-1 sm:px-2 rounded-xl sm:rounded-2xl text-center transition-all duration-200 cursor-pointer w-full min-w-0 ${
+                                    isActive
+                                      ? themeMode === 'obsidian_lavender'
+                                        ? 'text-white font-extrabold border-t border-l border-white/30 border-r border-b-2 scale-[1.03]'
+                                        : themeMode === 'glass'
+                                        ? 'bg-white/25 text-white font-extrabold border-2 border-white/40 shadow-md backdrop-blur-md scale-[1.03]'
+                                        : 'bg-gradient-to-tr from-orange-500 to-amber-500 text-white font-extrabold shadow-lg shadow-orange-500/35 border border-orange-400/80 scale-[1.03]'
+                                      : themeMode === 'obsidian_lavender'
+                                      ? 'bg-[#14121e]/90 hover:bg-[#1c1929] text-[#c8b7f8] border-t border-l border-white/[0.12] border-r border-black/60 border-b-2 border-b-black/80 shadow-[0_8px_18px_-2px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.12),inset_0_-1.5px_1.5px_rgba(0,0,0,0.5)]'
+                                      : themeMode === 'glass'
+                                      ? 'bg-white/[0.09] hover:bg-white/[0.18] text-white border border-white/20 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.35)]'
+                                      : 'bg-white/90 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 hover:border-orange-400'
                                   }`}
                                 >
-                                  {preset.temp}°
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
+                                  <span className="text-sm sm:text-base leading-none mb-0.5 drop-shadow-xs">{preset.icon}</span>
+                                  <span className="text-[11px] sm:text-xs font-bold leading-tight truncate w-full">
+                                    {preset.label}
+                                  </span>
+                                  <span
+                                    className={`text-[10px] sm:text-xs font-mono font-extrabold ${
+                                      isActive ? 'text-white' : themeMode === 'glass' || themeMode === 'obsidian_lavender' ? 'text-[#c8b7f8]' : 'text-slate-400 dark:text-slate-400'
+                                    }`}
+                                  >
+                                    {preset.temp}°
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
 
-                        <div className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-400 text-center leading-tight">
+                        <div className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-400 text-center leading-tight mt-1">
                           {t.dialAdjustHint}
                         </div>
                       </div>
@@ -1659,6 +1858,7 @@ export default function App() {
                         onToggleNotifications={setIsWeatherNotificationsEnabled}
                         onTriggerTestNotification={handleTriggerWeatherNotification}
                         themeMode={themeMode}
+                        obsidianPalette={activeObsidianPalette}
                         lang={lang}
                       />
                     </div>
@@ -1726,11 +1926,17 @@ export default function App() {
               ? {
                   boxShadow: `0 16px 40px -5px rgba(0,0,0,0.85), 0 0 25px ${activeObsidianPalette.cardGlow}, inset 0 1px 1.5px rgba(255,255,255,0.12), inset 0 -1.5px 2px rgba(0,0,0,0.5)`,
                 }
+              : themeMode === 'tactile_deck'
+              ? {
+                  boxShadow: '0 16px 40px rgba(0,0,0,0.92), 0 0 30px rgba(255,140,50,0.15), inset 0 1.5px 2px rgba(255,255,255,0.18), inset 0 -2px 4px rgba(0,0,0,0.8)',
+                }
               : undefined
           }
-          className={`flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2.5 p-1 sm:p-2 rounded-2xl sm:rounded-full backdrop-blur-2xl transition-all touch-pan-x ${
+          className={`flex items-center justify-center gap-1.5 xs:gap-2 sm:gap-2.5 p-1.5 sm:p-2.5 rounded-2xl sm:rounded-full backdrop-blur-2xl transition-all touch-pan-x ${
             themeMode === 'obsidian_lavender'
               ? 'bg-[#12101b]/95 border-t border-l border-white/[0.12] border-r border-black/70 border-b-2 border-b-black/85'
+              : themeMode === 'tactile_deck'
+              ? 'bg-[#161422]/98 border border-white/[0.14]'
               : themeMode === 'glass'
               ? 'bg-slate-950/40 border border-white/20 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]'
               : 'bg-white/85 dark:bg-slate-900/85 border border-slate-200/90 dark:border-slate-700/80 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.25)]'
@@ -1749,15 +1955,35 @@ export default function App() {
                         borderColor: activeObsidianPalette.borderUnder,
                         boxShadow: `0 8px 18px rgba(0,0,0,0.7), 0 2px 14px ${activeObsidianPalette.glow}, inset 0 1px 1px rgba(255,255,255,0.35)`,
                       }
+                    : isActive && themeMode === 'tactile_deck'
+                    ? {
+                        background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                        border: '1px solid rgba(255, 200, 150, 0.45)',
+                        boxShadow: '0 2px 0 #0c0b10, 0 4px 10px rgba(0,0,0,0.8), 0 0 22px rgba(255,145,50,0.6), inset 0 1.5px 2px rgba(255,255,255,0.45), inset 0 -2px 3px rgba(0,0,0,0.7)',
+                        transform: 'translateY(2px)',
+                        color: '#fff7ed',
+                        textShadow: '0 0 8px rgba(255,160,70,0.8)',
+                      }
+                    : !isActive && themeMode === 'tactile_deck'
+                    ? {
+                        background: 'linear-gradient(172deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.03) 40%, transparent 60%), radial-gradient(ellipse 70% 90% at 50% 45%, rgba(255,255,255,0.10) 0%, transparent 70%), #272533',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        boxShadow: '0 4px 0 #0c0b10, 0 8px 14px rgba(0,0,0,0.7), inset 0 1px 1.5px rgba(255,255,255,0.25), inset 0 -1.5px 2px rgba(0,0,0,0.5)',
+                        color: '#cfc9db',
+                      }
                     : undefined
                 }
-                className={`relative px-2 xs:px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full text-[10px] xs:text-[11px] sm:text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer min-w-0 whitespace-nowrap ${
+                className={`relative px-2.5 xs:px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full text-[10px] xs:text-[11px] sm:text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer min-w-0 whitespace-nowrap active:translate-y-0.5 ${
                   isActive
                     ? themeMode === 'obsidian_lavender'
                       ? `bg-gradient-to-r ${activeObsidianPalette.gradient} text-white border-t border-l border-white/30 border-r border-b-2 scale-105`
+                      : themeMode === 'tactile_deck'
+                      ? ''
                       : 'bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-orange-500 text-white shadow-md shadow-blue-500/30 dark:shadow-orange-500/30 scale-105'
                     : themeMode === 'obsidian_lavender'
                     ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d] border border-transparent hover:border-white/[0.06]'
+                    : themeMode === 'tactile_deck'
+                    ? 'hover:text-white'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'
                 }`}
               >
@@ -1775,9 +2001,20 @@ export default function App() {
         <button
           type="button"
           onClick={() => setIsVoiceAssistantOpen(true)}
+          style={
+            themeMode === 'tactile_deck'
+              ? {
+                  background: 'linear-gradient(172deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.05) 40%, transparent 60%), radial-gradient(circle at 50% 45%, rgba(255,145,50,0.9), #2f2520)',
+                  border: '1px solid rgba(255, 200, 150, 0.45)',
+                  boxShadow: '0 4px 0 #0c0b10, 0 8px 16px rgba(0,0,0,0.8), 0 0 20px rgba(255,145,50,0.5), inset 0 1.5px 2px rgba(255,255,255,0.5)',
+                }
+              : undefined
+          }
           className={`relative p-2 xs:p-2.5 sm:p-3 rounded-2xl sm:rounded-full backdrop-blur-2xl transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 shadow-lg group shrink-0 ${
             themeMode === 'obsidian_lavender'
               ? `bg-gradient-to-tr ${activeObsidianPalette.gradient} border-t border-l border-white/35 border-r border-[#3b1c8a] border-b border-b-[#230e58] text-white shadow-[0_8px_22px_rgba(0,0,0,0.7),0_0_15px_rgba(130,97,230,0.35),inset_0_1px_1px_rgba(255,255,255,0.35)]`
+              : themeMode === 'tactile_deck'
+              ? 'text-white'
               : themeMode === 'glass'
               ? 'bg-gradient-to-tr from-blue-600/80 to-indigo-600/80 hover:from-blue-500 hover:to-indigo-500 border border-white/30 text-white shadow-blue-500/30'
               : 'bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 border border-blue-400/40'

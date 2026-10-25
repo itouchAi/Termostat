@@ -81,6 +81,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const t = translations[lang] || translations.tr;
   const isObsidian = themeMode === 'obsidian_lavender';
   const isGlass = themeMode === 'glass';
+  const isTactile = themeMode === 'tactile_deck';
   const palette = obsidianPalette || getObsidianPalette(3);
   const [localUrl, setLocalUrl] = useState(dbUrl);
   const [localKey, setLocalKey] = useState(apiKey);
@@ -153,9 +154,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
     >
       <div
+        style={
+          isObsidian
+            ? {
+                boxShadow: `0 25px 70px rgba(0,0,0,0.95), 0 0 50px ${palette.cardGlow}`,
+                borderColor: palette.cardBorder,
+              }
+            : isTactile
+            ? {
+                boxShadow: '0 25px 70px rgba(0,0,0,0.98), 0 0 35px rgba(255,140,50,0.18)',
+              }
+            : undefined
+        }
         className={`rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 ${
           isObsidian
-            ? 'bg-[#12101b]/95 border-t border-l border-white/[0.18] border-r border-black/70 border-b-2 border-b-black/85 text-white shadow-[0_25px_70px_rgba(0,0,0,0.95)] backdrop-blur-2xl'
+            ? 'bg-[#12101b]/95 border-t border-l border-white/[0.18] border-r border-black/70 border-b-2 border-b-black/85 text-white backdrop-blur-2xl'
+            : isTactile
+            ? 'bg-[#161422]/98 border-t border-l border-white/[0.18] border-r border-black/80 border-b-2 border-b-black/95 text-white backdrop-blur-2xl'
             : isGlass
             ? 'bg-slate-950/75 border border-white/20 shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1.5px_2px_rgba(255,255,255,0.25)] backdrop-blur-2xl text-white'
             : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white'
@@ -173,9 +188,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         >
           <div className="flex items-center gap-2.5">
             <div
+              style={
+                isObsidian
+                  ? {
+                      borderColor: palette.borderUnder,
+                      color: palette.textColor,
+                      background: `linear-gradient(135deg, ${palette.hex}25, ${palette.ringColor}15)`,
+                    }
+                  : undefined
+              }
               className={`p-2 rounded-xl ${
                 isObsidian
-                  ? 'bg-[#1e1a2f] text-[#d8caff] border border-white/[0.12] shadow-xs'
+                  ? 'border shadow-xs'
                   : isGlass
                   ? 'bg-white/10 text-sky-300 border border-white/15 backdrop-blur-md'
                   : 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
@@ -366,9 +390,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     enabled: !smartDisplayConfig?.enabled,
                   })
                 }
+                style={
+                  smartDisplayConfig?.enabled && isObsidian
+                    ? {
+                        background: `linear-gradient(135deg, ${palette.hex} 0%, ${palette.ringColor} 50%, ${palette.borderUnder} 100%)`,
+                        borderColor: palette.borderUnder,
+                        boxShadow: `0 2px 10px ${palette.glow}`,
+                      }
+                    : undefined
+                }
                 className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs shrink-0 ${
                   smartDisplayConfig?.enabled
-                    ? 'bg-purple-600 text-white shadow-purple-500/30'
+                    ? isObsidian
+                      ? 'text-white border-t border-l border-white/25 border-r border-b'
+                      : 'bg-purple-600 text-white shadow-purple-500/30'
                     : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                 }`}
                 title="Smart Display özelliğini aç veya kapat"
@@ -387,7 +422,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onClose();
                     onLaunchSmartDisplay?.();
                   }}
-                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-98 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-purple-500/25 transition-all cursor-pointer"
+                  style={
+                    isObsidian
+                      ? {
+                          background: `linear-gradient(135deg, ${palette.hex} 0%, ${palette.ringColor} 50%, ${palette.borderUnder} 100%)`,
+                          borderColor: palette.borderUnder,
+                          boxShadow: `0 4px 14px rgba(0,0,0,0.6), 0 0 14px ${palette.glow}`,
+                        }
+                      : undefined
+                  }
+                  className={`w-full py-2.5 px-4 rounded-xl active:scale-98 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer ${
+                    isObsidian
+                      ? 'border-t border-l border-white/25 border-r border-b'
+                      : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-500/25'
+                  }`}
                 >
                   <Play className="w-4 h-4 fill-white" />
                   <span>Smart Display'i Şimdi Başlat (Tam Ekran)</span>
@@ -417,9 +465,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               mode: m.id as any,
                             })
                           }
+                          style={
+                            isSelected && isObsidian
+                              ? {
+                                  background: `linear-gradient(135deg, ${palette.hex} 0%, ${palette.ringColor} 50%, ${palette.borderUnder} 100%)`,
+                                  borderColor: palette.borderUnder,
+                                  boxShadow: `0 2px 10px ${palette.glow}`,
+                                }
+                              : undefined
+                          }
                           className={`p-2 rounded-xl text-left border transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-purple-600 text-white border-purple-500 shadow-xs font-bold'
+                              ? isObsidian
+                                ? 'text-white border-t border-l border-white/25 border-r border-b font-bold'
+                                : 'bg-purple-600 text-white border-purple-500 shadow-xs font-bold'
                               : 'bg-white/80 dark:bg-slate-800/80 hover:bg-purple-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
                           }`}
                         >
@@ -1245,9 +1304,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <button
                   type="button"
                   onClick={() => onToggleWeatherNotifications?.(!isWeatherNotificationsEnabled)}
+                  style={
+                    isWeatherNotificationsEnabled && isObsidian
+                      ? {
+                          background: `linear-gradient(135deg, ${palette.hex} 0%, ${palette.ringColor} 50%, ${palette.borderUnder} 100%)`,
+                          borderColor: palette.borderUnder,
+                          boxShadow: `0 2px 10px ${palette.glow}`,
+                        }
+                      : undefined
+                  }
                   className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
                     isWeatherNotificationsEnabled
-                      ? 'bg-amber-500 text-white shadow-xs'
+                      ? isObsidian
+                        ? 'text-white border-t border-l border-white/25 border-r border-b'
+                        : 'bg-amber-500 text-white shadow-xs'
                       : isObsidian || isGlass
                       ? 'bg-white/10 text-white/60 hover:bg-white/15'
                       : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -1539,9 +1609,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <button
             type="button"
             onClick={handleSave}
+            style={
+              isObsidian
+                ? {
+                    background: `linear-gradient(135deg, ${palette.hex} 0%, ${palette.ringColor} 50%, ${palette.borderUnder} 100%)`,
+                    borderColor: palette.borderUnder,
+                    boxShadow: `0 6px 18px rgba(0,0,0,0.7), 0 0 14px ${palette.glow}`,
+                  }
+                : undefined
+            }
             className={`px-5 py-2 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer active:scale-95 ${
               isObsidian
-                ? `bg-gradient-to-r ${palette.gradient} hover:brightness-110 shadow-lg shadow-[#8261e6]/30`
+                ? 'border-t border-l border-white/25 border-r border-b'
                 : isGlass
                 ? 'bg-white/20 hover:bg-white/30 border border-white/25 backdrop-blur-md shadow-md'
                 : 'bg-blue-600 hover:bg-blue-700'

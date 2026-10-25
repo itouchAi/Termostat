@@ -34,7 +34,7 @@ export interface WidgetItem {
   order: number;
 }
 
-export type ThemeMode = 'glass' | 'dark' | 'light' | 'system' | 'obsidian_lavender';
+export type ThemeMode = 'glass' | 'dark' | 'light' | 'system' | 'obsidian_lavender' | 'tactile_deck';
 export type PerformanceMode = 'ultra' | 'eco';
 export type MorphMode = 'heat' | 'eco' | 'night' | 'boost' | 'standby';
 

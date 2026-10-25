@@ -44,6 +44,7 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
   const t = translations[lang] || translations.tr;
   const isGlass = themeMode === 'glass';
   const isObsidian = themeMode === 'obsidian_lavender';
+  const isTactile = themeMode === 'tactile_deck';
   const palette = obsidianPalette || getObsidianPalette(3);
 
   // 0: Akıllı Zamanlama & Haftalık Program (Front layer)
@@ -127,15 +128,19 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
     setTimeout(() => setSaveSuccess(false), 2200);
   };
 
-  // Glass/Obsidian 2nd layer styles
+  // Glass/Obsidian/Tactile 2nd layer styles
   const windowBaseClass = isObsidian
     ? 'bg-[#12101b]/95 border-t border-l border-white/[0.12] border-r border-black/70 border-b-2 border-b-black/85 shadow-[0_20px_45px_rgba(0,0,0,0.85),inset_0_1.5px_2px_rgba(255,255,255,0.14)] text-slate-100'
+    : isTactile
+    ? 'bg-[#181622]/98 border-t border-l border-white/[0.18] border-r border-black/80 border-b-2 border-b-black/90 shadow-[0_20px_45px_rgba(0,0,0,0.9)] text-slate-100'
     : isGlass
     ? 'bg-slate-950/35 border border-white/20 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.25),0_20px_45px_rgba(0,0,0,0.35)] backdrop-blur-lg text-slate-100'
     : 'bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-slate-100 shadow-sm';
 
   const subBoxClass = isObsidian
     ? 'bg-[#151322] border-t border-l border-white/[0.12] border-r border-black/60 border-b border-black/80 text-slate-100 shadow-[0_8px_18px_-2px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.12)]'
+    : isTactile
+    ? 'bg-[#1f1d2b] border-t border-l border-white/[0.15] border-r border-black/70 border-b border-black/85 text-slate-100 shadow-[0_6px_14px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.14)]'
     : isGlass
     ? 'bg-white/[0.08] border border-white/12 text-slate-100 backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]'
     : 'bg-slate-50 dark:bg-slate-800/70 border border-slate-200/90 dark:border-slate-700/80 text-slate-800 dark:text-slate-200';
@@ -152,6 +157,8 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
         <div className={`flex items-center gap-1.5 p-1 rounded-2xl border transition-all ${
           isObsidian
             ? 'bg-[#12101b]/95 border-t border-l border-white/[0.12] border-r border-black/70 border-b-2 border-b-black/85 shadow-[0_12px_26px_-4px_rgba(0,0,0,0.8),inset_0_1px_1.5px_rgba(255,255,255,0.12)]'
+            : isTactile
+            ? 'bg-[#161422]/98 border border-white/[0.14] shadow-[0_12px_24px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.15)]'
             : isGlass
             ? 'bg-white/[0.10] border-white/20 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3)]'
             : 'bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs'
@@ -169,16 +176,39 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
                   triggerHaptic('light');
                   setActiveLayer(layerIndex as 0 | 1);
                 }}
-                style={isSelected && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
+                style={
+                  isSelected && isObsidian
+                    ? { background: palette.activePillGradient, borderColor: palette.borderUnder }
+                    : isSelected && isTactile
+                    ? {
+                        background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                        boxShadow: '0 2px 0 #0c0b10, 0 4px 10px rgba(0,0,0,0.8), 0 0 20px rgba(255,145,50,0.55), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                        border: '1px solid rgba(255, 200, 150, 0.45)',
+                        transform: 'translateY(1.5px)',
+                        color: '#fff7ed',
+                      }
+                    : !isSelected && isTactile
+                    ? {
+                        background: 'linear-gradient(172deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.03) 40%, transparent 60%), radial-gradient(ellipse 70% 90% at 50% 45%, rgba(255,255,255,0.10) 0%, transparent 70%), #272533',
+                        boxShadow: '0 3px 0 #0c0b10, 0 6px 12px rgba(0,0,0,0.6), inset 0 1px 1.5px rgba(255,255,255,0.2)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        color: '#cfc9db',
+                      }
+                    : undefined
+                }
                 className={`px-3.5 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
                   isSelected
                     ? isObsidian
                       ? 'text-white border-t border-l border-white/35 border-r border-b-2 shadow-[0_8px_18px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.4)] scale-[1.02]'
+                      : isTactile
+                      ? ''
                       : layerIndex === 0
                       ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
                       : 'bg-orange-500 text-white shadow-md shadow-orange-500/25 scale-[1.02]'
                     : isObsidian
                     ? 'text-[#9a93b5] hover:text-white hover:bg-[#1f1b2d]'
+                    : isTactile
+                    ? 'hover:text-white'
                     : isGlass
                     ? 'text-slate-300 hover:text-white'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -295,10 +325,26 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
             <button
               type="button"
               onClick={handleSave}
-              style={!saveSuccess && isObsidian ? { background: palette.activePillGradient, borderColor: palette.borderUnder } : undefined}
-              className={`w-full py-2.5 sm:py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer active:scale-95 ${
+              style={
                 saveSuccess
-                  ? 'bg-emerald-600 text-white'
+                  ? undefined
+                  : isTactile
+                  ? {
+                      background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                      boxShadow: '0 5px 0 #0c0b10, 0 10px 18px rgba(0,0,0,0.8), 0 0 25px rgba(255,145,50,0.6), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                      border: '1px solid rgba(255, 200, 150, 0.45)',
+                      color: '#fff7ed',
+                      textShadow: '0 0 8px rgba(255,160,70,0.8)',
+                    }
+                  : isObsidian
+                  ? { background: palette.activePillGradient, borderColor: palette.borderUnder }
+                  : undefined
+              }
+              className={`w-full py-2.5 sm:py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer active:translate-y-1 ${
+                saveSuccess
+                  ? 'bg-emerald-600 text-white shadow-emerald-500/25'
+                  : isTactile
+                  ? ''
                   : isObsidian
                   ? 'text-white border-t border-l border-white/35 border-r border-b-2 shadow-[0_8px_18px_rgba(0,0,0,0.7),inset_0_1px_1.5px_rgba(255,255,255,0.35)]'
                   : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/25'

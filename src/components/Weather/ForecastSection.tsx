@@ -18,6 +18,7 @@ import {
   Info,
 } from 'lucide-react';
 import type { ThemeMode } from '../../types.ts';
+import { type ObsidianPalette, getObsidianPalette } from '../../utils/obsidianPalettes.ts';
 import { translations, type Language } from '../../utils/i18n.ts';
 import type { LocationItem, CurrentWeather, DayForecast } from '../../utils/weather.ts';
 import { AnimatedWeatherIcon } from './AnimatedWeatherIcon.tsx';
@@ -33,6 +34,7 @@ interface ForecastSectionProps {
   onToggleNotifications?: (enabled: boolean) => void;
   onTriggerTestNotification?: () => void;
   themeMode?: ThemeMode;
+  obsidianPalette?: ObsidianPalette;
   lang?: Language;
 }
 
@@ -47,11 +49,14 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
   onToggleNotifications,
   onTriggerTestNotification,
   themeMode = 'glass',
+  obsidianPalette,
   lang = 'tr',
 }) => {
   const t = translations[lang] || translations.tr;
   const isObsidian = themeMode === 'obsidian_lavender';
   const isGlass = themeMode === 'glass';
+  const isTactile = themeMode === 'tactile_deck';
+  const palette = obsidianPalette || getObsidianPalette(3);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedDayForHourly, setSelectedDayForHourly] = useState<DayForecast | null>(null);
@@ -77,6 +82,8 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
     <div className={`w-full flex flex-col justify-between h-full rounded-2xl p-3 sm:p-4 transition-all ${
       isObsidian
         ? 'bg-transparent text-slate-100'
+        : isTactile
+        ? 'bg-transparent text-slate-100'
         : isGlass
         ? 'bg-slate-950/35 border border-white/20 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.25),0_20px_45px_rgba(0,0,0,0.35)] backdrop-blur-lg text-slate-100'
         : 'bg-slate-50/90 dark:bg-slate-900/90 border-t border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100'
@@ -89,9 +96,20 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
             type="button"
             onClick={() => setIsDropdownOpen((prev) => !prev)}
             aria-label="Konum Seç"
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            style={
+              isTactile
+                ? {
+                    background: 'linear-gradient(172deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.03) 40%, transparent 60%), #262432',
+                    boxShadow: '0 4px 0 #0c0b10, 0 8px 14px rgba(0,0,0,0.7), inset 0 1px 1.5px rgba(255,255,255,0.22)',
+                    border: '1px solid rgba(255, 255, 255, 0.14)',
+                  }
+                : undefined
+            }
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               isObsidian
                 ? 'bg-[#151322] hover:bg-[#1f1b2f] border-t border-l border-white/[0.14] border-r border-black/60 border-b border-black/80 text-white shadow-[0_4px_12px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.12)]'
+                : isTactile
+                ? 'text-white'
                 : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs hover:border-blue-400 text-slate-800 dark:text-white'
             }`}
           >
@@ -210,25 +228,83 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
             key={day.date}
             type="button"
             onClick={() => setSelectedDayForHourly(day)}
+            style={
+              isObsidian && idx === 0
+                ? {
+                    background: `linear-gradient(135deg, ${palette.hex} 0%, ${palette.ringColor} 50%, ${palette.borderUnder} 100%)`,
+                    borderColor: palette.ringColor,
+                    boxShadow: `0 10px 22px -3px rgba(0,0,0,0.8), 0 4px 14px ${palette.glow}, inset 0 1px 1px rgba(255,255,255,0.35)`,
+                  }
+                : isTactile && idx === 0
+                ? {
+                    background: 'linear-gradient(172deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.85) 0%, rgba(210,85,20,0.6) 55%, transparent 85%), #2f2520',
+                    boxShadow: '0 4px 0 #0c0b10, 0 8px 16px rgba(0,0,0,0.8), 0 0 20px rgba(255,145,50,0.55), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                    border: '1px solid rgba(255, 200, 150, 0.45)',
+                  }
+                : isTactile
+                ? {
+                    background: 'linear-gradient(172deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.03) 40%, transparent 60%), #262432',
+                    boxShadow: '0 4px 0 #0c0b10, 0 8px 14px rgba(0,0,0,0.7), inset 0 1px 1.5px rgba(255,255,255,0.22)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                  }
+                : undefined
+            }
             className={`p-2 sm:p-2.5 rounded-xl flex flex-col items-center justify-between text-center transition-all duration-200 cursor-pointer text-left w-full ${
               isObsidian
                 ? idx === 0
-                  ? 'bg-gradient-to-tr from-[#7352d4] via-[#8563e8] to-[#9979f5] border-t border-l border-white/30 border-r border-[#3b1c8a] border-b-2 border-b-[#230e58] shadow-[0_10px_22px_-3px_rgba(0,0,0,0.8),0_4px_14px_rgba(133,99,232,0.45),inset_0_1px_1px_rgba(255,255,255,0.35)] scale-[1.03] text-white'
+                  ? 'border-t border-l border-white/30 border-r border-b-2 scale-[1.03] text-white'
                   : 'bg-[#14121e]/90 hover:bg-[#1c1929] border-t border-l border-white/[0.12] border-r border-black/60 border-b-2 border-b-black/80 shadow-[0_8px_18px_-2px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.12)] text-slate-200'
+                : isTactile
+                ? idx === 0
+                  ? 'text-white scale-[1.03]'
+                  : 'text-slate-200 hover:text-white'
+                : isGlass
+                ? idx === 0
+                  ? 'bg-white/25 border-2 border-white/40 shadow-[0_10px_25px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.4)] backdrop-blur-md text-white scale-[1.03]'
+                  : 'bg-white/10 hover:bg-white/15 border border-white/20 text-white backdrop-blur-md shadow-xs'
                 : idx === 0
-                ? 'bg-white dark:bg-slate-800 border-2 border-blue-400/80 dark:border-orange-500/80 shadow-md shadow-blue-500/10 dark:shadow-orange-500/15'
+                ? 'bg-white dark:bg-slate-800 border-2 border-blue-400/80 dark:border-orange-500/80 shadow-md shadow-blue-500/10 dark:shadow-orange-500/15 scale-[1.03]'
                 : 'bg-white/80 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-xs hover:border-blue-400 dark:hover:border-slate-600 hover:shadow-sm'
             }`}
           >
             {/* Day Title + Date Label (e.g. Bugün • 16 Eki) */}
             <div className="flex flex-col items-center w-full mb-0.5">
-              <div className="flex items-center gap-1 text-[11px] sm:text-xs font-bold text-slate-800 dark:text-slate-100">
+              <div
+                className={`flex items-center gap-1 text-[11px] sm:text-xs font-bold ${
+                  idx === 0
+                    ? isObsidian || isGlass
+                      ? 'text-white'
+                      : 'text-slate-800 dark:text-slate-100'
+                    : isObsidian
+                    ? 'text-slate-200'
+                    : isGlass
+                    ? 'text-white/90'
+                    : 'text-slate-800 dark:text-slate-100'
+                }`}
+              >
                 <span className="truncate max-w-[55px] sm:max-w-none">{day.dayName}</span>
                 {idx === 0 && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-orange-500 shrink-0"></span>
+                  <span
+                    style={isObsidian ? { backgroundColor: palette.ringColor } : undefined}
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      isObsidian
+                        ? ''
+                        : isGlass
+                        ? 'bg-sky-400'
+                        : 'bg-blue-500 dark:bg-orange-500'
+                    }`}
+                  />
                 )}
               </div>
-              <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-400 font-medium font-mono">
+              <span
+                className={`text-[9px] sm:text-[10px] font-medium font-mono ${
+                  idx === 0 && (isObsidian || isGlass)
+                    ? 'text-white/80'
+                    : isObsidian
+                    ? 'text-[#9a93b5]'
+                    : 'text-slate-400 dark:text-slate-400'
+                }`}
+              >
                 {day.dateLabel || day.date.slice(5)}
               </span>
             </div>
@@ -239,23 +315,53 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
             </div>
 
             {/* Condition label */}
-            <span className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-300 font-medium truncate max-w-[65px] sm:max-w-[85px] leading-tight mb-1">
+            <span
+              className={`text-[9px] sm:text-[10px] font-medium truncate max-w-[65px] sm:max-w-[85px] leading-tight mb-1 ${
+                idx === 0 && (isObsidian || isGlass)
+                  ? 'text-white/90'
+                  : isObsidian
+                  ? 'text-[#c3b6e8]'
+                  : isGlass
+                  ? 'text-white/80'
+                  : 'text-slate-500 dark:text-slate-300'
+              }`}
+            >
               {day.conditionText}
             </span>
 
             {/* High / Low Degree */}
             <div className="flex items-center gap-1 font-mono text-[11px] sm:text-xs font-black">
-              <span className="text-slate-900 dark:text-white">{day.maxTemp}°</span>
-              <span className="text-slate-400 font-normal text-[10px]">{day.minTemp}°</span>
+              <span className={idx === 0 && (isObsidian || isGlass) ? 'text-white' : 'text-slate-900 dark:text-white'}>
+                {day.maxTemp}°
+              </span>
+              <span
+                className={`font-normal text-[10px] ${
+                  idx === 0 && (isObsidian || isGlass) ? 'text-white/70' : 'text-slate-400'
+                }`}
+              >
+                {day.minTemp}°
+              </span>
             </div>
 
             {/* Rain chance badge */}
             {day.rainChancePct > 20 ? (
-              <span className="text-[8px] sm:text-[9px] font-bold text-sky-600 dark:text-amber-300 mt-1 bg-sky-50 dark:bg-slate-750 px-1 py-0.2 rounded-md">
+              <span
+                className={`text-[8px] sm:text-[9px] font-bold mt-1 px-1 py-0.2 rounded-md ${
+                  idx === 0 && (isObsidian || isGlass)
+                    ? 'bg-white/20 text-white'
+                    : 'text-sky-600 dark:text-amber-300 bg-sky-50 dark:bg-slate-750'
+                }`}
+              >
                 %{day.rainChancePct}
               </span>
             ) : (
-              <span className="text-[8px] text-slate-400 mt-1 opacity-60">Açık</span>
+              <span
+                className={`text-[8px] mt-1 ${
+                  idx === 0 && (isObsidian || isGlass) ? 'text-white/70' : 'text-slate-400 opacity-60'
+                }`}
+              >
+                Açık
+              </span>
             )}
           </button>
         ))}
@@ -263,14 +369,30 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
 
       {/* ── NOTIFICATION & PRECAUTION ALERT BANNER (If Active or Severe Weather Ahead) ── */}
       {notificationsEnabled ? (
-        <div className="mt-2.5 p-2.5 rounded-xl bg-amber-500/10 dark:bg-slate-800 border border-amber-500/30 dark:border-amber-500/40 flex items-center justify-between gap-3 text-xs">
+        <div
+          className={`mt-2.5 p-2.5 rounded-xl flex items-center justify-between gap-3 text-xs ${
+            isObsidian
+              ? 'bg-[#151322] border border-amber-500/35 shadow-[0_4px_14px_rgba(0,0,0,0.7)] text-white'
+              : isGlass
+              ? 'bg-white/10 border border-white/20 backdrop-blur-md text-white shadow-xs'
+              : 'bg-amber-500/10 dark:bg-slate-800 border border-amber-500/30 dark:border-amber-500/40 text-slate-800 dark:text-slate-100'
+          }`}
+        >
           <div className="flex items-center gap-2 min-w-0">
             <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
             <div className="min-w-0">
-              <span className="font-bold text-amber-700 dark:text-amber-400 block text-[11px]">
+              <span
+                className={`font-bold block text-[11px] ${
+                  isObsidian || isGlass ? 'text-amber-400' : 'text-amber-700 dark:text-amber-400'
+                }`}
+              >
                 3 Saatlik Bildirim & Akıllı Tedbir Sistemi Devrede
               </span>
-              <span className="text-[10px] text-slate-600 dark:text-slate-300 truncate block">
+              <span
+                className={`text-[10px] truncate block ${
+                  isObsidian ? 'text-[#c3b6e8]' : isGlass ? 'text-white/75' : 'text-slate-600 dark:text-slate-300'
+                }`}
+              >
                 {hasSevereWeather
                   ? '⚠️ Önümüzdeki günlerde yağış ve ani ısı düşüşü bekleniyor. Tedbirler hazır.'
                   : '🌤️ Hava stabil. 3 saatte bir periyodik durum özeti ve kombi önerisi iletilir.'}
@@ -282,14 +404,34 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
             <button
               type="button"
               onClick={() => setIsPrecautionModalOpen(true)}
-              className="px-2 py-1 rounded-lg bg-amber-500 text-white font-bold text-[10px] hover:bg-amber-600 shadow-xs transition-all cursor-pointer"
+              style={
+                isObsidian
+                  ? {
+                      background: `linear-gradient(135deg, ${palette.hex} 0%, ${palette.borderUnder} 100%)`,
+                      borderColor: palette.ringColor,
+                    }
+                  : undefined
+              }
+              className={`px-2 py-1 rounded-lg font-bold text-[10px] shadow-xs transition-all cursor-pointer ${
+                isObsidian
+                  ? 'text-white border'
+                  : isGlass
+                  ? 'bg-white/20 hover:bg-white/30 text-white border border-white/25 backdrop-blur-md'
+                  : 'bg-amber-500 text-white hover:bg-amber-600'
+              }`}
             >
               Önlemleri Gör
             </button>
             <button
               type="button"
               onClick={onTriggerTestNotification}
-              className="px-2 py-1 rounded-lg bg-white dark:bg-slate-750 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-semibold text-[10px] hover:bg-slate-100 transition-all cursor-pointer"
+              className={`px-2 py-1 rounded-lg font-semibold text-[10px] transition-all cursor-pointer ${
+                isObsidian
+                  ? 'bg-[#1e1930] hover:bg-[#2b2542] border border-white/[0.12] text-slate-200'
+                  : isGlass
+                  ? 'bg-white/10 hover:bg-white/20 border border-white/15 text-white'
+                  : 'bg-white dark:bg-slate-750 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100'
+              }`}
               title="Şimdi bir 3 saatlik hava bildirimi simüle et"
             >
               Test Bildirimi
@@ -320,9 +462,17 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
           className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in"
         >
           <div
+            style={
+              isObsidian
+                ? {
+                    boxShadow: `0 25px 70px rgba(0,0,0,0.95), 0 0 45px ${palette.cardGlow}`,
+                    borderColor: palette.cardBorder,
+                  }
+                : undefined
+            }
             className={`border rounded-3xl p-4 sm:p-5 w-full max-w-lg shadow-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 transition-all ${
               isObsidian
-                ? 'bg-[#12101b]/95 border-t border-l border-white/[0.16] border-r border-black/70 border-b-2 border-b-black/85 text-white shadow-[0_25px_70px_rgba(0,0,0,0.95)]'
+                ? 'bg-[#12101b]/95 border-t border-l border-white/[0.16] border-r border-black/70 border-b-2 border-b-black/85 text-white'
                 : isGlass
                 ? 'bg-slate-950/60 border border-white/25 shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1.5px_2px_rgba(255,255,255,0.3)] backdrop-blur-2xl text-white'
                 : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white'
@@ -340,9 +490,18 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
             >
               <div className="flex items-center gap-2">
                 <div
+                  style={
+                    isObsidian
+                      ? {
+                          borderColor: palette.borderUnder,
+                          color: palette.textColor,
+                          background: `linear-gradient(135deg, ${palette.hex}25, ${palette.ringColor}15)`,
+                        }
+                      : undefined
+                  }
                   className={`p-2 rounded-xl ${
                     isObsidian
-                      ? 'bg-[#1e1930] text-[#c8b7f8] border border-white/[0.08]'
+                      ? 'border shadow-xs'
                       : isGlass
                       ? 'bg-white/10 text-sky-300 border border-white/15'
                       : 'bg-blue-50 dark:bg-blue-900/40 text-blue-500'
@@ -461,9 +620,18 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedDayForHourly(null)}
+                style={
+                  isObsidian
+                    ? {
+                        background: `linear-gradient(135deg, ${palette.hex} 0%, ${palette.ringColor} 50%, ${palette.borderUnder} 100%)`,
+                        borderColor: palette.borderUnder,
+                        boxShadow: `0 4px 14px rgba(0,0,0,0.7), 0 0 12px ${palette.glow}`,
+                      }
+                    : undefined
+                }
                 className={`px-4 py-1.5 rounded-xl font-bold text-xs cursor-pointer active:scale-95 transition-all ${
                   isObsidian
-                    ? 'bg-gradient-to-r from-[#8261e6] to-[#b18cf8] text-white shadow-md'
+                    ? 'text-white border-t border-l border-white/25 border-r border-b'
                     : isGlass
                     ? 'bg-white/20 hover:bg-white/30 text-white border border-white/25'
                     : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200'
@@ -485,9 +653,17 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
           className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in"
         >
           <div
+            style={
+              isObsidian
+                ? {
+                    boxShadow: `0 25px 70px rgba(0,0,0,0.95), 0 0 45px ${palette.cardGlow}`,
+                    borderColor: palette.cardBorder,
+                  }
+                : undefined
+            }
             className={`border rounded-3xl p-5 w-full max-w-md shadow-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 transition-all ${
               isObsidian
-                ? 'bg-[#12101b]/95 border-t border-l border-white/[0.16] border-r border-black/70 border-b-2 border-b-black/85 text-white shadow-[0_25px_70px_rgba(0,0,0,0.95)]'
+                ? 'bg-[#12101b]/95 border-t border-l border-white/[0.16] border-r border-black/70 border-b-2 border-b-black/85 text-white'
                 : isGlass
                 ? 'bg-slate-950/60 border border-white/25 shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1.5px_2px_rgba(255,255,255,0.3)] backdrop-blur-2xl text-white'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white'
@@ -580,9 +756,18 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setIsPrecautionModalOpen(false)}
+                style={
+                  isObsidian
+                    ? {
+                        background: `linear-gradient(135deg, ${palette.hex} 0%, ${palette.ringColor} 50%, ${palette.borderUnder} 100%)`,
+                        borderColor: palette.borderUnder,
+                        boxShadow: `0 4px 14px rgba(0,0,0,0.7), 0 0 12px ${palette.glow}`,
+                      }
+                    : undefined
+                }
                 className={`px-4 py-2 rounded-xl font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all ${
                   isObsidian
-                    ? 'bg-gradient-to-r from-[#8261e6] to-[#b18cf8] text-white shadow-md'
+                    ? 'text-white border-t border-l border-white/25 border-r border-b'
                     : isGlass
                     ? 'bg-white/20 hover:bg-white/30 text-white border border-white/25'
                     : 'bg-amber-500 hover:bg-amber-600 text-white'
@@ -604,9 +789,17 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
           className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in"
         >
           <div
+            style={
+              isObsidian
+                ? {
+                    boxShadow: `0 25px 70px rgba(0,0,0,0.95), 0 0 45px ${palette.cardGlow}`,
+                    borderColor: palette.cardBorder,
+                  }
+                : undefined
+            }
             className={`border rounded-3xl p-5 w-full max-w-sm shadow-2xl animate-in zoom-in-95 ${
               isObsidian
-                ? 'bg-[#12101b]/95 border-t border-l border-white/[0.16] border-r border-black/70 border-b-2 border-b-black/85 text-white shadow-[0_25px_70px_rgba(0,0,0,0.95)]'
+                ? 'bg-[#12101b]/95 border-t border-l border-white/[0.16] border-r border-black/70 border-b-2 border-b-black/85 text-white'
                 : isGlass
                 ? 'bg-slate-950/60 border border-white/25 shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1.5px_2px_rgba(255,255,255,0.3)] backdrop-blur-2xl text-white'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white'
@@ -647,7 +840,13 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
                   placeholder="Yazlık Ev"
                   value={newLocName}
                   onChange={(e) => setNewLocName(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 rounded-xl font-medium focus:outline-none ${
+                    isObsidian
+                      ? 'bg-[#181524] border border-white/[0.12] text-white focus:border-purple-400'
+                      : isGlass
+                      ? 'bg-white/[0.08] border border-white/20 text-white'
+                      : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white focus:ring-1 focus:ring-blue-500'
+                  }`}
                 />
               </div>
 
@@ -658,7 +857,13 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
                 <select
                   value={newCityName}
                   onChange={(e) => setNewCityName(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 rounded-xl font-medium focus:outline-none ${
+                    isObsidian
+                      ? 'bg-[#181524] border border-white/[0.12] text-white focus:border-purple-400'
+                      : isGlass
+                      ? 'bg-white/[0.08] border border-white/20 text-white'
+                      : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white focus:ring-1 focus:ring-blue-500'
+                  }`}
                 >
                   <option value="İstanbul">İstanbul</option>
                   <option value="Ankara">Ankara</option>
@@ -675,13 +880,28 @@ export const ForecastSection: React.FC<ForecastSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-slate-400 hover:bg-white/10 cursor-pointer"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm cursor-pointer active:scale-95 transition-all"
+                  style={
+                    isObsidian
+                      ? {
+                          background: `linear-gradient(135deg, ${palette.hex} 0%, ${palette.ringColor} 50%, ${palette.borderUnder} 100%)`,
+                          borderColor: palette.borderUnder,
+                          boxShadow: `0 4px 14px rgba(0,0,0,0.7), 0 0 12px ${palette.glow}`,
+                        }
+                      : undefined
+                  }
+                  className={`px-4 py-2 rounded-xl font-bold shadow-sm cursor-pointer active:scale-95 transition-all ${
+                    isObsidian
+                      ? 'text-white border-t border-l border-white/25 border-r border-b'
+                      : isGlass
+                      ? 'bg-white/20 hover:bg-white/30 text-white border border-white/25'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
                 >
                   Konumu Ekle & Bağla
                 </button>
