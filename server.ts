@@ -41,6 +41,7 @@ async function startServer() {
   app.get('/.well-known/assetlinks.json', (req: Request, res: Response) => {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
     const localPath = path.resolve(__dirname, 'public/.well-known/assetlinks.json');
     const distPath = path.resolve(__dirname, 'dist/.well-known/assetlinks.json');
     if (fs.existsSync(localPath)) {
@@ -49,6 +50,29 @@ async function startServer() {
       res.sendFile(distPath);
     } else {
       res.status(404).json({ error: 'assetlinks.json not found' });
+    }
+  });
+
+  // Explicit PWA Manifest & Service Worker Cache-Control headers (for Android TWA freshness)
+  app.get('/manifest.json', (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'application/manifest+json');
+    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    const localPath = path.resolve(__dirname, 'public/manifest.json');
+    if (fs.existsSync(localPath)) {
+      res.sendFile(localPath);
+    } else {
+      res.status(404).json({ error: 'manifest.json not found' });
+    }
+  });
+
+  app.get('/sw.js', (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    const localPath = path.resolve(__dirname, 'public/sw.js');
+    if (fs.existsSync(localPath)) {
+      res.sendFile(localPath);
+    } else {
+      res.status(404).json({ error: 'sw.js not found' });
     }
   });
 
