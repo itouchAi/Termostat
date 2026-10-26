@@ -431,7 +431,11 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
               </h3>
             </div>
             {currentDayData && (
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                isTactile
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40'
+                  : 'bg-blue-500/20 text-blue-300 border border-blue-400/30'
+              }`}>
                 {currentDayData.avgTemp.toFixed(1)}°C
               </span>
             )}
@@ -446,12 +450,27 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
                   triggerHaptic('light');
                   setTimeframe('daily');
                 }}
-                style={timeframe === 'daily' && isObsidian ? { background: palette.activePillGradient } : undefined}
+                style={
+                  timeframe === 'daily' && isTactile
+                    ? {
+                        background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                        boxShadow: '0 2px 0 #0c0b10, 0 4px 10px rgba(0,0,0,0.8), 0 0 16px rgba(255,145,50,0.5), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                        border: '1px solid rgba(255, 200, 150, 0.45)',
+                        color: '#fff7ed',
+                      }
+                    : timeframe === 'daily' && isObsidian
+                    ? { background: palette.activePillGradient }
+                    : undefined
+                }
                 className={`py-1 rounded-lg transition-all cursor-pointer ${
                   timeframe === 'daily'
-                    ? isObsidian
+                    ? isTactile
+                      ? 'font-bold'
+                      : isObsidian
                       ? 'text-white border-t border-l border-white/25 border-r border-b border-black/60 shadow-[0_4px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)] font-bold'
                       : 'bg-blue-600 text-white shadow-xs'
+                    : isTactile
+                    ? 'text-slate-300 hover:text-white'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -463,12 +482,27 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
                   triggerHaptic('light');
                   setTimeframe('weekly');
                 }}
-                style={timeframe === 'weekly' && isObsidian ? { background: palette.activePillGradient } : undefined}
+                style={
+                  timeframe === 'weekly' && isTactile
+                    ? {
+                        background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                        boxShadow: '0 2px 0 #0c0b10, 0 4px 10px rgba(0,0,0,0.8), 0 0 16px rgba(255,145,50,0.5), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                        border: '1px solid rgba(255, 200, 150, 0.45)',
+                        color: '#fff7ed',
+                      }
+                    : timeframe === 'weekly' && isObsidian
+                    ? { background: palette.activePillGradient }
+                    : undefined
+                }
                 className={`py-1 rounded-lg transition-all cursor-pointer ${
                   timeframe === 'weekly'
-                    ? isObsidian
+                    ? isTactile
+                      ? 'font-bold'
+                      : isObsidian
                       ? 'text-white border-t border-l border-white/25 border-r border-b border-black/60 shadow-[0_4px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)] font-bold'
                       : 'bg-blue-600 text-white shadow-xs'
+                    : isTactile
+                    ? 'text-slate-300 hover:text-white'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -480,12 +514,27 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
                   triggerHaptic('light');
                   setTimeframe('monthly');
                 }}
-                style={timeframe === 'monthly' && isObsidian ? { background: palette.activePillGradient } : undefined}
+                style={
+                  timeframe === 'monthly' && isTactile
+                    ? {
+                        background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                        boxShadow: '0 2px 0 #0c0b10, 0 4px 10px rgba(0,0,0,0.8), 0 0 16px rgba(255,145,50,0.5), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                        border: '1px solid rgba(255, 200, 150, 0.45)',
+                        color: '#fff7ed',
+                      }
+                    : timeframe === 'monthly' && isObsidian
+                    ? { background: palette.activePillGradient }
+                    : undefined
+                }
                 className={`py-1 rounded-lg transition-all cursor-pointer ${
                   timeframe === 'monthly'
-                    ? isObsidian
+                    ? isTactile
+                      ? 'font-bold'
+                      : isObsidian
                       ? 'text-white border-t border-l border-white/25 border-r border-b border-black/60 shadow-[0_4px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)] font-bold'
                       : 'bg-blue-600 text-white shadow-xs'
+                    : isTactile
+                    ? 'text-slate-300 hover:text-white'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -498,16 +547,29 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
           <div className={`w-full flex flex-col gap-1.5 px-3 py-1.5 rounded-xl shrink-0 my-1 ${subBoxClass}`}>
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-slate-300 flex items-center gap-1.5 shrink-0">
-                <Calendar className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <Calendar className={`w-3.5 h-3.5 shrink-0 ${isTactile ? 'text-amber-400' : 'text-blue-400'}`} />
                 {t.inspectedDate}
               </span>
 
               <div className="relative inline-flex items-center">
                 <button
                   type="button"
-                  style={isObsidian ? { background: palette.activePillGradient } : undefined}
+                  style={
+                    isTactile
+                      ? {
+                          background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                          boxShadow: '0 2px 0 #0c0b10, 0 4px 10px rgba(0,0,0,0.8), 0 0 16px rgba(255,145,50,0.5), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                          border: '1px solid rgba(255, 200, 150, 0.45)',
+                          color: '#fff7ed',
+                        }
+                      : isObsidian
+                      ? { background: palette.activePillGradient }
+                      : undefined
+                  }
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold active:scale-95 text-white flex items-center gap-1.5 transition-all whitespace-nowrap pointer-events-none ${
-                    isObsidian
+                    isTactile
+                      ? ''
+                      : isObsidian
                       ? 'border-t border-l border-white/25 border-r border-b border-black/60 shadow-[0_4px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]'
                       : 'bg-blue-600 hover:bg-blue-700 shadow-xs'
                   }`}
@@ -622,9 +684,22 @@ export const ReportDeckView: React.FC<ReportDeckViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedDate(todayStr)}
-                  style={isObsidian ? { background: palette.activePillGradient } : undefined}
+                  style={
+                    isTactile
+                      ? {
+                          background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                          boxShadow: '0 2px 0 #0c0b10, 0 4px 10px rgba(0,0,0,0.8), 0 0 16px rgba(255,145,50,0.5), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                          border: '1px solid rgba(255, 200, 150, 0.45)',
+                          color: '#fff7ed',
+                        }
+                      : isObsidian
+                      ? { background: palette.activePillGradient }
+                      : undefined
+                  }
                   className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all text-white ${
-                    isObsidian
+                    isTactile
+                      ? ''
+                      : isObsidian
                       ? 'border-t border-l border-white/25 border-r border-b border-black/60 shadow-[0_4px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]'
                       : 'bg-blue-600 hover:bg-blue-700 active:scale-95 shadow-xs'
                   }`}

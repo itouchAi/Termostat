@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Mic,
   Monitor,
+  Sliders,
 } from 'lucide-react';
 
 import type { ThemeMode, PerformanceMode, MorphMode, ScheduleItem, WidgetItem } from './types.ts';
@@ -674,6 +675,10 @@ export default function App() {
   // Mouse wheel horizontal navigation
   const lastWheelTimeRef = useRef<number>(0);
   const handleWheel = (e: React.WheelEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-dial-widget], [data-no-swipe], .no-swipe')) {
+      return;
+    }
     const now = Date.now();
     if (now - lastWheelTimeRef.current < 450) return;
     if (Math.abs(e.deltaX) > 25 || (e.shiftKey && Math.abs(e.deltaY) > 25)) {
@@ -1138,7 +1143,9 @@ export default function App() {
       {/* ── TOP NAV HEADER ── */}
       <header
         className={`relative z-40 h-14 sm:h-16 px-3 sm:px-6 md:px-8 flex items-center justify-between border-b transition-all ${
-          themeMode === 'obsidian_lavender'
+          themeMode === 'tactile_deck'
+            ? 'border-white/[0.08] bg-[#161422]/95 text-white backdrop-blur-2xl shadow-[0_4px_25px_rgba(0,0,0,0.8)]'
+            : themeMode === 'obsidian_lavender'
             ? 'border-white/[0.08] bg-[#0c0a13]/90 text-white backdrop-blur-2xl shadow-[0_4px_25px_rgba(0,0,0,0.8)]'
             : themeMode === 'glass'
             ? 'border-white/15 bg-slate-950/30 text-white backdrop-blur-2xl shadow-sm'
@@ -1180,7 +1187,9 @@ export default function App() {
             type="button"
             onClick={() => setLang((prev) => (prev === 'tr' ? 'en' : 'tr'))}
             className={`h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl border flex items-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer ${
-              themeMode === 'obsidian_lavender'
+              themeMode === 'tactile_deck'
+                ? 'bg-[#1b1926] hover:bg-[#252234] border-t border-l border-white/[0.22] border-r border-black/70 border-b border-black/90 text-amber-300 shadow-[0_3px_8px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.18)]'
+                : themeMode === 'obsidian_lavender'
                 ? 'bg-[#151322] hover:bg-[#1f1b2f] border-t border-l border-white/[0.14] border-r border-black/60 border-b border-black/80 text-white shadow-[0_4px_12px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.12)]'
                 : themeMode === 'glass'
                 ? 'bg-white/10 hover:bg-white/20 border-white/25 text-white backdrop-blur-md shadow-white/5'
@@ -1198,7 +1207,11 @@ export default function App() {
             type="button"
             onClick={() => setPerformanceMode((p) => (p === 'ultra' ? 'eco' : 'ultra'))}
             className={`p-1.5 sm:px-2.5 sm:py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border cursor-pointer ${
-              themeMode === 'obsidian_lavender'
+              themeMode === 'tactile_deck'
+                ? performanceMode === 'ultra'
+                  ? 'bg-[#221f2d] border-amber-500/60 text-amber-300 shadow-[0_3px_8px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.18)]'
+                  : 'bg-[#1a1824] border-emerald-500/60 text-emerald-300 shadow-[0_3px_8px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)]'
+                : themeMode === 'obsidian_lavender'
                 ? performanceMode === 'ultra'
                   ? 'bg-[#1e1930] border-amber-500/50 text-amber-300 shadow-md'
                   : 'bg-[#151322] border-emerald-500/50 text-emerald-300 shadow-md'
@@ -1227,7 +1240,9 @@ export default function App() {
             type="button"
             onClick={() => setIsThemeModalOpen(true)}
             className={`h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl border flex items-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer ${
-              themeMode === 'obsidian_lavender'
+              themeMode === 'tactile_deck'
+                ? 'bg-[#1b1926] hover:bg-[#252234] border-t border-l border-white/[0.22] border-r border-black/70 border-b border-black/90 text-amber-300 shadow-[0_3px_8px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.18)]'
+                : themeMode === 'obsidian_lavender'
                 ? 'bg-[#151322] hover:bg-[#1f1b2f] border-t border-l border-white/[0.14] border-r border-black/60 border-b border-black/80 text-[#d8caff] shadow-[0_4px_12px_rgba(0,0,0,0.6)]'
                 : themeMode === 'glass'
                 ? 'bg-blue-600/30 hover:bg-blue-600/45 border-blue-400/50 text-white backdrop-blur-md shadow-blue-500/10'
@@ -1235,7 +1250,9 @@ export default function App() {
             }`}
             aria-label="Tema ve görsel efekt ayarları"
             title={`${t.themeMenuTitle}: ${
-              themeMode === 'obsidian_lavender'
+              themeMode === 'tactile_deck'
+                ? 'Tactile Deck'
+                : themeMode === 'obsidian_lavender'
                 ? 'Obsidian Lavender'
                 : themeMode === 'glass'
                 ? t.themeGlass
@@ -1246,7 +1263,12 @@ export default function App() {
                 : t.themeLight
             }`}
           >
-            {themeMode === 'obsidian_lavender' ? (
+            {themeMode === 'tactile_deck' ? (
+              <>
+                <Sliders className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-[10px] font-bold hidden sm:inline text-amber-300">Tactile Deck</span>
+              </>
+            ) : themeMode === 'obsidian_lavender' ? (
               <>
                 <Sparkles className="w-3.5 h-3.5 text-[#a786ff] animate-pulse" />
                 <span className="text-[10px] font-bold hidden sm:inline">Obsidian</span>
@@ -1289,7 +1311,9 @@ export default function App() {
                 : undefined
             }
             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer ${
-              themeMode === 'obsidian_lavender'
+              themeMode === 'tactile_deck'
+                ? 'bg-[#1b1926] hover:bg-[#252234] border-t border-l border-white/[0.22] border-r border-black/70 border-b border-black/90 text-amber-300 shadow-[0_3px_8px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.18)]'
+                : themeMode === 'obsidian_lavender'
                 ? 'bg-[#151322] hover:bg-[#201c32] border-t border-l border-white/[0.18] border-r border-b text-white shadow-[0_4px_14px_rgba(0,0,0,0.7)]'
                 : themeMode === 'glass'
                 ? 'bg-slate-950/40 hover:bg-slate-900/60 border border-white/20 hover:border-white/35 text-white backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3)]'
@@ -1317,7 +1341,9 @@ export default function App() {
                   : undefined
               }
               className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer animate-in fade-in ${
-                themeMode === 'obsidian_lavender'
+                themeMode === 'tactile_deck'
+                  ? 'bg-[#1b1926] hover:bg-[#252234] border-t border-l border-white/[0.22] border-r border-black/70 border-b border-black/90 text-amber-300 shadow-[0_3px_8px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.18)]'
+                  : themeMode === 'obsidian_lavender'
                   ? 'bg-[#151322] hover:bg-[#201c32] border-t border-l border-white/[0.18] border-r border-b shadow-[0_4px_14px_rgba(0,0,0,0.7)]'
                   : themeMode === 'glass'
                   ? 'bg-purple-600/30 hover:bg-purple-600/45 border border-purple-400/40 text-white backdrop-blur-md'
@@ -1344,7 +1370,9 @@ export default function App() {
                 : undefined
             }
             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer group ${
-              themeMode === 'obsidian_lavender'
+              themeMode === 'tactile_deck'
+                ? 'bg-[#1b1926] hover:bg-[#252234] border-t border-l border-white/[0.22] border-r border-black/70 border-b border-black/90 text-amber-300 shadow-[0_3px_8px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.18)]'
+                : themeMode === 'obsidian_lavender'
                 ? 'bg-[#151322] hover:bg-[#201c32] border-t border-l border-white/[0.18] border-r border-b text-white shadow-[0_4px_14px_rgba(0,0,0,0.7)]'
                 : themeMode === 'glass'
                 ? 'bg-slate-950/40 hover:bg-slate-900/60 border border-white/20 hover:border-white/35 text-white backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.3)]'

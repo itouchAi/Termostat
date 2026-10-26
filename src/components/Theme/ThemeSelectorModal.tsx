@@ -224,19 +224,25 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
         <div className={`px-5 py-4 border-b flex items-center justify-between shrink-0 ${
           isObsidian
             ? 'border-white/[0.08] bg-[#161324]/80'
+            : isTactile
+            ? 'border-white/[0.1] bg-[#1c1928]/95 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]'
             : isGlass
             ? 'border-white/15 bg-white/[0.08]'
             : 'border-slate-200/80 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-800/50'
         }`}>
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+            <div className={`w-9 h-9 rounded-2xl flex items-center justify-center text-white shadow-md ${
+              isTactile
+                ? 'bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-400 shadow-amber-500/20'
+                : 'bg-gradient-to-tr from-sky-500 via-indigo-500 to-purple-500 shadow-indigo-500/20'
+            }`}>
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
               <h3 className="font-extrabold text-sm sm:text-base tracking-tight">
                 Tema & Görsel Efektler
               </h3>
-              <p className={`text-[11px] ${isObsidian ? 'text-[#a89dc7]' : isGlass ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
+              <p className={`text-[11px] ${isObsidian ? 'text-[#a89dc7]' : isTactile ? 'text-amber-300/80' : isGlass ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
                 Seçtiğiniz an arka planda canlı değişir, çarpı ile çıkabilirsiniz.
               </p>
             </div>
@@ -250,6 +256,8 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
             className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer active:scale-95 transition-all ${
               isObsidian
                 ? 'bg-[#1e1a2f] hover:bg-[#2b2542] text-[#d8caff] border border-white/[0.12]'
+                : isTactile
+                ? 'bg-[#221f2f] hover:bg-[#2c283c] text-amber-300 border-t border-l border-white/20 border-r border-b border-black/80 shadow-[0_2px_5px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.2)]'
                 : isGlass
                 ? 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
                 : 'bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-300 dark:hover:bg-slate-700'
@@ -264,10 +272,10 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
           {/* ── 1. TEMA SEÇENEKLERİ (ALT ALTA & ÖRNEK GÖRSELLERİ İLE) ── */}
           <div>
             <h4 className={`text-[11px] font-bold uppercase tracking-wider mb-2.5 flex items-center gap-1.5 ${
-              isObsidian ? 'text-[#c8b7f8]' : isGlass ? 'text-slate-300' : 'text-slate-400 dark:text-slate-400'
+              isObsidian ? 'text-[#c8b7f8]' : isTactile ? 'text-amber-400' : isGlass ? 'text-slate-300' : 'text-slate-400 dark:text-slate-400'
             }`}>
               <span>Arayüz Teması</span>
-              <span className={`text-[10px] font-semibold lowercase ${isObsidian ? 'text-[#a786ff]' : 'text-blue-500 dark:text-blue-400'}`}>
+              <span className={`text-[10px] font-semibold lowercase ${isObsidian ? 'text-[#a786ff]' : isTactile ? 'text-amber-400/80' : 'text-blue-500 dark:text-blue-400'}`}>
                 • anlık canlı uygulanır
               </span>
             </h4>
@@ -296,14 +304,14 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                         ? isObsidian
                           ? 'bg-[#221c38] border-[#a786ff] shadow-[0_0_20px_rgba(167,134,255,0.25)] ring-2 ring-[#a786ff]/40 text-white'
                           : isTactile
-                          ? 'bg-[#221e2e] border-amber-500 shadow-[0_0_24px_rgba(245,158,11,0.35)] ring-2 ring-amber-500/40 text-white'
+                          ? 'bg-[#221e2e] border-amber-500 shadow-[0_0_24px_rgba(245,158,11,0.35),inset_0_1px_2px_rgba(255,255,255,0.2)] ring-2 ring-amber-500/40 text-white'
                           : isGlass
                           ? 'bg-white/20 border-white/50 shadow-lg ring-2 ring-white/30 text-white'
                           : 'bg-blue-500/10 dark:bg-blue-500/15 border-blue-500 shadow-md ring-2 ring-blue-500/30'
                         : isObsidian
                         ? 'bg-[#161324]/80 hover:bg-[#1e1a2f] border-white/[0.08] text-slate-300'
                         : isTactile
-                        ? 'bg-[#1a1724]/90 hover:bg-[#252033] border-white/[0.12] text-slate-200'
+                        ? 'bg-[#1b1928] hover:bg-[#242133] border-t border-l border-white/[0.15] border-r border-black/60 border-b border-black/80 text-slate-200 shadow-[0_3px_10px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.06)]'
                         : isGlass
                         ? 'bg-white/[0.07] hover:bg-white/[0.12] border-white/15 text-white'
                         : 'bg-white/60 dark:bg-slate-800/50 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 border-slate-200 dark:border-slate-800'
@@ -459,20 +467,20 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
           {/* ── 2. PERFORMANS MODU (GÜÇLÜ TELEFONLAR / DÜŞÜK GÜÇ MODU) ── */}
           <div
             className={`pt-2 border-t ${
-              isObsidian ? 'border-white/[0.08]' : isGlass ? 'border-white/15' : 'border-slate-200/80 dark:border-slate-800/80'
+              isObsidian ? 'border-white/[0.08]' : isTactile ? 'border-white/[0.1]' : isGlass ? 'border-white/15' : 'border-slate-200/80 dark:border-slate-800/80'
             }`}
           >
             <div className="mb-2.5">
               <h4
                 className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-                  isObsidian ? 'text-[#c8b7f8]' : isGlass ? 'text-slate-300' : 'text-slate-400 dark:text-slate-400'
+                  isObsidian ? 'text-[#c8b7f8]' : isTactile ? 'text-amber-400' : isGlass ? 'text-slate-300' : 'text-slate-400 dark:text-slate-400'
                 }`}
               >
                 <span>Cihaz Performansı & FPS Modu</span>
               </h4>
               <p
                 className={`text-[11px] mt-0.5 ${
-                  isObsidian ? 'text-[#9a93b5]' : isGlass ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'
+                  isObsidian ? 'text-[#9a93b5]' : isTactile ? 'text-slate-300' : isGlass ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'
                 }`}
               >
                 Telefonunuzun donanımına göre maksimum akıcılık veya pil tasarrufu seçin.
@@ -496,11 +504,15 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                   performanceMode === 'ultra'
                     ? isObsidian
                       ? 'bg-[#1e1930] text-white ring-2 ring-white/20'
+                      : isTactile
+                      ? 'bg-[#262235] border-amber-500 text-white ring-2 ring-amber-500/40 shadow-[0_0_16px_rgba(245,158,11,0.25),inset_0_1px_1px_rgba(255,255,255,0.2)]'
                       : isGlass
                       ? 'bg-white/20 border-white/50 shadow-md ring-2 ring-white/30 text-white'
                       : 'bg-amber-500/10 dark:bg-amber-500/15 border-amber-500 shadow-md ring-2 ring-amber-500/30'
                     : isObsidian
                     ? 'bg-[#161324] hover:bg-[#201c32] border-white/[0.08] text-slate-200'
+                    : isTactile
+                    ? 'bg-[#1b1928] hover:bg-[#242133] border-t border-l border-white/[0.15] border-r border-black/60 border-b border-black/80 text-slate-200 shadow-[0_3px_10px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.06)]'
                     : isGlass
                     ? 'bg-white/10 hover:bg-white/15 border-white/15 text-white'
                     : 'bg-white/60 dark:bg-slate-800/50 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 border-slate-200 dark:border-slate-800'
@@ -510,8 +522,8 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                   className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                     performanceMode === 'ultra'
                       ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
-                      : isObsidian
-                      ? 'bg-[#252037] text-slate-300'
+                      : isObsidian || isTactile
+                      ? 'bg-[#252037] text-amber-400/80 border border-white/10'
                       : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300'
                   }`}
                 >
@@ -528,7 +540,7 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                   </div>
                   <p
                     className={`text-[10px] leading-snug mt-0.5 ${
-                      isObsidian ? 'text-[#9a93b5]' : isGlass ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
+                      isObsidian ? 'text-[#9a93b5]' : isTactile ? 'text-slate-300' : isGlass ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
                     }`}
                   >
                     Güçlü telefonlar için tam çözünürlüklü parçacıklar, akıcı hava durumu ve kristal cam.
@@ -544,11 +556,15 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                   performanceMode === 'eco'
                     ? isObsidian
                       ? 'bg-[#1e1930] border-emerald-500 shadow-md ring-2 ring-emerald-500/30 text-white'
+                      : isTactile
+                      ? 'bg-[#262235] border-emerald-500 text-white ring-2 ring-emerald-500/40 shadow-[0_0_16px_rgba(16,185,129,0.25),inset_0_1px_1px_rgba(255,255,255,0.2)]'
                       : isGlass
                       ? 'bg-white/20 border-white/50 shadow-md ring-2 ring-white/30 text-white'
                       : 'bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500 shadow-md ring-2 ring-emerald-500/30'
                     : isObsidian
                     ? 'bg-[#161324] hover:bg-[#201c32] border-white/[0.08] text-slate-200'
+                    : isTactile
+                    ? 'bg-[#1b1928] hover:bg-[#242133] border-t border-l border-white/[0.15] border-r border-black/60 border-b border-black/80 text-slate-200 shadow-[0_3px_10px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.06)]'
                     : isGlass
                     ? 'bg-white/10 hover:bg-white/15 border-white/15 text-white'
                     : 'bg-white/60 dark:bg-slate-800/50 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 border-slate-200 dark:border-slate-800'
@@ -558,8 +574,8 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                   className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                     performanceMode === 'eco'
                       ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                      : isObsidian
-                      ? 'bg-[#252037] text-slate-300'
+                      : isObsidian || isTactile
+                      ? 'bg-[#252037] text-emerald-400/80 border border-white/10'
                       : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300'
                   }`}
                 >
@@ -576,7 +592,7 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                   </div>
                   <p
                     className={`text-[10px] leading-snug mt-0.5 ${
-                      isObsidian ? 'text-[#9a93b5]' : isGlass ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
+                      isObsidian ? 'text-[#9a93b5]' : isTactile ? 'text-slate-300' : isGlass ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
                     }`}
                   >
                     Hafifletilmiş efektler, yavaşlayan cihazlar için sıfır GPU yükü ve uzun pil ömrü.
@@ -588,13 +604,13 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
 
           {/* ── 3. CANLI HAVA AMBİYANSINI ANINDA DENEYİN (TEST BUTONLARI) ── */}
           {onSelectWeatherConditionOverride && (
-            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80">
+            <div className={`pt-2 border-t ${isObsidian ? 'border-white/[0.08]' : isTactile ? 'border-white/[0.1]' : 'border-slate-200/80 dark:border-slate-800/80'}`}>
               <div className="mb-2">
-                <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 flex items-center gap-1.5">
-                  <CloudSun className="w-3.5 h-3.5 text-blue-500" />
+                <h4 className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${isTactile ? 'text-amber-400' : 'text-slate-400 dark:text-slate-400'}`}>
+                  <CloudSun className={`w-3.5 h-3.5 ${isTactile ? 'text-amber-400' : 'text-blue-500'}`} />
                   <span>Arka Plan Hava Efektini Önizle</span>
                 </h4>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                <p className={`text-[10px] ${isTactile ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
                   Yağmur, kar, sis ve güneş efektlerini hemen denemek için dokunun:
                 </p>
               </div>
@@ -616,11 +632,15 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                         isActive
                           ? isObsidian
                             ? 'text-white shadow-xs'
+                            : isTactile
+                            ? 'bg-gradient-to-b from-[#2e2a3d] to-[#1d1b28] text-amber-300 border-amber-500 shadow-[0_2px_8px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.25)]'
                             : isGlass
                             ? 'bg-white/25 text-white border-white/40 shadow-xs'
                             : 'bg-blue-600 text-white border-blue-600 shadow-sm'
                           : isObsidian
                           ? 'bg-[#181427] hover:bg-[#221c38] border-white/[0.08] text-slate-200'
+                          : isTactile
+                          ? 'bg-[#191726] hover:bg-[#232032] border-white/[0.1] text-slate-300'
                           : isGlass
                           ? 'bg-white/10 hover:bg-white/15 border-white/15 text-white'
                           : 'bg-white/80 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
@@ -640,13 +660,15 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
         <div className={`px-5 py-3 border-t flex items-center justify-between shrink-0 ${
           isObsidian
             ? 'border-white/[0.08] bg-[#161324]/80'
+            : isTactile
+            ? 'border-white/[0.1] bg-[#1c1928]/95'
             : isGlass
             ? 'border-white/15 bg-white/[0.08]'
             : 'border-slate-200/80 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-800/50'
         }`}>
           <div className="flex items-center gap-1.5 text-[11px] font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            <span className={isObsidian ? 'text-[#c8b7f8]' : isGlass ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}>
+            <span className={isObsidian ? 'text-[#c8b7f8]' : isTactile ? 'text-amber-300/90' : isGlass ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}>
               Tema anında aktiftir
             </span>
           </div>
@@ -661,11 +683,20 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                     boxShadow: `0 8px 22px rgba(0,0,0,0.6), 0 2px 14px ${palette.glow}`,
                     borderColor: palette.ringColor,
                   }
+                : isTactile
+                ? {
+                    background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                    boxShadow: '0 4px 0 #0c0b10, 0 8px 16px rgba(0,0,0,0.8), 0 0 16px rgba(255,145,50,0.5), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                    border: '1px solid rgba(255, 200, 150, 0.45)',
+                    color: '#fff7ed',
+                  }
                 : undefined
             }
             className={`px-4 py-2 rounded-xl font-bold text-xs active:scale-95 transition-all shadow-md cursor-pointer ${
               isObsidian
                 ? 'text-white border'
+                : isTactile
+                ? ''
                 : isGlass
                 ? 'bg-white/20 hover:bg-white/30 text-white border border-white/25 backdrop-blur-md'
                 : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90'

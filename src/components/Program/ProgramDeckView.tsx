@@ -244,13 +244,17 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between shrink-0 mb-2 pb-1.5 border-b border-white/10">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
+              <span className={`w-2.5 h-2.5 rounded-full ${isTactile ? 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' : 'bg-blue-500'} animate-pulse`} />
               <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-100">
                 {t.progTabSchedule}
               </h3>
             </div>
             {isEncrypted && (
-              <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-400 bg-emerald-500/20 px-2.5 py-0.5 rounded-md border border-emerald-400/30 flex items-center gap-1">
+              <span className={`text-[10px] sm:text-[11px] font-semibold px-2.5 py-0.5 rounded-md flex items-center gap-1 ${
+                isTactile
+                  ? 'text-amber-300 bg-amber-500/15 border border-amber-500/35 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
+                  : 'text-emerald-400 bg-emerald-500/20 border border-emerald-400/30'
+              }`}>
                 <ShieldCheck className="w-3.5 h-3.5" />
                 {t.encryptedGcm}
               </span>
@@ -272,11 +276,40 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
                     type="button"
                     onClick={() => toggleItem(item.id)}
                     aria-label={`${item.name} status`}
-                    className={`w-10 h-6 rounded-full transition-colors relative flex items-center p-0.5 shrink-0 cursor-pointer ${
-                      item.enabled ? 'bg-emerald-500' : 'bg-slate-600'
+                    style={
+                      isTactile && item.enabled
+                        ? {
+                            background: 'linear-gradient(180deg, #ff9a4a 0%, #ea580c 100%)',
+                            boxShadow: '0 0 12px rgba(245,158,11,0.6), inset 0 1px 2px rgba(255,255,255,0.4)',
+                            border: '1px solid rgba(255,180,100,0.5)',
+                          }
+                        : isTactile && !item.enabled
+                        ? {
+                            background: '#151320',
+                            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.8)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                          }
+                        : undefined
+                    }
+                    className={`w-10 h-6 rounded-full transition-all relative flex items-center p-0.5 shrink-0 cursor-pointer ${
+                      item.enabled
+                        ? isTactile
+                          ? ''
+                          : 'bg-emerald-500'
+                        : isTactile
+                        ? ''
+                        : 'bg-slate-600'
                     }`}
                   >
                     <span
+                      style={
+                        isTactile
+                          ? {
+                              background: 'linear-gradient(172deg, #ffffff 0%, #e2e8f0 45%, #94a3b8 100%)',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.9)',
+                            }
+                          : undefined
+                      }
                       className={`w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform ${
                         item.enabled ? 'translate-x-4' : 'translate-x-0'
                       }`}
@@ -290,8 +323,12 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
                 {/* Controls: Time & Temp */}
                 <div className="flex items-center gap-2.5 shrink-0">
                   {/* Time Input */}
-                  <div className="flex items-center gap-1.5 bg-black/30 px-2 py-1 rounded-xl border border-white/15 shadow-2xs">
-                    <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded-xl transition-all ${
+                    isTactile
+                      ? 'bg-[#151320] border border-white/15 shadow-[inset_0_2px_4px_rgba(0,0,0,0.7)]'
+                      : 'bg-black/30 border border-white/15 shadow-2xs'
+                  }`}>
+                    <Clock className={`w-3.5 h-3.5 shrink-0 ${isTactile ? 'text-amber-400' : 'text-slate-400'}`} />
                     <input
                       type="time"
                       value={item.time}
@@ -302,7 +339,11 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
                   </div>
 
                   {/* Target Temp Input */}
-                  <div className="flex items-center gap-1 bg-black/30 px-2 py-1 rounded-xl border border-white/15 shadow-2xs">
+                  <div className={`flex items-center gap-1 px-2 py-1 rounded-xl transition-all ${
+                    isTactile
+                      ? 'bg-[#151320] border border-white/15 shadow-[inset_0_2px_4px_rgba(0,0,0,0.7)]'
+                      : 'bg-black/30 border border-white/15 shadow-2xs'
+                  }`}>
                     <input
                       type="number"
                       min="10"
@@ -313,7 +354,7 @@ export const ProgramDeckView: React.FC<ProgramDeckViewProps> = ({
                       aria-label={`${item.name} target`}
                       className="w-11 bg-transparent text-white text-xs sm:text-sm font-mono font-bold text-center focus:outline-none"
                     />
-                    <span className="text-xs font-bold text-slate-400">°C</span>
+                    <span className={`text-xs font-bold ${isTactile ? 'text-amber-400' : 'text-slate-400'}`}>°C</span>
                   </div>
                 </div>
               </div>

@@ -129,6 +129,8 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
               className={`p-2 rounded-xl ${
                 isObsidian
                   ? 'border shadow-xs'
+                  : isTactile
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs'
                   : isGlass
                   ? 'bg-white/10 text-sky-300 border border-white/15'
                   : 'bg-blue-50 dark:bg-blue-900/40 text-blue-500'
@@ -142,7 +144,7 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
               </h2>
               <p
                 className={`text-[11px] ${
-                  isObsidian ? 'text-[#a89dc7]' : isGlass ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
+                  isObsidian ? 'text-[#a89dc7]' : isTactile ? 'text-slate-300' : isGlass ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
                 }`}
               >
                 Ekranları ve alt menüleri yukarı/aşağı butonlarıyla dilediğiniz gibi sıralayın.
@@ -157,6 +159,8 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
             className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer active:scale-95 transition-all ${
               isObsidian
                 ? 'bg-[#1e1a2f] hover:bg-[#2b2542] text-[#d8caff] border border-white/[0.12]'
+                : isTactile
+                ? 'bg-[#221f2f] hover:bg-[#2c283c] text-amber-300 border-t border-l border-white/20 border-r border-b border-black/80 shadow-[0_2px_5px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.2)]'
                 : isGlass
                 ? 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -171,7 +175,7 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
           <div className="flex items-center justify-between pb-1">
             <span
               className={`text-[11px] font-bold uppercase tracking-wider ${
-                isObsidian ? 'text-[#c8b7f8]' : isGlass ? 'text-slate-300' : 'text-slate-400 dark:text-slate-400'
+                isObsidian ? 'text-[#c8b7f8]' : isTactile ? 'text-amber-400' : isGlass ? 'text-slate-300' : 'text-slate-400 dark:text-slate-400'
               }`}
             >
               Ana Ekran Sıralaması (Karusel & Alt Çubuk)
@@ -193,6 +197,8 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                 className={`p-3 sm:p-3.5 rounded-2xl border transition-all ${
                   isObsidian
                     ? 'bg-[#181524] border-white/[0.08] shadow-[0_4px_14px_rgba(0,0,0,0.4)]'
+                    : isTactile
+                    ? 'bg-[#1c1929] border-t border-l border-white/[0.16] border-r border-black/60 border-b border-black/80 text-white shadow-[0_4px_14px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.08)]'
                     : isGlass
                     ? 'bg-white/[0.08] hover:bg-white/[0.12] border-white/15 text-white shadow-sm'
                     : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700'
@@ -209,6 +215,8 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                           className={`text-[10px] font-mono px-1.5 py-0.2 rounded-md ${
                             isObsidian
                               ? 'bg-[#241f38] text-[#c8b7f8]'
+                              : isTactile
+                              ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
                               : isGlass
                               ? 'bg-white/10 text-slate-300'
                               : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -221,6 +229,8 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                         className={`text-[11px] truncate ${
                           isObsidian
                             ? 'text-[#a89dc7]'
+                            : isTactile
+                            ? 'text-slate-300'
                             : isGlass
                             ? 'text-slate-300'
                             : 'text-slate-500 dark:text-slate-400'
@@ -241,9 +251,11 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                         onMoveTab(tabId, 'up');
                       }}
                       aria-label={`${def.title} yukarı taşı`}
-                      className={`p-2 rounded-xl transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                      className={`p-2 rounded-xl transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:translate-y-0.5 ${
                         isObsidian
                           ? 'bg-[#221c38] hover:bg-[#2f274d] text-[#c8b7f8] border border-white/[0.08]'
+                          : isTactile
+                          ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] hover:from-[#373248] hover:to-[#222030] text-amber-300 border-t border-l border-white/20 border-r border-black/70 border-b border-black/90 shadow-[0_3px_0_#0c0b10,0_4px_8px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.25)]'
                           : isGlass
                           ? 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
                           : 'bg-slate-200/80 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
@@ -259,9 +271,11 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                         onMoveTab(tabId, 'down');
                       }}
                       aria-label={`${def.title} aşağı taşı`}
-                      className={`p-2 rounded-xl transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                      className={`p-2 rounded-xl transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:translate-y-0.5 ${
                         isObsidian
                           ? 'bg-[#221c38] hover:bg-[#2f274d] text-[#c8b7f8] border border-white/[0.08]'
+                          : isTactile
+                          ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] hover:from-[#373248] hover:to-[#222030] text-amber-300 border-t border-l border-white/20 border-r border-black/70 border-b border-black/90 shadow-[0_3px_0_#0c0b10,0_4px_8px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.25)]'
                           : isGlass
                           ? 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
                           : 'bg-slate-200/80 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
@@ -278,6 +292,8 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                     className={`mt-3 pt-2.5 border-t space-y-1.5 ${
                       isObsidian
                         ? 'border-white/[0.06]'
+                        : isTactile
+                        ? 'border-white/[0.08]'
                         : isGlass
                         ? 'border-white/10'
                         : 'border-slate-200 dark:border-slate-700'
@@ -286,12 +302,12 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                     <div
                       style={isObsidian ? { color: palette.textColor } : undefined}
                       className={`flex items-center gap-1.5 text-[10px] font-bold mb-1 ${
-                        isObsidian ? '' : isGlass ? 'text-sky-300' : 'text-sky-400'
+                        isObsidian ? '' : isTactile ? 'text-amber-400' : isGlass ? 'text-sky-300' : 'text-sky-400'
                       }`}
                     >
                       <Layers
                         style={isObsidian ? { color: palette.ringColor } : undefined}
-                        className="w-3 h-3"
+                        className={`w-3 h-3 ${isTactile ? 'text-amber-400' : ''}`}
                       />
                       <span>Rapor Alt Sekmeleri (İç Sıralama):</span>
                     </div>
@@ -309,6 +325,8 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                             className={`p-2 rounded-xl border flex items-center justify-between gap-2 text-xs transition-all ${
                               isObsidian
                                 ? 'bg-[#1e1930] border-white/[0.08]'
+                                : isTactile
+                                ? 'bg-[#221e30] border-t border-l border-white/[0.12] border-r border-black/60 border-b border-black/80 text-slate-100 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]'
                                 : isGlass
                                 ? 'bg-white/[0.06] border-white/10 text-white'
                                 : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
@@ -328,9 +346,11 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                                   onMoveReportSub(subId, 'up');
                                 }}
                                 aria-label={`${sub.title} yukarı taşı`}
-                                className={`p-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                                className={`p-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:translate-y-0.5 ${
                                   isObsidian
                                     ? 'bg-[#2b2542] hover:bg-[#393256] text-[#c8b7f8]'
+                                    : isTactile
+                                    ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] hover:from-[#373248] hover:to-[#222030] text-amber-300 border-t border-l border-white/20 border-r border-black/70 border-b border-black/90 shadow-[0_2px_0_#0c0b10,0_3px_6px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.25)]'
                                     : isGlass
                                     ? 'bg-white/10 hover:bg-white/20 text-white'
                                     : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -346,9 +366,11 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                                   onMoveReportSub(subId, 'down');
                                 }}
                                 aria-label={`${sub.title} aşağı taşı`}
-                                className={`p-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                                className={`p-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:translate-y-0.5 ${
                                   isObsidian
                                     ? 'bg-[#2b2542] hover:bg-[#393256] text-[#c8b7f8]'
+                                    : isTactile
+                                    ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] hover:from-[#373248] hover:to-[#222030] text-amber-300 border-t border-l border-white/20 border-r border-black/70 border-b border-black/90 shadow-[0_2px_0_#0c0b10,0_3px_6px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.25)]'
                                     : isGlass
                                     ? 'bg-white/10 hover:bg-white/20 text-white'
                                     : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -370,6 +392,8 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                     className={`mt-3 pt-2.5 border-t space-y-1.5 ${
                       isObsidian
                         ? 'border-white/[0.06]'
+                        : isTactile
+                        ? 'border-white/[0.08]'
                         : isGlass
                         ? 'border-white/10'
                         : 'border-slate-200 dark:border-slate-700'
@@ -378,12 +402,12 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                     <div
                       style={isObsidian ? { color: palette.textColor } : undefined}
                       className={`flex items-center gap-1.5 text-[10px] font-bold mb-1 ${
-                        isObsidian ? '' : isGlass ? 'text-amber-300' : 'text-amber-400'
+                        isObsidian ? '' : isTactile ? 'text-amber-400' : isGlass ? 'text-amber-300' : 'text-amber-400'
                       }`}
                     >
                       <Layers
                         style={isObsidian ? { color: palette.ringColor } : undefined}
-                        className="w-3 h-3"
+                        className={`w-3 h-3 ${isTactile ? 'text-amber-400' : ''}`}
                       />
                       <span>Program Alt Sekmeleri (İç Sıralama):</span>
                     </div>
@@ -401,6 +425,8 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                             className={`p-2 rounded-xl border flex items-center justify-between gap-2 text-xs transition-all ${
                               isObsidian
                                 ? 'bg-[#1e1930] border-white/[0.08]'
+                                : isTactile
+                                ? 'bg-[#221e30] border-t border-l border-white/[0.12] border-r border-black/60 border-b border-black/80 text-slate-100 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]'
                                 : isGlass
                                 ? 'bg-white/[0.06] border-white/10 text-white'
                                 : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
@@ -420,9 +446,11 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                                   onMoveProgSub(subId, 'up');
                                 }}
                                 aria-label={`${sub.title} yukarı taşı`}
-                                className={`p-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                                className={`p-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:translate-y-0.5 ${
                                   isObsidian
                                     ? 'bg-[#2b2542] hover:bg-[#393256] text-[#c8b7f8]'
+                                    : isTactile
+                                    ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] hover:from-[#373248] hover:to-[#222030] text-amber-300 border-t border-l border-white/20 border-r border-black/70 border-b border-black/90 shadow-[0_2px_0_#0c0b10,0_3px_6px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.25)]'
                                     : isGlass
                                     ? 'bg-white/10 hover:bg-white/20 text-white'
                                     : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -438,9 +466,11 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
                                   onMoveProgSub(subId, 'down');
                                 }}
                                 aria-label={`${sub.title} aşağı taşı`}
-                                className={`p-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                                className={`p-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:translate-y-0.5 ${
                                   isObsidian
                                     ? 'bg-[#2b2542] hover:bg-[#393256] text-[#c8b7f8]'
+                                    : isTactile
+                                    ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] hover:from-[#373248] hover:to-[#222030] text-amber-300 border-t border-l border-white/20 border-r border-black/70 border-b border-black/90 shadow-[0_2px_0_#0c0b10,0_3px_6px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.25)]'
                                     : isGlass
                                     ? 'bg-white/10 hover:bg-white/20 text-white'
                                     : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -465,6 +495,8 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
           className={`px-5 py-3 border-t flex items-center justify-between shrink-0 ${
             isObsidian
               ? 'border-white/[0.08] bg-[#161324]/80'
+              : isTactile
+              ? 'border-white/[0.1] bg-[#1c1928]/95'
               : isGlass
               ? 'border-white/15 bg-white/[0.08]'
               : 'border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50'
@@ -479,6 +511,8 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
             className={`text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 ${
               isObsidian
                 ? 'text-[#c8b7f8] hover:text-white'
+                : isTactile
+                ? 'text-amber-400 hover:text-amber-300'
                 : isGlass
                 ? 'text-slate-300 hover:text-white'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'

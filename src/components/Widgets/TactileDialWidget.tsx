@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { triggerHaptic } from '../../utils/haptics.ts';
 
 interface TactileDialWidgetProps {
@@ -20,39 +20,79 @@ export const TactileDialWidget: React.FC<TactileDialWidgetProps> = ({
 }) => {
   const dialRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
-  const startYRef = useRef(0);
-  const startTempRef = useRef(targetTemp);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Map 16.0°C - 30.0°C to -135deg to +135deg (span 270 deg)
   const minTemp = 16.0;
   const maxTemp = 30.0;
-  const angle = Math.min(135, Math.max(-135, ((targetTemp - minTemp) / (maxTemp - minTemp)) * 270 - 135));
+  const currentAngle = Math.min(135, Math.max(-135, ((targetTemp - minTemp) / (maxTemp - minTemp)) * 270 - 135));
+  const lastAngleRef = useRef<number>(currentAngle);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    e.stopPropagation();
-    isDraggingRef.current = true;
-    startYRef.current = e.clientY;
-    startTempRef.current = targetTemp;
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-  };
+  // Update angle directly from pointer coords relative to dial center
+  const updateAngleFromPointer = useCallback((clientX: number, clientY: number) => {
+    if (!dialRef.current) return;
+    const rect = dialRef.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = clientX - cx;
+    const dy = clientY - cy;
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDraggingRef.current) return;
-    e.stopPropagation();
-    const deltaY = startYRef.current - e.clientY;
-    const tempChange = (deltaY / 70) * 2.0;
-    const rawNew = startTempRef.current + tempChange;
-    const clamped = Math.min(maxTemp, Math.max(minTemp, Math.round(rawNew * 2) / 2));
+    // Angle where 12 o'clock is 0 deg, clockwise is positive
+    let deg = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
+    while (deg > 180) deg -= 360;
+    while (deg < -180) deg += 360;
+
+    let targetAngle = deg;
+    // Guard against flipping through bottom dead zone (-135° to +135°)
+    if (lastAngleRef.current > 60 && deg < -90) {
+      targetAngle = 135;
+    } else if (lastAngleRef.current < -60 && deg > 90) {
+      targetAngle = -135;
+    } else if (targetAngle > 135) {
+      targetAngle = 135;
+    } else if (targetAngle < -135) {
+      targetAngle = -135;
+    }
+
+    lastAngleRef.current = targetAngle;
+
+    const fraction = (targetAngle - (-135)) / 270;
+    const rawTemp = minTemp + fraction * (maxTemp - minTemp);
+    const clamped = Math.min(maxTemp, Math.max(minTemp, Math.round(rawTemp * 2) / 2));
     if (clamped !== targetTemp) {
       onSetTarget(clamped);
       triggerHaptic('selection');
     }
+  }, [targetTemp, onSetTarget]);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isDraggingRef.current = true;
+    setIsDragging(true);
+    lastAngleRef.current = currentAngle;
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+    updateAngleFromPointer(e.clientX, e.clientY);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    updateAngleFromPointer(e.clientX, e.clientY);
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    e.preventDefault();
     e.stopPropagation();
     isDraggingRef.current = false;
-    (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    setIsDragging(false);
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
   };
 
   const handleWheel = (e: React.WheelEvent) => {
@@ -81,40 +121,37 @@ export const TactileDialWidget: React.FC<TactileDialWidgetProps> = ({
 
   return (
     <div
-      data-no-swipe="true"
-      data-dial-widget="true"
-      onPointerDownCapture={(e) => e.stopPropagation()}
-      onPointerMoveCapture={(e) => e.stopPropagation()}
-      onPointerUpCapture={(e) => e.stopPropagation()}
-      onTouchStartCapture={(e) => e.stopPropagation()}
-      onTouchMoveCapture={(e) => e.stopPropagation()}
-      onTouchEndCapture={(e) => e.stopPropagation()}
-      onMouseDownCapture={(e) => e.stopPropagation()}
-      onMouseMoveCapture={(e) => e.stopPropagation()}
-      onMouseUpCapture={(e) => e.stopPropagation()}
-      className="flex flex-col items-center justify-center select-none py-1 my-auto touch-none no-swipe"
+      className="flex flex-col items-center justify-center select-none py-1 my-auto w-fit mx-auto"
     >
-      {/* ── ROTARY DIAL (Exact Knurled 3D Design from User's Image 3) ── */}
+      {/* ── ROTARY DIAL (Exact Knurled 3D Design with 360° Circular Drag) ── */}
       <div
         ref={dialRef}
+        data-no-swipe="true"
+        data-dial-widget="true"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
         onWheel={handleWheel}
-        className="w-48 h-48 xs:w-56 xs:h-56 sm:w-64 sm:h-64 rounded-full relative cursor-ns-resize touch-none select-none transition-transform"
+        className={`w-48 h-48 xs:w-56 xs:h-56 sm:w-64 sm:h-64 rounded-full relative touch-none select-none no-swipe ${
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        }`}
         style={{
           background: 'repeating-conic-gradient(#0b0a0f 0 4deg, #5d5663 4deg 8deg)',
           boxShadow: `
             0 16px 30px rgba(0, 0, 0, 0.8),
             0 0 0 3px #0a090d,
-            0 0 30px rgba(255, 140, 60, ${isKombiActive ? 0.45 : 0.08})
+            0 0 ${isDragging ? '45px' : '30px'} rgba(255, 140, 60, ${isDragging ? 0.65 : isKombiActive ? 0.45 : 0.08})
           `,
         }}
-        title="Sıcaklığı ayarlamak için dikey sürükleyin veya fare tekerleğini çevirin"
+        title="Turuncu ayar ışığını parmağınızla saat yönünde veya tersinde çevirerek dereceyi ayarlayabilirsiniz"
       >
         {/* Inner Metallic Disc / Convex Cap */}
         <div
-          className="absolute inset-3 sm:inset-4 rounded-full flex flex-col items-center justify-center transition-all duration-300"
+          className="absolute inset-3 sm:inset-4 rounded-full flex flex-col items-center justify-center pointer-events-none transition-all duration-300"
           style={{
             background: `
               linear-gradient(172deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.04) 40%, transparent 60%),
@@ -123,28 +160,31 @@ export const TactileDialWidget: React.FC<TactileDialWidgetProps> = ({
             boxShadow: `
               inset 0 2.5px 5px rgba(255, 255, 255, 0.35),
               inset 0 -7px 14px rgba(0, 0, 0, 0.75),
-              0 0 24px rgba(255, 150, 70, ${isKombiActive ? 0.35 : 0.05})
+              0 0 24px rgba(255, 150, 70, ${isDragging ? 0.5 : isKombiActive ? 0.35 : 0.05})
             `,
           }}
         >
-          {/* Rotating Dial Indicator Pill */}
+          {/* Rotating Dial Indicator Pill (Orange Setting Light) */}
           <div
-            className="absolute inset-0 pointer-events-none transition-transform duration-100"
-            style={{ transform: `rotate(${angle}deg)` }}
+            className="absolute inset-0 pointer-events-none transition-transform duration-75"
+            style={{ transform: `rotate(${currentAngle}deg)` }}
           >
             <div
-              className="absolute left-1/2 top-1.5 sm:top-2 w-1.5 sm:w-2 h-3.5 sm:h-4.5 -ml-0.5 sm:-ml-1 rounded-sm sm:rounded-full transition-all"
+              className="absolute left-1/2 top-1 sm:top-1.5 w-2 sm:w-2.5 h-4 sm:h-5 -ml-1 sm:-ml-1.25 rounded-full transition-all duration-150"
               style={{
-                backgroundColor: isKombiActive ? '#ff9a4a' : '#f59e0b',
-                boxShadow: isKombiActive
+                backgroundColor: isDragging ? '#ffbe76' : isKombiActive ? '#ff9a4a' : '#f59e0b',
+                boxShadow: isDragging
+                  ? '0 0 16px #ff9a4a, 0 0 28px #ff7a1a, 0 0 6px #ffffff'
+                  : isKombiActive
                   ? '0 0 10px #ff8a3a, 0 0 20px #ff7a1a'
                   : '0 0 8px #f59e0b',
+                transform: isDragging ? 'scale(1.2)' : 'scale(1)',
               }}
             />
           </div>
 
           {/* Central Readout (Exact typography from Image 3) */}
-          <div className="flex flex-col items-center justify-center text-center z-10 px-2">
+          <div className="flex flex-col items-center justify-center text-center z-10 px-2 pointer-events-none">
             <span className="text-[10px] xs:text-[11px] font-bold text-[#8f9bb3] tracking-widest uppercase mb-0.5">
               HEDEF TERMOSTAT
             </span>

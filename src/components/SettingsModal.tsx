@@ -181,6 +181,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           className={`flex items-center justify-between pb-3 sm:pb-4 border-b shrink-0 ${
             isObsidian
               ? 'border-white/[0.08]'
+              : isTactile
+              ? 'border-white/[0.1]'
               : isGlass
               ? 'border-white/15'
               : 'border-slate-100 dark:border-slate-800'
@@ -195,10 +197,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       color: palette.textColor,
                       background: `linear-gradient(135deg, ${palette.hex}25, ${palette.ringColor}15)`,
                     }
+                  : isTactile
+                  ? {
+                      background: 'linear-gradient(135deg, rgba(255,140,50,0.2), rgba(210,85,20,0.1))',
+                      borderColor: 'rgba(255,160,80,0.3)',
+                      color: '#fcd34d',
+                    }
                   : undefined
               }
               className={`p-2 rounded-xl ${
-                isObsidian
+                isObsidian || isTactile
                   ? 'border shadow-xs'
                   : isGlass
                   ? 'bg-white/10 text-sky-300 border border-white/15 backdrop-blur-md'
@@ -211,7 +219,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <h2
                 id="settings-modal-title"
                 className={`text-base font-bold ${
-                  isObsidian || isGlass ? 'text-white' : 'text-slate-800 dark:text-white'
+                  isObsidian || isGlass || isTactile ? 'text-white' : 'text-slate-800 dark:text-white'
                 }`}
               >
                 {t.settingsModalTitle}
@@ -220,6 +228,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 className={`text-xs ${
                   isObsidian
                     ? 'text-[#c3b6e8]'
+                    : isTactile
+                    ? 'text-slate-300'
                     : isGlass
                     ? 'text-white/70'
                     : 'text-slate-500 dark:text-slate-400'
@@ -236,6 +246,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             className={`w-9 h-9 rounded-full flex items-center justify-center cursor-pointer shadow-xs active:scale-95 transition-all ${
               isObsidian
                 ? 'bg-[#1e1a2f] hover:bg-[#2b2542] text-[#d8caff] border border-white/[0.12]'
+                : isTactile
+                ? 'bg-[#221f2f] hover:bg-[#2c283c] text-amber-300 border-t border-l border-white/20 border-r border-b border-black/80 shadow-[0_2px_5px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.2)]'
                 : isGlass
                 ? 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
                 : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
@@ -252,29 +264,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             className={`p-3.5 rounded-2xl flex items-center justify-between gap-3 shadow-xs ${
               isObsidian
                 ? 'bg-[#181427] border border-amber-500/25 text-white'
+                : isTactile
+                ? 'bg-[#1c1929] border-t border-l border-white/[0.16] border-r border-black/60 border-b border-black/80 shadow-[0_4px_14px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.08)] text-white'
                 : isGlass
                 ? 'bg-amber-500/10 border border-amber-400/25 backdrop-blur-md text-white'
                 : 'bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-indigo-500/10 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-indigo-950/40 border border-amber-400/40 dark:border-amber-500/30'
             }`}
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-amber-500/30">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                isTactile
+                  ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] text-amber-400 border border-amber-500/30 shadow-[0_2px_4px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.2)]'
+                  : 'bg-amber-500 text-white shadow-amber-500/30'
+              }`}>
                 <Lock className="w-4 h-4" />
               </div>
               <div className="min-w-0">
                 <div
                   className={`font-bold text-xs flex items-center gap-1.5 truncate ${
-                    isObsidian || isGlass ? 'text-white' : 'text-slate-900 dark:text-white'
+                    isObsidian || isGlass || isTactile ? 'text-white' : 'text-slate-900 dark:text-white'
                   }`}
                 >
                   <span>{t.vaultCardTitle}</span>
-                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300">
+                  <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full ${
+                    isTactile
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      : 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300'
+                  }`}>
                     AES-256
                   </span>
                 </div>
                 <p
                   className={`text-[10px] truncate ${
-                    isObsidian ? 'text-[#c3b6e8]' : isGlass ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
+                    isObsidian ? 'text-[#c3b6e8]' : isTactile ? 'text-slate-300' : isGlass ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
                   }`}
                 >
                   {t.vaultCardSub}
@@ -288,7 +310,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onClose();
                 onOpenVaultModal?.();
               }}
-              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-xs shrink-0 flex items-center gap-1 shadow-xs cursor-pointer transition-all"
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs shrink-0 flex items-center gap-1 cursor-pointer transition-all active:scale-95 ${
+                isTactile
+                  ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] hover:from-[#373248] hover:to-[#222030] text-amber-300 border-t border-l border-white/20 border-r border-black/70 border-b border-black/90 shadow-[0_3px_0_#0c0b10,0_4px_8px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.25)]'
+                  : 'bg-amber-500 hover:bg-amber-600 text-white shadow-xs'
+              }`}
               title="Şifreli kasa ve bildirim pop-up penceresini aç"
             >
               <span>{t.openVault}</span>
@@ -301,29 +327,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             className={`p-3.5 rounded-2xl flex items-center justify-between gap-3 shadow-xs ${
               isObsidian
                 ? 'bg-[#181427] border border-blue-500/25 text-white'
+                : isTactile
+                ? 'bg-[#1c1929] border-t border-l border-white/[0.16] border-r border-black/60 border-b border-black/80 shadow-[0_4px_14px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.08)] text-white'
                 : isGlass
                 ? 'bg-blue-500/10 border border-blue-400/25 backdrop-blur-md text-white'
                 : 'bg-gradient-to-r from-blue-500/10 via-emerald-500/10 to-amber-500/10 dark:from-blue-950/40 dark:via-emerald-950/30 dark:to-amber-950/40 border border-blue-400/40 dark:border-blue-500/30'
             }`}
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/30">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                isTactile
+                  ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] text-amber-400 border border-amber-500/30 shadow-[0_2px_4px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.2)]'
+                  : 'bg-gradient-to-tr from-blue-600 to-emerald-500 text-white shadow-blue-500/30'
+              }`}>
                 <span className="text-sm">🏠</span>
               </div>
               <div className="min-w-0">
                 <div
                   className={`font-bold text-xs flex items-center gap-1.5 truncate ${
-                    isObsidian || isGlass ? 'text-white' : 'text-slate-900 dark:text-white'
+                    isObsidian || isGlass || isTactile ? 'text-white' : 'text-slate-900 dark:text-white'
                   }`}
                 >
                   <span>{t.googleHomeTitle}</span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full ${
+                    isTactile
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      : 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300'
+                  }`}>
                     {t.googleHomeBadge}
                   </span>
                 </div>
                 <p
                   className={`text-[10px] truncate ${
-                    isObsidian ? 'text-[#c3b6e8]' : isGlass ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
+                    isObsidian ? 'text-[#c3b6e8]' : isTactile ? 'text-slate-300' : isGlass ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
                   }`}
                 >
                   {t.googleHomeSub}
@@ -337,7 +373,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onClose();
                 onOpenGoogleHomeModal?.();
               }}
-              className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shrink-0 flex items-center gap-1 shadow-xs cursor-pointer transition-all"
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs shrink-0 flex items-center gap-1 cursor-pointer transition-all active:scale-95 ${
+                isTactile
+                  ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] hover:from-[#373248] hover:to-[#222030] text-amber-300 border-t border-l border-white/20 border-r border-black/70 border-b border-black/90 shadow-[0_3px_0_#0c0b10,0_4px_8px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.25)]'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
+              }`}
               title="Google Home entegrasyonu ve simülatörünü aç"
             >
               <span>Yönet</span>
@@ -350,6 +390,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             className={`p-3.5 rounded-2xl flex flex-col gap-3 shadow-xs ${
               isObsidian
                 ? 'bg-[#181427] border border-purple-500/25 text-white'
+                : isTactile
+                ? 'bg-[#1c1929] border-t border-l border-white/[0.16] border-r border-black/60 border-b border-black/80 shadow-[0_4px_14px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.08)] text-white'
                 : isGlass
                 ? 'bg-purple-500/10 border border-purple-400/25 backdrop-blur-md text-white'
                 : 'bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 dark:from-purple-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 border border-purple-400/40 dark:border-purple-500/30'
@@ -360,23 +402,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               className={`flex items-center justify-between pb-2 border-b ${
                 isObsidian
                   ? 'border-white/[0.08]'
+                  : isTactile
+                  ? 'border-white/[0.08]'
                   : isGlass
                   ? 'border-white/15'
                   : 'border-purple-200/50 dark:border-purple-800/50'
               }`}
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-purple-500/30">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                  isTactile
+                    ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] text-amber-400 border border-amber-500/30 shadow-[0_2px_4px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.2)]'
+                    : 'bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow-purple-500/30'
+                }`}>
                   <Monitor className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-bold text-slate-900 dark:text-white text-xs flex items-center gap-1.5 truncate">
+                  <div className={`font-bold text-xs flex items-center gap-1.5 truncate ${
+                    isObsidian || isGlass || isTactile ? 'text-white' : 'text-slate-900 dark:text-white'
+                  }`}>
                     <span>Smart Display & Ambiyans</span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300">
+                    <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full ${
+                      isTactile
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                        : 'bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300'
+                    }`}>
                       Tablet / PC
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                  <p className={`text-[10px] truncate ${isTactile ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
                     Masaüstü veya duvarda canlı saat, hava ve medya ekranı
                   </p>
                 </div>
@@ -397,13 +451,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         borderColor: palette.borderUnder,
                         boxShadow: `0 2px 10px ${palette.glow}`,
                       }
+                    : smartDisplayConfig?.enabled && isTactile
+                    ? {
+                        background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                        boxShadow: '0 3px 0 #0c0b10, 0 6px 12px rgba(0,0,0,0.8), 0 0 12px rgba(255,145,50,0.5), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                        border: '1px solid rgba(255, 200, 150, 0.45)',
+                        color: '#fff7ed',
+                      }
                     : undefined
                 }
-                className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs shrink-0 ${
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs shrink-0 active:translate-y-0.5 ${
                   smartDisplayConfig?.enabled
                     ? isObsidian
                       ? 'text-white border-t border-l border-white/25 border-r border-b'
+                      : isTactile
+                      ? ''
                       : 'bg-purple-600 text-white shadow-purple-500/30'
+                    : isTactile
+                    ? 'bg-[#221f2f] text-slate-400 border border-white/10'
                     : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                 }`}
                 title="Smart Display özelliğini aç veya kapat"
@@ -429,11 +494,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           borderColor: palette.borderUnder,
                           boxShadow: `0 4px 14px rgba(0,0,0,0.6), 0 0 14px ${palette.glow}`,
                         }
+                      : isTactile
+                      ? {
+                          background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                          boxShadow: '0 4px 0 #0c0b10, 0 8px 16px rgba(0,0,0,0.8), 0 0 16px rgba(255,145,50,0.5), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                          border: '1px solid rgba(255, 200, 150, 0.45)',
+                          color: '#fff7ed',
+                        }
                       : undefined
                   }
                   className={`w-full py-2.5 px-4 rounded-xl active:scale-98 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer ${
                     isObsidian
                       ? 'border-t border-l border-white/25 border-r border-b'
+                      : isTactile
+                      ? ''
                       : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-500/25'
                   }`}
                 >
@@ -443,8 +517,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {/* 1. Görüntü / Medya Modu Seçimi */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <Tv className="w-3.5 h-3.5 text-purple-500" />
+                  <label className={`text-[11px] font-bold flex items-center gap-1.5 ${isTactile ? 'text-amber-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                    <Tv className={`w-3.5 h-3.5 ${isTactile ? 'text-amber-400' : 'text-purple-500'}`} />
                     <span>Ekran Modu:</span>
                   </label>
                   <div className="grid grid-cols-2 gap-1.5 text-[10px]">
@@ -478,7 +552,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             isSelected
                               ? isObsidian
                                 ? 'text-white border-t border-l border-white/25 border-r border-b font-bold'
+                                : isTactile
+                                ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] text-amber-300 border-amber-500 shadow-[0_2px_8px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.25)] font-bold'
                                 : 'bg-purple-600 text-white border-purple-500 shadow-xs font-bold'
+                              : isTactile
+                              ? 'bg-[#181624] hover:bg-[#221f31] border-white/10 text-slate-300'
                               : 'bg-white/80 dark:bg-slate-800/80 hover:bg-purple-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
                           }`}
                         >
@@ -1238,6 +1316,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             className={`p-3.5 rounded-2xl flex flex-col gap-3 shadow-xs ${
               isObsidian
                 ? 'bg-[#181427] border border-white/[0.08] text-white'
+                : isTactile
+                ? 'bg-[#1c1929] border-t border-l border-white/[0.16] border-r border-black/60 border-b border-black/80 shadow-[0_4px_14px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.08)] text-white'
                 : isGlass
                 ? 'bg-white/[0.06] border border-white/15 backdrop-blur-md text-white'
                 : 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80'
@@ -1247,26 +1327,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               className={`flex items-center justify-between pb-2 border-b ${
                 isObsidian
                   ? 'border-white/[0.08]'
+                  : isTactile
+                  ? 'border-white/[0.08]'
                   : isGlass
                   ? 'border-white/15'
                   : 'border-slate-200/60 dark:border-slate-700/60'
               }`}
             >
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                  isTactile
+                    ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] text-amber-400 border border-amber-500/30'
+                    : 'bg-amber-500 text-white'
+                }`}>
                   <Bell className="w-4 h-4" />
                 </div>
                 <div>
                   <h4
                     className={`font-bold text-xs ${
-                      isObsidian || isGlass ? 'text-white' : 'text-slate-900 dark:text-white'
+                      isObsidian || isGlass || isTactile ? 'text-white' : 'text-slate-900 dark:text-white'
                     }`}
                   >
                     {t.notifSectionTitle}
                   </h4>
                   <p
                     className={`text-[10px] ${
-                      isObsidian ? 'text-[#c3b6e8]' : isGlass ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
+                      isObsidian ? 'text-[#c3b6e8]' : isTactile ? 'text-slate-300' : isGlass ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
                     }`}
                   >
                     {t.notifSectionSub}
@@ -1280,6 +1366,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               className={`p-2.5 rounded-xl flex flex-col gap-2 ${
                 isObsidian
                   ? 'bg-[#1e1930] border border-white/[0.08]'
+                  : isTactile
+                  ? 'bg-[#221e30] border-t border-l border-white/[0.12] border-r border-black/60 border-b border-black/80 text-white'
                   : isGlass
                   ? 'bg-white/[0.08] border border-white/15'
                   : 'bg-white dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-750'
@@ -1294,7 +1382,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   )}
                   <span
                     className={`font-bold text-xs ${
-                      isObsidian || isGlass ? 'text-white' : 'text-slate-800 dark:text-slate-200'
+                      isObsidian || isGlass || isTactile ? 'text-white' : 'text-slate-800 dark:text-slate-200'
                     }`}
                   >
                     {t.notif3hTitle}
@@ -1311,13 +1399,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           borderColor: palette.borderUnder,
                           boxShadow: `0 2px 10px ${palette.glow}`,
                         }
+                      : isWeatherNotificationsEnabled && isTactile
+                      ? {
+                          background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                          boxShadow: '0 2px 0 #0c0b10, 0 4px 8px rgba(0,0,0,0.7), inset 0 1px 1.5px rgba(255,255,255,0.4)',
+                          border: '1px solid rgba(255, 200, 150, 0.45)',
+                          color: '#fff7ed',
+                        }
                       : undefined
                   }
                   className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
                     isWeatherNotificationsEnabled
                       ? isObsidian
                         ? 'text-white border-t border-l border-white/25 border-r border-b'
+                        : isTactile
+                        ? ''
                         : 'bg-amber-500 text-white shadow-xs'
+                      : isTactile
+                      ? 'bg-[#1b1928] text-slate-400 border border-white/10'
                       : isObsidian || isGlass
                       ? 'bg-white/10 text-white/60 hover:bg-white/15'
                       : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -1329,7 +1428,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <p
                 className={`text-[10px] leading-relaxed ${
-                  isObsidian ? 'text-[#c3b6e8]' : isGlass ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
+                  isObsidian ? 'text-[#c3b6e8]' : isTactile ? 'text-slate-300' : isGlass ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
                 }`}
               >
                 {t.notif3hDesc}
@@ -1338,6 +1437,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div
                 className={`flex items-center justify-between pt-1 border-t ${
                   isObsidian
+                    ? 'border-white/[0.08]'
+                    : isTactile
                     ? 'border-white/[0.08]'
                     : isGlass
                     ? 'border-white/15'
@@ -1350,7 +1451,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <button
                   type="button"
                   onClick={handleTriggerTest}
-                  className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-500 dark:text-amber-400 font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer border border-amber-400/30"
+                  className={`px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer border ${
+                    isTactile
+                      ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] text-amber-300 border-amber-500/40 shadow-xs'
+                      : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-500 dark:text-amber-400 border-amber-400/30'
+                  }`}
                   title="Test bildirimi simülasyonu çalıştır"
                 >
                   <Send className="w-3 h-3" />
@@ -1364,6 +1469,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               className={`p-2.5 rounded-xl flex flex-col gap-2 ${
                 isObsidian
                   ? 'bg-[#1e1930] border border-white/[0.08]'
+                  : isTactile
+                  ? 'bg-[#221e30] border-t border-l border-white/[0.12] border-r border-black/60 border-b border-black/80 text-white'
                   : isGlass
                   ? 'bg-white/[0.08] border border-white/15'
                   : 'bg-white dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-750'
@@ -1374,7 +1481,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <ShieldAlert className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                   <span
                     className={`font-bold text-xs ${
-                      isObsidian || isGlass ? 'text-white' : 'text-slate-800 dark:text-slate-200'
+                      isObsidian || isGlass || isTactile ? 'text-white' : 'text-slate-800 dark:text-slate-200'
                     }`}
                   >
                     {t.notifCriticalTitle}
@@ -1387,6 +1494,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
                     isCriticalAlertsEnabled
                       ? 'bg-rose-600 text-white shadow-xs'
+                      : isTactile
+                      ? 'bg-[#1b1928] text-slate-400 border border-white/10'
                       : isObsidian || isGlass
                       ? 'bg-white/10 text-white/60 hover:bg-white/15'
                       : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -1398,7 +1507,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <p
                 className={`text-[10px] leading-relaxed ${
-                  isObsidian ? 'text-[#c3b6e8]' : isGlass ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
+                  isObsidian ? 'text-[#c3b6e8]' : isTactile ? 'text-slate-300' : isGlass ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
                 }`}
               >
                 {t.notifCriticalDesc}
@@ -1416,6 +1525,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             className={`p-3.5 rounded-2xl flex flex-col gap-2.5 ${
               isObsidian
                 ? 'bg-rose-950/25 border border-rose-500/30 text-white'
+                : isTactile
+                ? 'bg-[#251720] border-t border-l border-rose-500/30 border-r border-black/60 border-b border-black/80 text-white'
                 : isGlass
                 ? 'bg-rose-500/10 border border-rose-400/25 backdrop-blur-md text-white'
                 : 'bg-rose-500/10 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800/60'
@@ -1431,7 +1542,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </span>
                 <p
                   className={`text-[10px] leading-relaxed mt-0.5 ${
-                    isObsidian ? 'text-[#c3b6e8]' : isGlass ? 'text-white/70' : 'text-slate-600 dark:text-slate-400'
+                    isObsidian ? 'text-[#c3b6e8]' : isTactile ? 'text-slate-300' : isGlass ? 'text-white/70' : 'text-slate-600 dark:text-slate-400'
                   }`}
                 >
                   {t.resetDataWarning}
@@ -1448,6 +1559,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div
                 className={`flex items-center gap-2 pt-1 border-t ${
                   isObsidian
+                    ? 'border-rose-900/60'
+                    : isTactile
                     ? 'border-rose-900/60'
                     : isGlass
                     ? 'border-rose-400/20'
@@ -1467,6 +1580,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   className={`py-1.5 px-3 rounded-xl font-semibold text-xs cursor-pointer ${
                     isObsidian
                       ? 'bg-[#1e1930] text-slate-300 hover:bg-[#2b2542]'
+                      : isTactile
+                      ? 'bg-[#1c1928] text-slate-300 hover:bg-[#262235]'
                       : isGlass
                       ? 'bg-white/10 text-white hover:bg-white/20'
                       : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
@@ -1492,6 +1607,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             className={`p-3 rounded-xl flex items-center justify-between ${
               isObsidian
                 ? 'bg-[#181427] border border-white/[0.08] text-white'
+                : isTactile
+                ? 'bg-[#1c1929] border border-white/[0.1] text-white'
                 : isGlass
                 ? 'bg-white/[0.06] border border-white/15 backdrop-blur-md text-white'
                 : 'bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700'
@@ -1501,6 +1618,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               className={
                 isObsidian
                   ? 'text-[#c3b6e8] font-medium'
+                  : isTactile
+                  ? 'text-slate-300 font-medium'
                   : isGlass
                   ? 'text-white/80 font-medium'
                   : 'text-slate-600 dark:text-slate-300 font-medium'
@@ -1522,7 +1641,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div>
             <label
               className={`font-semibold block mb-1.5 flex items-center gap-1.5 ${
-                isObsidian || isGlass ? 'text-white/90' : 'text-slate-700 dark:text-slate-300'
+                isObsidian || isGlass || isTactile ? 'text-white/90' : 'text-slate-700 dark:text-slate-300'
               }`}
             >
               <Database className="w-3.5 h-3.5 text-blue-400" />
@@ -1536,6 +1655,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               className={`w-full px-3 py-2 rounded-xl font-mono focus:outline-none transition-all ${
                 isObsidian
                   ? 'bg-[#1a162b] border border-white/[0.12] text-white placeholder-slate-500 focus:border-[#8261e6] focus:ring-1 focus:ring-[#8261e6]'
+                  : isTactile
+                  ? 'bg-[#151320] border border-white/[0.16] text-amber-200 placeholder-slate-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500'
                   : isGlass
                   ? 'bg-white/[0.08] border border-white/20 text-white placeholder-slate-400 focus:ring-1 focus:ring-sky-400'
                   : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white focus:ring-1 focus:ring-blue-500'
@@ -1546,7 +1667,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div>
             <label
               className={`font-semibold block mb-1.5 flex items-center gap-1.5 ${
-                isObsidian || isGlass ? 'text-white/90' : 'text-slate-700 dark:text-slate-300'
+                isObsidian || isGlass || isTactile ? 'text-white/90' : 'text-slate-700 dark:text-slate-300'
               }`}
             >
               <Key className="w-3.5 h-3.5 text-amber-400" />
@@ -1560,6 +1681,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               className={`w-full px-3 py-2 rounded-xl font-mono focus:outline-none transition-all ${
                 isObsidian
                   ? 'bg-[#1a162b] border border-white/[0.12] text-white placeholder-slate-500 focus:border-[#8261e6] focus:ring-1 focus:ring-[#8261e6]'
+                  : isTactile
+                  ? 'bg-[#151320] border border-white/[0.16] text-amber-200 placeholder-slate-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500'
                   : isGlass
                   ? 'bg-white/[0.08] border border-white/20 text-white placeholder-slate-400 focus:ring-1 focus:ring-sky-400'
                   : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white focus:ring-1 focus:ring-blue-500'
@@ -1571,6 +1694,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             className={`p-3 rounded-xl border flex items-start gap-2 ${
               isObsidian
                 ? 'bg-[#1e1930] border-purple-500/25 text-purple-200'
+                : isTactile
+                ? 'bg-[#1c1929] border-amber-500/30 text-amber-200'
                 : isGlass
                 ? 'bg-sky-500/10 border-sky-400/25 text-sky-200'
                 : 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/60 text-blue-800 dark:text-blue-300'
@@ -1588,6 +1713,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           className={`pt-3 sm:pt-4 border-t flex items-center justify-end gap-2 shrink-0 ${
             isObsidian
               ? 'border-white/[0.08]'
+              : isTactile
+              ? 'border-white/[0.1]'
               : isGlass
               ? 'border-white/15'
               : 'border-slate-100 dark:border-slate-800'
@@ -1599,6 +1726,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             className={`px-4 py-2 rounded-xl font-semibold text-xs cursor-pointer transition-all ${
               isObsidian
                 ? 'text-[#c3b6e8] hover:bg-white/[0.08] hover:text-white'
+                : isTactile
+                ? 'text-slate-300 hover:bg-white/[0.08] hover:text-white'
                 : isGlass
                 ? 'text-white/80 hover:bg-white/10 hover:text-white'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -1616,11 +1745,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     borderColor: palette.borderUnder,
                     boxShadow: `0 6px 18px rgba(0,0,0,0.7), 0 0 14px ${palette.glow}`,
                   }
+                : isTactile
+                ? {
+                    background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                    boxShadow: '0 4px 0 #0c0b10, 0 8px 16px rgba(0,0,0,0.8), 0 0 16px rgba(255,145,50,0.5), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                    border: '1px solid rgba(255, 200, 150, 0.45)',
+                    color: '#fff7ed',
+                  }
                 : undefined
             }
             className={`px-5 py-2 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer active:scale-95 ${
               isObsidian
                 ? 'border-t border-l border-white/25 border-r border-b'
+                : isTactile
+                ? ''
                 : isGlass
                 ? 'bg-white/20 hover:bg-white/30 border border-white/25 backdrop-blur-md shadow-md'
                 : 'bg-blue-600 hover:bg-blue-700'
