@@ -7,6 +7,7 @@ import {
   ChevronUp,
   ChevronDown,
 } from 'lucide-react';
+import { triggerHaptic } from '../../utils/haptics.ts';
 
 interface SmartDisplayControlsPillProps {
   brightnessPercent: number;
@@ -64,15 +65,20 @@ export const SmartDisplayControlsPill: React.FC<SmartDisplayControlsPillProps> =
       {!isExpanded ? (
         /* ── MINIMIZED CONTROLS PILL (Güneş simgesi, Tam ekran simgesi, Kırmızı çarpı butonu) ── */
         <div
-          onClick={() => setIsExpanded(true)}
+          onClick={() => {
+            triggerHaptic('light');
+            setIsExpanded(true);
+          }}
           className="group flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-2xl border border-white/20 hover:border-amber-400/40 shadow-2xl transition-all cursor-pointer active:scale-95 text-white"
           title="Ekran parlaklığı ve kontrolleri genişletmek için tıklayın"
         >
           {/* 1. Güneş simgesi (Parlaklık ayarını genişletir) */}
           <button
             type="button"
+            onPointerDown={() => triggerHaptic('selection')}
             onClick={(e) => {
               e.stopPropagation();
+              triggerHaptic('selection');
               setIsExpanded(true);
             }}
             className="w-7 h-7 rounded-full bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/30 flex items-center justify-center text-amber-300 transition-all cursor-pointer shrink-0"
@@ -84,8 +90,10 @@ export const SmartDisplayControlsPill: React.FC<SmartDisplayControlsPillProps> =
           {/* 2. Tam ekran simgesi (Kiosk toggle) */}
           <button
             type="button"
+            onPointerDown={() => triggerHaptic('medium')}
             onClick={(e) => {
               e.stopPropagation();
+              triggerHaptic('medium');
               onToggleFullscreen();
             }}
             className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 flex items-center justify-center text-white transition-all cursor-pointer shrink-0"
@@ -101,8 +109,10 @@ export const SmartDisplayControlsPill: React.FC<SmartDisplayControlsPillProps> =
           {/* 3. Kırmızı arka planlı beyaz çarpı kapatma butonu */}
           <button
             type="button"
+            onPointerDown={() => triggerHaptic('heavy')}
             onClick={(e) => {
               e.stopPropagation();
+              triggerHaptic('heavy');
               onClose();
             }}
             className="w-7 h-7 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-90 flex items-center justify-center text-white shadow-md shadow-rose-600/30 transition-all cursor-pointer shrink-0"
@@ -132,10 +142,17 @@ export const SmartDisplayControlsPill: React.FC<SmartDisplayControlsPillProps> =
               onChange={(e) => {
                 e.stopPropagation();
                 scheduleAutoCollapse();
+                triggerHaptic('light');
                 onBrightnessChange(Number(e.target.value));
               }}
-              onPointerDown={(e) => e.stopPropagation()}
-              onTouchStart={(e) => e.stopPropagation()}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                triggerHaptic('light');
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+                triggerHaptic('light');
+              }}
               className="w-14 sm:w-20 accent-amber-400 cursor-pointer h-1.5 rounded-lg"
             />
             <span className="font-mono text-[10px] w-6 sm:w-7 text-right text-amber-300 font-bold shrink-0">
@@ -146,9 +163,11 @@ export const SmartDisplayControlsPill: React.FC<SmartDisplayControlsPillProps> =
           {/* Fullscreen Toggle */}
           <button
             type="button"
+            onPointerDown={() => triggerHaptic('medium')}
             onClick={(e) => {
               e.stopPropagation();
               scheduleAutoCollapse();
+              triggerHaptic('medium');
               onToggleFullscreen();
             }}
             className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 active:scale-90 flex items-center justify-center text-white transition-all cursor-pointer shrink-0"
@@ -164,8 +183,10 @@ export const SmartDisplayControlsPill: React.FC<SmartDisplayControlsPillProps> =
           {/* Red Exit Button (Circular matching collapsed icon - no text truncation) */}
           <button
             type="button"
+            onPointerDown={() => triggerHaptic('heavy')}
             onClick={(e) => {
               e.stopPropagation();
+              triggerHaptic('heavy');
               onClose();
             }}
             className="w-7 h-7 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-90 flex items-center justify-center text-white shadow-md shadow-rose-600/30 transition-all cursor-pointer shrink-0"
@@ -177,8 +198,10 @@ export const SmartDisplayControlsPill: React.FC<SmartDisplayControlsPillProps> =
           {/* Collapse Button */}
           <button
             type="button"
+            onPointerDown={() => triggerHaptic('light')}
             onClick={(e) => {
               e.stopPropagation();
+              triggerHaptic('light');
               setIsExpanded(false);
             }}
             className="w-5 h-5 rounded-full hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"

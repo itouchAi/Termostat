@@ -18,25 +18,25 @@ export const triggerHaptic = (type: HapticFeedbackType = 'light'): void => {
   try {
     switch (type) {
       case 'light':
-        navigator.vibrate(10);
+        navigator.vibrate(24);
         break;
       case 'selection':
-        navigator.vibrate(14);
+        navigator.vibrate(32);
         break;
       case 'medium':
-        navigator.vibrate(22);
+        navigator.vibrate(45);
         break;
       case 'heavy':
-        navigator.vibrate(36);
+        navigator.vibrate(70);
         break;
       case 'success':
-        navigator.vibrate([14, 45, 22]);
+        navigator.vibrate([28, 45, 35]);
         break;
       case 'warning':
-        navigator.vibrate([30, 60, 30]);
+        navigator.vibrate([50, 70, 50]);
         break;
       default:
-        navigator.vibrate(12);
+        navigator.vibrate(28);
         break;
     }
   } catch {

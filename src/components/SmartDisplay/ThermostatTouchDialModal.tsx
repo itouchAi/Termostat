@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import type { ThemeMode } from '../../types.ts';
+import { triggerHaptic } from '../../utils/haptics.ts';
 
 interface ThermostatTouchDialModalProps {
   isOpen: boolean;
@@ -110,6 +111,7 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
 
   const handleStep = (step: number) => {
     resetInactivityTimer();
+    triggerHaptic('selection');
     const updated = Math.round((targetTemp + step) * 2) / 2;
     if (updated >= 10 && updated <= 32) {
       onSetTargetTemp(updated);
@@ -118,6 +120,7 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
 
   const handleSetPreset = (temp: number) => {
     resetInactivityTimer();
+    triggerHaptic('medium');
     onSetTargetTemp(temp);
   };
 
@@ -165,7 +168,10 @@ export const ThermostatTouchDialModal: React.FC<ThermostatTouchDialModalProps> =
       const ratio = (mappedAngle - 135) / 270;
       const rawTemp = MIN_TEMP + ratio * (MAX_TEMP - MIN_TEMP);
       const rounded = Math.round(rawTemp * 2) / 2;
-      onSetTargetTemp(rounded);
+      if (rounded !== targetTemp) {
+        triggerHaptic('light');
+        onSetTargetTemp(rounded);
+      }
     }
   };
 

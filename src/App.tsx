@@ -172,13 +172,13 @@ export default function App() {
     return tabsOrder.map((id) => tabMap[id]).filter(Boolean);
   }, [lang, t, tabsOrder]);
 
-  // ── Theme State: 'glass' | 'dark' | 'light' | 'system' ──
+  // ── Theme State: 'glass' | 'dark' | 'light' | 'system' | 'obsidian_lavender' | 'tactile_deck' ──
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('theme_preference') as ThemeMode;
-      if (saved === 'glass' || saved === 'light' || saved === 'dark' || saved === 'system' || saved === 'obsidian_lavender') return saved;
+      if (saved === 'glass' || saved === 'light' || saved === 'dark' || saved === 'system' || saved === 'obsidian_lavender' || saved === 'tactile_deck') return saved;
     }
-    return 'obsidian_lavender';
+    return 'tactile_deck';
   });
 
   // ── Obsidian Palette Sub-color Option (0: Pastel Lavanta, 1: Kül Leylak, 2: Kraliyet İndigo, 3: Derin Obsidyen Dumanı) ──
@@ -1976,7 +1976,11 @@ export default function App() {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => navigateToTab(idx)}
+                onPointerDown={() => triggerHaptic('selection')}
+                onClick={() => {
+                  triggerHaptic('selection');
+                  navigateToTab(idx);
+                }}
                 style={
                   isActive && themeMode === 'obsidian_lavender'
                     ? {
@@ -2028,7 +2032,11 @@ export default function App() {
         {/* 4'lü Barın DIŞINDA, EN SAĞINDA AYNI HİZADA SESLİ KOMUT BUTONU */}
         <button
           type="button"
-          onClick={() => setIsVoiceAssistantOpen(true)}
+          onPointerDown={() => triggerHaptic('medium')}
+          onClick={() => {
+            triggerHaptic('medium');
+            setIsVoiceAssistantOpen(true);
+          }}
           style={
             themeMode === 'tactile_deck'
               ? {

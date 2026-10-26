@@ -14,6 +14,7 @@ import {
   Repeat,
   Repeat1,
 } from 'lucide-react';
+import { triggerHaptic } from '../../utils/haptics.ts';
 
 interface LuxuryMediaBarProps {
   mediaType: 'audio' | 'video' | 'image';
@@ -160,7 +161,10 @@ export const LuxuryMediaBar: React.FC<LuxuryMediaBarProps> = ({
       {!isExpanded ? (
         /* ── MINIMIZED COMPACT MEDIA PILL (Televizyon simgesi, Play/Pause butonu, Ses simgesi - Video ismi yazmaz) ── */
         <div
-          onClick={() => setIsExpanded(true)}
+          onClick={() => {
+            triggerHaptic('light');
+            setIsExpanded(true);
+          }}
           className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-2xl border border-white/20 hover:border-amber-400/40 text-white shadow-2xl transition-all cursor-pointer active:scale-95"
           title="Medya kontrollerini açmak için tıklayın"
         >
@@ -179,8 +183,10 @@ export const LuxuryMediaBar: React.FC<LuxuryMediaBarProps> = ({
           {/* Quick Play/Pause Button */}
           <button
             type="button"
+            onPointerDown={() => triggerHaptic('medium')}
             onClick={(e) => {
               e.stopPropagation();
+              triggerHaptic('medium');
               onTogglePlay();
             }}
             className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/30 active:scale-90 flex items-center justify-center text-white transition-all shadow-sm cursor-pointer"
@@ -196,8 +202,10 @@ export const LuxuryMediaBar: React.FC<LuxuryMediaBarProps> = ({
           {/* Volume Button: Opens vertical volume slider upward */}
           <button
             type="button"
+            onPointerDown={() => triggerHaptic('selection')}
             onClick={(e) => {
               e.stopPropagation();
+              triggerHaptic('selection');
               setIsVolumeSliderOpen((prev) => !prev);
             }}
             className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/30 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
@@ -227,9 +235,11 @@ export const LuxuryMediaBar: React.FC<LuxuryMediaBarProps> = ({
           <div className="flex items-center gap-1">
             <button
               type="button"
+              onPointerDown={() => triggerHaptic('selection')}
               onClick={(e) => {
                 e.stopPropagation();
                 scheduleAutoCollapse();
+                triggerHaptic('selection');
                 onPrevious();
               }}
               className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-90 text-white transition-all cursor-pointer"
@@ -240,9 +250,11 @@ export const LuxuryMediaBar: React.FC<LuxuryMediaBarProps> = ({
 
             <button
               type="button"
+              onPointerDown={() => triggerHaptic('medium')}
               onClick={(e) => {
                 e.stopPropagation();
                 scheduleAutoCollapse();
+                triggerHaptic('medium');
                 onTogglePlay();
               }}
               className="p-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 active:scale-90 text-white shadow-lg shadow-amber-500/30 transition-all cursor-pointer flex items-center justify-center"
@@ -257,9 +269,11 @@ export const LuxuryMediaBar: React.FC<LuxuryMediaBarProps> = ({
 
             <button
               type="button"
+              onPointerDown={() => triggerHaptic('selection')}
               onClick={(e) => {
                 e.stopPropagation();
                 scheduleAutoCollapse();
+                triggerHaptic('selection');
                 onNext();
               }}
               className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-90 text-white transition-all cursor-pointer"
@@ -274,9 +288,11 @@ export const LuxuryMediaBar: React.FC<LuxuryMediaBarProps> = ({
           {/* Loop / Repeat Toggle Button */}
           <button
             type="button"
+            onPointerDown={() => triggerHaptic('selection')}
             onClick={(e) => {
               e.stopPropagation();
               scheduleAutoCollapse();
+              triggerHaptic('selection');
               onToggleLoop?.();
             }}
             className={`p-1.5 rounded-xl transition-all cursor-pointer ${
@@ -296,8 +312,10 @@ export const LuxuryMediaBar: React.FC<LuxuryMediaBarProps> = ({
           {/* Volume Control: Toggles upward slider */}
           <button
             type="button"
+            onPointerDown={() => triggerHaptic('selection')}
             onClick={(e) => {
               e.stopPropagation();
+              triggerHaptic('selection');
               setIsVolumeSliderOpen((prev) => !prev);
             }}
             className={`p-1.5 rounded-xl transition-all cursor-pointer ${
@@ -317,8 +335,10 @@ export const LuxuryMediaBar: React.FC<LuxuryMediaBarProps> = ({
           {/* Collapse Bar Button */}
           <button
             type="button"
+            onPointerDown={() => triggerHaptic('light')}
             onClick={(e) => {
               e.stopPropagation();
+              triggerHaptic('light');
               setIsExpanded(false);
               setIsVolumeSliderOpen(false);
             }}

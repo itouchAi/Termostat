@@ -28,6 +28,7 @@ import { MusicEqualizer } from './MusicEqualizer.tsx';
 import { LuxuryMediaBar } from './LuxuryMediaBar.tsx';
 import { ThermostatTouchDialModal } from './ThermostatTouchDialModal.tsx';
 import { SmartDisplayControlsPill } from './SmartDisplayControlsPill.tsx';
+import { triggerHaptic } from '../../utils/haptics.ts';
 
 interface SmartDisplayOverlayProps {
   isOpen: boolean;
@@ -445,8 +446,10 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
             {/* Dokun ve Kontrol Et: Termostat Görseli & Tekerlek Açma Butonu */}
             <button
               type="button"
+              onPointerDown={() => triggerHaptic('medium')}
               onClick={(e) => {
                 e.stopPropagation();
+                triggerHaptic('medium');
                 setIsThermostatClosing(false);
                 setIsThermostatWheelOpen(true);
               }}
@@ -541,8 +544,10 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
               <span className="text-[11px] sm:text-xs text-slate-400">Hedef:</span>
               <button
                 type="button"
+                onPointerDown={() => triggerHaptic('selection')}
                 onClick={(e) => {
                   e.stopPropagation();
+                  triggerHaptic('selection');
                   onSetTargetTemp(Math.max(10, +(targetTemp - 0.5).toFixed(1)));
                 }}
                 className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
@@ -555,8 +560,10 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
               </span>
               <button
                 type="button"
+                onPointerDown={() => triggerHaptic('selection')}
                 onClick={(e) => {
                   e.stopPropagation();
+                  triggerHaptic('selection');
                   onSetTargetTemp(Math.min(32, +(targetTemp + 0.5).toFixed(1)));
                 }}
                 className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
@@ -642,8 +649,10 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
           <div className="shrink-0 flex items-center transition-all duration-300 ease-out">
             <button
               type="button"
+              onPointerDown={() => triggerHaptic('selection')}
               onClick={(e) => {
                 e.stopPropagation();
+                triggerHaptic('selection');
                 setIsCleanScreen((prev) => !prev);
               }}
               className={`p-2 sm:p-2.5 md:p-3 rounded-full backdrop-blur-2xl border transition-all duration-500 cursor-pointer pointer-events-auto ${
