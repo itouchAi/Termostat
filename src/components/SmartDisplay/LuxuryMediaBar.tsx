@@ -29,6 +29,8 @@ interface LuxuryMediaBarProps {
   onVolumeChange?: (volume: number) => void;
   isLoop?: boolean;
   onToggleLoop?: () => void;
+  isExpanded?: boolean;
+  onToggleExpand?: (expanded: boolean) => void;
 }
 
 export const LuxuryMediaBar: React.FC<LuxuryMediaBarProps> = ({
@@ -43,8 +45,15 @@ export const LuxuryMediaBar: React.FC<LuxuryMediaBarProps> = ({
   onVolumeChange,
   isLoop = true,
   onToggleLoop,
+  isExpanded: isExpandedProp,
+  onToggleExpand,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [uncontrolledExpanded, setUncontrolledExpanded] = useState(false);
+  const isExpanded = isExpandedProp !== undefined ? isExpandedProp : uncontrolledExpanded;
+  const setIsExpanded = (val: boolean) => {
+    if (onToggleExpand) onToggleExpand(val);
+    setUncontrolledExpanded(val);
+  };
   const [isVolumeSliderOpen, setIsVolumeSliderOpen] = useState(false);
   const autoCollapseTimerRef = useRef<any>(null);
   const volumeSliderRef = useRef<HTMLDivElement | null>(null);
