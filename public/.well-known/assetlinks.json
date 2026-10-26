@@ -5,6 +5,7 @@
       "namespace": "android_app",
       "package_name": "app.vercel.termostat.twa",
       "sha256_cert_fingerprints": [
+        "42:69:CF:AA:36:57:CD:8A:A9:8F:71:B4:AE:37:0F:83:12:B2:CD:F0:4D:B0:6F:9B:3D:83:C8:B3:A2:00:CB:38",
         "9D:C7:85:94:BC:46:4A:11:DF:3D:AE:A7:06:3D:F7:BD:2F:CD:60:B4:CF:1B:5C:5A:8D:C1:EF:C1:92:7F:E7:D4"
       ]
     }

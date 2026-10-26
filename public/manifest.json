@@ -16,12 +16,5 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-  "orientation": "any",
-  "android_package_name": "app.vercel.termostat.twa",
-  "min_sdk_version": 23,
-  "android_manifest_config": {
-    "min_sdk_version": 23,
-    "target_sdk_version": 34
-  }
+  ]
 }
