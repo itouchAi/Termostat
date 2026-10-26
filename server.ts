@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,6 +33,23 @@ async function startServer() {
       return;
     }
     next();
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // DIGITAL ASSET LINKS (Android TWA / APK Address Bar Removal)
+  // ─────────────────────────────────────────────────────────────
+  app.get('/.well-known/assetlinks.json', (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    const localPath = path.resolve(__dirname, 'public/.well-known/assetlinks.json');
+    const distPath = path.resolve(__dirname, 'dist/.well-known/assetlinks.json');
+    if (fs.existsSync(localPath)) {
+      res.sendFile(localPath);
+    } else if (fs.existsSync(distPath)) {
+      res.sendFile(distPath);
+    } else {
+      res.status(404).json({ error: 'assetlinks.json not found' });
+    }
   });
 
   // ─────────────────────────────────────────────────────────────
@@ -367,7 +385,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.resolve(__dirname, 'dist')));
+    app.use(express.static(path.resolve(__dirname, 'dist'), { dotfiles: 'allow' }));
     app.get('*', (req: Request, res: Response) => {
       res.sendFile(path.resolve(__dirname, 'dist/index.html'));
     });
