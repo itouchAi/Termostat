@@ -1212,21 +1212,13 @@ export default function App() {
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <h1 className="font-extrabold text-xs sm:text-sm md:text-base tracking-tight text-slate-900 dark:text-white truncate">
-                Kombi Termostat 3D
+                Termostat 3D
               </h1>
-              <span className="hidden sm:inline-block text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                3D MORPH DOCK
-              </span>
             </div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-              <span className="flex items-center gap-1">
-                <span className={`w-1.5 h-1.5 rounded-full ${isCloudConnected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                {activeLocation.name} ({activeLocation.cityName})
-              </span>
-              <span>•</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-0.5">
-                <ShieldCheck className="w-3 h-3" />
-                AES-256
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 truncate">
+              <span className="flex items-center gap-1 truncate">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isCloudConnected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                <span className="truncate">{activeLocation.name} ({activeLocation.cityName})</span>
               </span>
             </div>
           </div>
@@ -1379,34 +1371,32 @@ export default function App() {
             <SlidersHorizontal className="w-3.5 h-3.5" />
           </button>
 
-          {/* Smart Display Quick Launch (Tablet / PC) */}
-          {smartDisplayConfig.enabled && (
-            <button
-              type="button"
-              onClick={() => setIsSmartDisplayOpen(true)}
-              style={
-                themeMode === 'obsidian_lavender'
-                  ? {
-                      borderColor: activeObsidianPalette.borderUnder,
-                      color: activeObsidianPalette.ringColor,
-                    }
-                  : undefined
-              }
-              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer animate-in fade-in ${
-                themeMode === 'tactile_deck'
-                  ? 'bg-[#1b1926] hover:bg-[#252234] border-t border-l border-white/[0.22] border-r border-black/70 border-b border-black/90 text-amber-300 shadow-[0_3px_8px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.18)]'
-                  : themeMode === 'obsidian_lavender'
-                  ? 'bg-[#151322] hover:bg-[#201c32] border-t border-l border-white/[0.18] border-r border-b shadow-[0_4px_14px_rgba(0,0,0,0.7)]'
-                  : themeMode === 'glass'
-                  ? 'bg-purple-600/30 hover:bg-purple-600/45 border border-purple-400/40 text-white backdrop-blur-md'
-                  : 'bg-purple-500/15 hover:bg-purple-500/25 text-purple-600 dark:text-purple-400 border border-purple-400/40'
-              }`}
-              aria-label="Smart Display / Ambiyans Modu"
-              title="Smart Display / Ambiyans Modunu Başlat (Tablet & PC)"
-            >
-              <Monitor className="w-3.5 h-3.5" />
-            </button>
-          )}
+          {/* Smart Display Quick Launch (Mobil, Tablet & PC) */}
+          <button
+            type="button"
+            onClick={() => setIsSmartDisplayOpen(true)}
+            style={
+              themeMode === 'obsidian_lavender'
+                ? {
+                    borderColor: activeObsidianPalette.borderUnder,
+                    color: activeObsidianPalette.ringColor,
+                  }
+                : undefined
+            }
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer ${
+              themeMode === 'tactile_deck'
+                ? 'bg-[#1b1926] hover:bg-[#252234] border-t border-l border-white/[0.22] border-r border-black/70 border-b border-black/90 text-amber-300 shadow-[0_3px_8px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.18)]'
+                : themeMode === 'obsidian_lavender'
+                ? 'bg-[#151322] hover:bg-[#201c32] border-t border-l border-white/[0.18] border-r border-b shadow-[0_4px_14px_rgba(0,0,0,0.7)]'
+                : themeMode === 'glass'
+                ? 'bg-purple-600/30 hover:bg-purple-600/45 border border-purple-400/40 text-white backdrop-blur-md'
+                : 'bg-purple-500/15 hover:bg-purple-500/25 text-purple-600 dark:text-purple-400 border border-purple-400/40'
+            }`}
+            aria-label="Smart Display / Ambiyans Modu"
+            title="Smart Display / Ambiyans Modunu Başlat"
+          >
+            <Monitor className="w-3.5 h-3.5" />
+          </button>
 
           {/* 4. Settings Gear Button (Ayarlar Çarkı - Aktif Temaya Tam Uyumlu) */}
           <button

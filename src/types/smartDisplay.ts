@@ -60,7 +60,7 @@ export interface SmartDisplayConfig {
 }
 
 export const DEFAULT_SMART_DISPLAY_CONFIG: SmartDisplayConfig = {
-  enabled: false,
+  enabled: true,
   mode: 'aod',
   presetTheme: 'fireplace',
   customImageUrl: '',

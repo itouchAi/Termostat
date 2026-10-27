@@ -109,7 +109,7 @@ export const StartupBootSplash: React.FC<StartupBootSplashProps> = ({
       {/* App Title */}
       <div className="flex flex-col items-center text-center px-4 mb-6 z-10">
         <h1 className="text-xl sm:text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-white to-amber-100 uppercase drop-shadow-sm">
-          Kombi Termostat 3D
+          Termostat 3D
         </h1>
         <p className="text-[11px] font-mono text-slate-400 mt-1 tracking-wider uppercase">
           Tactile Edition
