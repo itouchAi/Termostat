@@ -453,8 +453,16 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
                 setIsThermostatClosing(false);
                 setIsThermostatWheelOpen(true);
               }}
-              className="group flex items-center gap-2 sm:gap-2.5 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-3xl bg-black/40 hover:bg-black/60 active:scale-95 backdrop-blur-xl border border-white/15 hover:border-amber-400/50 shadow-2xl transition-all cursor-pointer"
-              title="Dokun ve Kontrol Et (5 sn Otomatik Kapanan Termostat Tekerleği)"
+              className={`group flex items-center gap-2 sm:gap-2.5 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-3xl active:scale-95 backdrop-blur-xl transition-all cursor-pointer ${
+                themeMode === 'tactile_deck'
+                  ? 'bg-[#181624]/90 hover:bg-[#221f32] border-t border-l border-white/[0.22] border-r border-black/70 border-b border-black/90 shadow-[0_4px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.18)] hover:border-amber-400/70'
+                  : themeMode === 'obsidian_lavender'
+                  ? 'bg-[#120f20]/90 hover:bg-[#1c1830] border border-[#8261e6]/45 shadow-[0_4px_20px_rgba(0,0,0,0.8),0_0_15px_rgba(130,97,230,0.35)] hover:border-[#a786ff]/70'
+                  : themeMode === 'glass'
+                  ? 'bg-white/10 hover:bg-white/20 border border-white/30 shadow-2xl backdrop-blur-xl'
+                  : 'bg-black/40 hover:bg-black/60 border border-white/15 hover:border-amber-400/50 shadow-2xl'
+              }`}
+              title="Dokun ve Kontrol Et (Otomatik Kapanan Termostat Tekerleği)"
             >
               {/* Termostat Dairesel Görsel & Alev Simülasyonu */}
               <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-300 p-0.5 shadow-[0_0_14px_rgba(245,158,11,0.4)] group-hover:scale-105 transition-transform flex items-center justify-center">
