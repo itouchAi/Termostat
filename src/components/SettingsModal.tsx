@@ -33,7 +33,7 @@ import {
   Maximize,
   Smartphone,
 } from 'lucide-react';
-import { triggerHaptic, isHapticSupported, type HapticFeedbackType } from '../utils/haptics.ts';
+import { triggerHaptic, isHapticSupported, getHapticsEnabled, setHapticsEnabled, type HapticFeedbackType } from '../utils/haptics.ts';
 import { translations, type Language } from '../utils/i18n.ts';
 import type { SmartDisplayConfig } from '../types/smartDisplay.ts';
 import type { ThemeMode } from '../types.ts';
@@ -58,6 +58,8 @@ interface SettingsModalProps {
   onLaunchSmartDisplay?: () => void;
   themeMode?: ThemeMode;
   obsidianPalette?: ObsidianPalette;
+  isHapticsEnabled?: boolean;
+  onToggleHaptics?: (enabled: boolean) => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -79,6 +81,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onLaunchSmartDisplay,
   themeMode = 'glass',
   obsidianPalette,
+  isHapticsEnabled: isHapticsEnabledProp,
+  onToggleHaptics,
 }) => {
   const t = translations[lang] || translations.tr;
   const isObsidian = themeMode === 'obsidian_lavender';
@@ -117,11 +121,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [isConfirmingReset, setIsConfirmingReset] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
 
+  // Global haptic feedback toggle state (persisted in localStorage)
+  const [localHapticsEnabled, setLocalHapticsEnabled] = useState<boolean>(() => {
+    if (isHapticsEnabledProp !== undefined) return isHapticsEnabledProp;
+    return getHapticsEnabled();
+  });
+
+  useEffect(() => {
+    if (isHapticsEnabledProp !== undefined) {
+      setLocalHapticsEnabled(isHapticsEnabledProp);
+    }
+  }, [isHapticsEnabledProp]);
+
+  const handleToggleHaptics = (enabled: boolean) => {
+    setLocalHapticsEnabled(enabled);
+    setHapticsEnabled(enabled);
+    onToggleHaptics?.(enabled);
+    if (enabled) {
+      triggerHaptic('medium', true);
+    }
+  };
+
   // Haptic feedback testing state
   const [activeHapticTest, setActiveHapticTest] = useState<string | null>(null);
 
   const handleTestHapticPulse = (type: HapticFeedbackType, label: string) => {
-    triggerHaptic(type);
+    triggerHaptic(type, true); // force=true allows testing hardware vibration even if toggled off
     setActiveHapticTest(label);
     setTimeout(() => {
       setActiveHapticTest(null);
@@ -1558,7 +1583,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <div className="min-w-0">
                   <div className="font-bold text-xs flex items-center gap-1.5 truncate">
-                    <span>Haptik Titreşim & Dokunma Testi</span>
+                    <span>Haptik Titreşim & Dokunma</span>
                     <span
                       className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full ${
                         isTactile
@@ -1566,21 +1591,71 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           : 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300'
                       }`}
                     >
-                      Android APK & Web
+                      Android & Web
                     </span>
                   </div>
                   <p className={`text-[10px] truncate ${isTactile ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
-                    Buton, kadran ve alt gezinme barı mekanik titreşim motoru
+                    Tüm butonlar, kadran ve alt dock için mekanik titreşim
                   </p>
                 </div>
               </div>
 
-              {activeHapticTest && (
-                <span className="text-[10px] font-bold text-amber-400 animate-pulse flex items-center gap-1">
-                  <Zap className="w-3 h-3 fill-amber-400" />
-                  {activeHapticTest}
-                </span>
-              )}
+              {/* Master Haptic Switch Toggle */}
+              <div className="flex items-center gap-2 shrink-0">
+                {activeHapticTest && (
+                  <span className="text-[10px] font-bold text-amber-400 animate-pulse hidden sm:flex items-center gap-1">
+                    <Zap className="w-3 h-3 fill-amber-400" />
+                    {activeHapticTest}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleToggleHaptics(!localHapticsEnabled)}
+                  style={
+                    localHapticsEnabled && isTactile
+                      ? {
+                          background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                          boxShadow: '0 3px 0 #0c0b10, 0 6px 12px rgba(0,0,0,0.8), 0 0 12px rgba(255,145,50,0.5), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                          border: '1px solid rgba(255, 200, 150, 0.45)',
+                          color: '#fff7ed',
+                        }
+                      : undefined
+                  }
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs shrink-0 active:translate-y-0.5 ${
+                    localHapticsEnabled
+                      ? isObsidian
+                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-t border-l border-white/25 border-r border-b'
+                        : isTactile
+                        ? ''
+                        : 'bg-emerald-600 text-white shadow-emerald-500/30'
+                      : isTactile
+                      ? 'bg-[#221f2f] text-slate-400 border border-white/10'
+                      : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                  }`}
+                  title="Uygulama genelinde haptik titreşimi aç veya kapat"
+                >
+                  <span>{localHapticsEnabled ? 'Açık ✓' : 'Kapalı'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Durum Bildirimi (Açık / Kapalı) */}
+            <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl border text-[10px] ${
+              localHapticsEnabled
+                ? isTactile
+                  ? 'bg-amber-500/10 border-amber-500/25 text-amber-200'
+                  : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+                : 'bg-slate-800/60 border-white/10 text-slate-400'
+            }`}>
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className={`w-2 h-2 rounded-full ${localHapticsEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+                {localHapticsEnabled
+                  ? 'Uygulama genelinde dokunmatik titreşim aktif.'
+                  : 'Tüm buton ve menü titreşimleri sessize alındı.'}
+              </span>
+              <span className="text-[9px] opacity-75 font-mono">
+                {localHapticsEnabled ? 'Canlı Geri Bildirim' : 'Sessiz Mod'}
+              </span>
             </div>
 
             {/* 4 Canlı Titreşim Test Butonu */}

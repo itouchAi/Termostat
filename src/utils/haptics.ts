@@ -11,12 +11,37 @@ export type HapticFeedbackType =
   | 'success'    // double rhythmic confirmation (e.g. saved schedule / presets)
   | 'warning';   // alert vibration
 
+const STORAGE_KEY = 'app_haptics_enabled';
+
+/** Retrieve global haptics enabled setting from localStorage (defaults to true) */
+export const getHapticsEnabled = (): boolean => {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return true;
+  try {
+    const val = localStorage.getItem(STORAGE_KEY);
+    return val !== 'false';
+  } catch {
+    return true;
+  }
+};
+
+/** Persist global haptics enabled setting to localStorage */
+export const setHapticsEnabled = (enabled: boolean): void => {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEY, String(enabled));
+  } catch {}
+};
+
 /** Check whether navigator.vibrate is supported in this browser/device */
 export const isHapticSupported = (): boolean => {
   return typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
 };
 
-export const triggerHaptic = (type: HapticFeedbackType = 'light'): void => {
+export const triggerHaptic = (type: HapticFeedbackType = 'light', force: boolean = false): void => {
+  if (!force && !getHapticsEnabled()) {
+    return;
+  }
+
   if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') {
     return;
   }

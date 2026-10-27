@@ -24,7 +24,7 @@ import type { SmartDisplayConfig } from './types/smartDisplay.ts';
 import { DEFAULT_SMART_DISPLAY_CONFIG } from './types/smartDisplay.ts';
 import { translations, type Language } from './utils/i18n.ts';
 import { ThreeScene } from './components/ThreeCanvas/ThreeScene.tsx';
-import { triggerHaptic } from './utils/haptics.ts';
+import { triggerHaptic, getHapticsEnabled } from './utils/haptics.ts';
 import { AtmosphericWeatherBackground } from './components/Weather/AtmosphericWeatherBackground.tsx';
 import { ThemeSelectorModal } from './components/Theme/ThemeSelectorModal.tsx';
 import { ForecastSection } from './components/Weather/ForecastSection.tsx';
@@ -278,6 +278,11 @@ export default function App() {
     }, 40);
     return () => clearTimeout(animTimer);
   }, []);
+
+  // ── Global Haptic Feedback Toggle State ──
+  const [isHapticsEnabled, setIsHapticsEnabled] = useState<boolean>(() => {
+    return getHapticsEnabled();
+  });
 
   // ── Carousel Infinite Sliding State ──
   // virtualIndex can grow arbitrarily positive or negative for infinite loop
@@ -2147,6 +2152,8 @@ export default function App() {
         onLaunchSmartDisplay={() => setIsSmartDisplayOpen(true)}
         themeMode={themeMode}
         obsidianPalette={activeObsidianPalette}
+        isHapticsEnabled={isHapticsEnabled}
+        onToggleHaptics={setIsHapticsEnabled}
       />
 
       <VaultNotificationsModal
