@@ -493,7 +493,7 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
                     <span className="font-extrabold text-xs">
-                      Maksimum Performans
+                      Ultra Canavar Modu
                     </span>
                     <span className="text-[9px] font-mono font-bold text-amber-500 bg-amber-500/15 px-1.5 py-0.5 rounded-full">
                       60 FPS
@@ -504,7 +504,7 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                       isObsidian ? 'text-[#9a93b5]' : isTactile ? 'text-slate-300' : isGlass ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
                     }`}
                   >
-                    Güçlü telefonlar için tam çözünürlüklü parçacıklar, akıcı hava durumu ve kristal cam.
+                    3D morphing motoru, sekmeler arası optik blur & scale derinlik geçişleri ve tam partikül yoğunluğu.
                   </p>
                 </div>
               </button>
@@ -545,10 +545,10 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
                     <span className="font-extrabold text-xs">
-                      Düşük Güç (Eco Mod)
+                      Eco Tasarruf (Sıfır Kasma)
                     </span>
                     <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/15 px-1.5 py-0.5 rounded-full">
-                      PİL TASARRUFU
+                      PİL KORUMA
                     </span>
                   </div>
                   <p
@@ -556,7 +556,7 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                       isObsidian ? 'text-[#9a93b5]' : isTactile ? 'text-slate-300' : isGlass ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
                     }`}
                   >
-                    Hafifletilmiş efektler, yavaşlayan cihazlar için sıfır GPU yükü ve uzun pil ömrü.
+                    Tüm blur filtreleri, ağır 3D eğimler ve arka plan efektleri kapalı; anında tepki ve sıfır gecikme.
                   </p>
                 </div>
               </button>

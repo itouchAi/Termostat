@@ -267,6 +267,29 @@ export default function App() {
     }
   }, [performanceMode]);
 
+  // Visual feedback toast when switching performance modes
+  const [perfToast, setPerfToast] = useState<{ title: string; desc: string; isUltra: boolean } | null>(null);
+  const perfToastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const togglePerformanceMode = useCallback((targetMode?: PerformanceMode) => {
+    setPerformanceMode((prev) => {
+      const next = targetMode ?? (prev === 'ultra' ? 'eco' : 'ultra');
+      if (perfToastTimerRef.current) clearTimeout(perfToastTimerRef.current);
+      setPerfToast({
+        title: next === 'ultra' ? '60 FPS Ultra Canavar Modu' : 'Eco Tasarruf Modu',
+        desc:
+          next === 'ultra'
+            ? '3D Holografik Deck, Optik Lens Blur (12px) & Retina Termostat Aktif'
+            : 'Sıfır Kasma: Tüm Blur & 3D Derinlik Kapalı, Düz Ultra Hızlı 2D Kaydırma',
+        isUltra: next === 'ultra',
+      });
+      perfToastTimerRef.current = setTimeout(() => {
+        setPerfToast(null);
+      }, 2600);
+      return next;
+    });
+  }, []);
+
   const [reducedMotion] = useState<boolean>(false);
 
   // ── Startup Entrance Animation State ──
@@ -1109,8 +1132,8 @@ export default function App() {
           : 'bg-radial-[at_top] from-slate-100 via-sky-50/40 to-slate-200/80 text-slate-800'
       } font-sans transition-all duration-500 flex flex-col selection:bg-[#8261e6] selection:text-white overflow-hidden`}
     >
-      {/* ── TACTILE DECK THERMAL HUE & FLAME AMBIENT TRAILS (Driven by targetTemp & knob 3 physics) ── */}
-      {themeMode === 'tactile_deck' && (
+      {/* ── TACTILE DECK THERMAL HUE & FLAME AMBIENT TRAILS (Ultra Canavar Modunda Aktif, Eco Modda Kapalı) ── */}
+      {themeMode === 'tactile_deck' && performanceMode === 'ultra' && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none transition-all duration-700">
           {/* Volumetric Thermal Hue Aura */}
           <div
@@ -1134,8 +1157,8 @@ export default function App() {
           />
         </div>
       )}
-      {/* ── VOLUMETRIC OBSIDIAN NEON AMBIENT TRAILS (Full App Backlighting) ── */}
-      {themeMode === 'obsidian_lavender' && (
+      {/* ── VOLUMETRIC OBSIDIAN NEON AMBIENT TRAILS (Ultra Canavar Modunda Aktif, Eco Modda Kapalı) ── */}
+      {themeMode === 'obsidian_lavender' && performanceMode === 'ultra' && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none transition-all duration-700">
           {/* Central volumetric aura radiating from behind the stage cards */}
           <div
@@ -1196,12 +1219,20 @@ export default function App() {
           isAppLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2.5'
         } ${
           themeMode === 'tactile_deck'
-            ? 'border-white/[0.08] bg-[#161422]/95 text-white backdrop-blur-2xl shadow-[0_4px_25px_rgba(0,0,0,0.8)]'
+            ? performanceMode === 'ultra'
+              ? 'border-white/[0.08] bg-[#161422]/95 text-white backdrop-blur-2xl shadow-[0_4px_25px_rgba(0,0,0,0.8)]'
+              : 'border-white/[0.08] bg-[#161422] text-white shadow-md'
             : themeMode === 'obsidian_lavender'
-            ? 'border-white/[0.08] bg-[#0c0a13]/90 text-white backdrop-blur-2xl shadow-[0_4px_25px_rgba(0,0,0,0.8)]'
+            ? performanceMode === 'ultra'
+              ? 'border-white/[0.08] bg-[#0c0a13]/90 text-white backdrop-blur-2xl shadow-[0_4px_25px_rgba(0,0,0,0.8)]'
+              : 'border-white/[0.08] bg-[#0c0a13] text-white shadow-md'
             : themeMode === 'glass'
-            ? 'border-white/15 bg-slate-950/30 text-white backdrop-blur-2xl shadow-sm'
-            : 'border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md'
+            ? performanceMode === 'ultra'
+              ? 'border-white/15 bg-slate-950/30 text-white backdrop-blur-2xl shadow-sm'
+              : 'border-white/15 bg-slate-900 text-white shadow-sm'
+            : performanceMode === 'ultra'
+            ? 'border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md'
+            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm'
         }`}
       >
         {/* Brand */}
@@ -1246,35 +1277,44 @@ export default function App() {
             <span className="text-[11px] font-black tracking-tight">{lang === 'tr' ? 'TR' : 'EN'}</span>
           </button>
 
-          {/* 1. Performance Mode Switch (Ultra 60FPS vs Eco Low-Power) */}
+          {/* 1. Performance Mode Switch (Ultra 60FPS Canavar Modu vs Eco Sıfır Kasma) */}
           <button
             type="button"
-            onClick={() => setPerformanceMode((p) => (p === 'ultra' ? 'eco' : 'ultra'))}
-            className={`p-1.5 sm:px-2.5 sm:py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border cursor-pointer ${
+            onClick={() => {
+              triggerHaptic('light');
+              togglePerformanceMode();
+            }}
+            className={`p-1.5 sm:px-2.5 sm:py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border cursor-pointer active:scale-95 ${
               themeMode === 'tactile_deck'
                 ? performanceMode === 'ultra'
-                  ? 'bg-[#221f2d] border-amber-500/60 text-amber-300 shadow-[0_3px_8px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.18)]'
-                  : 'bg-[#1a1824] border-emerald-500/60 text-emerald-300 shadow-[0_3px_8px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)]'
+                  ? 'bg-[#221f2d] border-amber-500/70 text-amber-300 shadow-[0_3px_8px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.18)]'
+                  : 'bg-[#1a1824] border-emerald-500/70 text-emerald-300 shadow-[0_3px_8px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)]'
                 : themeMode === 'obsidian_lavender'
                 ? performanceMode === 'ultra'
-                  ? 'bg-[#1e1930] border-amber-500/50 text-amber-300 shadow-md'
-                  : 'bg-[#151322] border-emerald-500/50 text-emerald-300 shadow-md'
+                  ? 'bg-[#1e1930] border-amber-500/60 text-amber-300 shadow-md'
+                  : 'bg-[#151322] border-emerald-500/60 text-emerald-300 shadow-md'
                 : performanceMode === 'ultra'
-                ? 'bg-amber-500/15 border-amber-500/40 text-amber-500 dark:text-amber-400 shadow-sm'
-                : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                ? 'bg-amber-500/20 border-amber-500/50 text-amber-500 dark:text-amber-400 shadow-sm'
+                : 'bg-emerald-500/20 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 shadow-sm'
             }`}
-            title={performanceMode === 'ultra' ? t.perfUltraTitle : t.perfEcoTitle}
+            title={
+              performanceMode === 'ultra'
+                ? '60 FPS Ultra Canavar Modu (Yumuşak Blur & 3D Derinlik Geçişleri Aktif)'
+                : 'Eco Tasarruf Modu (Sıfır Kasma: Tüm Blur ve Ağır Efektler Kapalı)'
+            }
             aria-label="Performans modunu değiştir"
           >
             {performanceMode === 'ultra' ? (
               <>
-                <Zap className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                <span className="hidden md:inline text-[11px]">{t.perfUltra}</span>
+                <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-400 animate-pulse" />
+                <span className="text-[11px] font-black tracking-tight">60 FPS</span>
+                <span className="hidden lg:inline text-[9px] text-amber-400/80 font-bold uppercase tracking-wider">Ultra</span>
               </>
             ) : (
               <>
-                <BatteryCharging className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="hidden md:inline text-[11px]">{t.perfEco}</span>
+                <BatteryCharging className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-[11px] font-black tracking-tight">ECO</span>
+                <span className="hidden lg:inline text-[9px] text-emerald-400/80 font-bold uppercase tracking-wider">Sıfır Kasma</span>
               </>
             )}
           </button>
@@ -1430,6 +1470,39 @@ export default function App() {
         </div>
       </header>
 
+      {/* ── Mode Switch Floating Notification Toast ── */}
+      {perfToast && (
+        <div className="fixed top-14 sm:top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 animate-in fade-in slide-in-from-top-3 max-w-[92vw]">
+          <div
+            className={`px-3.5 py-2 rounded-2xl border backdrop-blur-2xl shadow-2xl flex items-center gap-2.5 ${
+              perfToast.isUltra
+                ? 'bg-[#1e182e]/95 border-amber-500/60 text-amber-300 shadow-[0_12px_36px_rgba(245,158,11,0.25)]'
+                : 'bg-[#101b1b]/95 border-emerald-500/60 text-emerald-300 shadow-[0_12px_36px_rgba(16,185,129,0.2)]'
+            }`}
+          >
+            <div
+              className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
+                perfToast.isUltra ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
+              }`}
+            >
+              {perfToast.isUltra ? (
+                <Zap className="w-4 h-4 fill-current animate-pulse" />
+              ) : (
+                <BatteryCharging className="w-4 h-4" />
+              )}
+            </div>
+            <div className="text-left">
+              <div className="text-xs font-black tracking-tight flex items-center gap-1.5">
+                <span>{perfToast.title}</span>
+              </div>
+              <p className="text-[10.5px] text-white/80 font-medium leading-tight">
+                {perfToast.desc}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── 3D FLOATING CAROUSEL STAGE (Infinite Horizontal Pickup Deformation with Finger/Mouse Swipe) ── */}
       <main
         ref={stageRef}
@@ -1448,18 +1521,20 @@ export default function App() {
             : 'opacity-0 scale-[0.96] translate-y-3.5 blur-[2px]'
         }`}
       >
-        {/* Subtle Ambient Glow Behind Floating Windows */}
-        <div
-          className={`absolute pointer-events-none w-[600px] h-[400px] rounded-full blur-[120px] transition-all duration-700 ${
-            effectiveTheme === 'dark'
-              ? isKombiActive
-                ? 'bg-orange-600/15'
-                : 'bg-indigo-600/12'
-              : isKombiActive
-              ? 'bg-amber-400/20'
-              : 'bg-sky-400/15'
-          }`}
-        />
+        {/* Subtle Ambient Glow Behind Floating Windows (Ultra Canavar Modunda Aktif, Eco Modda Kapalı) */}
+        {performanceMode === 'ultra' && (
+          <div
+            className={`absolute pointer-events-none w-[600px] h-[400px] rounded-full blur-[120px] transition-all duration-700 ${
+              effectiveTheme === 'dark'
+                ? isKombiActive
+                  ? 'bg-orange-600/15'
+                  : 'bg-indigo-600/12'
+                : isKombiActive
+                ? 'bg-amber-400/20'
+                : 'bg-sky-400/15'
+            }`}
+          />
+        )}
 
         {/* Floating Left / Right Navigation Buttons (Desktop & Tablet) */}
         <button
@@ -1480,8 +1555,14 @@ export default function App() {
           <ChevronRight className="w-6 h-6" />
         </button>
 
-        {/* ── 3D FLOATING CARDS (Üst bar ve alt dock'a çok ince boşluk kalacak şekilde genişletilmiş) ── */}
-        <div className="relative w-full max-w-5xl h-full max-h-[890px] flex items-center justify-center">
+        {/* ── 3D FLOATING CARDS (Ultra Canavar Modunda 3D Holografik Deck + Lens Odak Blur, Eco Modda Düz 2D Kaydırma) ── */}
+        <div
+          className="relative w-full max-w-5xl h-full max-h-[890px] flex items-center justify-center"
+          style={{
+            perspective: performanceMode === 'ultra' ? '1400px' : 'none',
+            transformStyle: performanceMode === 'ultra' ? 'preserve-3d' : 'flat',
+          }}
+        >
           {tabs.map((tab, idx) => {
             const n = tabs.length;
             const currentTab = ((virtualIndex % n) + n) % n;
@@ -1495,52 +1576,101 @@ export default function App() {
             const effectiveOffset = diff + dragFraction;
             const absOffset = Math.abs(effectiveOffset);
 
-            // Pickup 3D rotation:
-            const rotateY = Math.max(-38, Math.min(38, -effectiveOffset * 25));
-            const rotateZ = Math.max(-4, Math.min(4, effectiveOffset * -1.5));
-            const translateZ = -Math.min(320, absOffset * 150);
-            const translateX = effectiveOffset * 105; // in %
-            const scale = Math.max(0.75, 1 - absOffset * 0.1);
-            const opacity = Math.max(0, 1 - absOffset * 0.42);
-            const zIndex = Math.round(100 - absOffset * 10);
-            const isCenter = absOffset < 0.4;
+            const isUltra = performanceMode === 'ultra';
+            const isCenter = absOffset < 0.35;
 
-            // Only render cards reasonably close in infinite space
-            if (absOffset > 2.3) return null;
+            // 60 FPS ULTRA CANAVAR MODU:
+            // 1. Kartlar ekrandan tamamen kaybolup gitmez: Sağ ve sol kanatlarda (effectiveOffset * 82%) 3D derinlikte durur.
+            // 2. Kamera Odak Derinliği (Depth-of-Field Blur): Merkezdeki kart 0px kristal net; yan kanattaki kartlar lüks 12px buzlu lens fluluğuna ve %68 parlaklığa geçer.
+            // 3. Opaklık koruması: Kartlar saydamlaşıp yok olmaz (opaklık 0.90 - 1.0 arası kalır), böylece gerçek bir optik netleme/flulaşma hissi yaşanır!
+            // 4. Yan kanattaki flulaşmış karta dokunulduğunda doğrudan merkeze akıcı geçiş yapar.
+            // ECO TASARRUF MODU:
+            // 1. Sıfır Kasma: Tüm blur filtreleri (filter: none) ve 3D derinlik matrisi tamamen kapalıdır.
+            // 2. Düz 2D yatay kaydırma (translateX: 100%, rotate: 0, translateZ: 0, scale: 1).
+            // 3. Ultra hızlı ve hafif 220ms geçiş; ekrandan çıkan kartlar anında bellekten kaldırılır.
+            const rotateY = isUltra ? Math.max(-32, Math.min(32, -effectiveOffset * 28)) : 0;
+            const rotateZ = isUltra ? Math.max(-4, Math.min(4, effectiveOffset * -1.8)) : 0;
+            const translateZ = isUltra ? -Math.min(360, absOffset * 220) : 0;
+            const translateX = isUltra ? effectiveOffset * 82 : effectiveOffset * 100; // in %
+            const scale = isUltra
+              ? Math.max(0.78, 1 - Math.pow(absOffset, 1.1) * 0.16)
+              : 1;
+            const opacity = isUltra
+              ? Math.max(0, 1 - Math.pow(Math.max(0, absOffset - 0.72), 1.5) * 2.2)
+              : absOffset > 0.95 ? 0 : 1;
+            const zIndex = isUltra ? Math.round(100 - absOffset * 25) : isCenter ? 50 : 10;
+
+            // Ultra Canavar Modu Gerçekçi Lens Odak & Flulaşma (Depth of Field):
+            // Merkez kart: 0px blur, 1.0 parlaklık.
+            // Uzaklaşan veya yan kanattaki kart: 12px lens bluru ve odak dışı yumuşak ton.
+            const blurPx = isUltra ? Math.min(12, absOffset * 10.5) : 0;
+            const brightness = isUltra ? Math.max(0.68, 1 - absOffset * 0.32) : 1;
+            const filterStyle = isUltra && blurPx > 0.3
+              ? `blur(${blurPx.toFixed(1)}px) brightness(${brightness.toFixed(2)})`
+              : 'none';
+
+            // Only render cards reasonably close in space (Eco cuts immediately to save CPU)
+            if (absOffset > (isUltra ? 2.1 : 1.05)) return null;
 
             return (
               <div
                 key={tab.id}
+                onClick={() => {
+                  if (!isCenter && isUltra && absOffset < 1.4) {
+                    triggerHaptic('light');
+                    navigateToTab(idx);
+                  }
+                }}
                 style={{
                   transform: `translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg) scale(${scale})`,
+                  filter: filterStyle,
                   opacity,
                   zIndex,
                   transition: isDragging
                     ? 'none'
-                    : 'transform 0.5s cubic-bezier(0.2, 0.9, 0.35, 1), opacity 0.4s ease',
+                    : isUltra
+                    ? 'transform 0.58s cubic-bezier(0.16, 1, 0.3, 1), filter 0.48s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease'
+                    : 'transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)',
                   transformOrigin: '50% 50%',
-                  pointerEvents: isCenter ? 'auto' : 'none',
-                  boxShadow:
-                    themeMode === 'obsidian_lavender'
+                  pointerEvents: isCenter || (isUltra && absOffset < 1.35) ? 'auto' : 'none',
+                  cursor: !isCenter && isUltra && absOffset < 1.35 ? 'pointer' : 'default',
+                  boxShadow: !isUltra
+                    ? undefined
+                    : themeMode === 'obsidian_lavender'
+                    ? isCenter
                       ? `0 28px 75px -15px rgba(0,0,0,0.95), 0 0 55px ${activeObsidianPalette.cardGlow}, inset 0 1px 1.5px rgba(255,255,255,0.18)`
-                      : undefined,
+                      : '0 12px 35px -10px rgba(0,0,0,0.8)'
+                    : isCenter
+                    ? '0 25px 65px -15px rgba(0,0,0,0.7), 0 0 35px rgba(249,115,22,0.15)'
+                    : '0 10px 30px rgba(0,0,0,0.5)',
                   borderColor:
                     themeMode === 'obsidian_lavender' ? activeObsidianPalette.cardBorder : undefined,
+                  willChange: isDragging ? 'transform' : isUltra ? 'transform, filter, opacity' : 'transform',
                 }}
-                className={`absolute inset-0 w-full h-full rounded-[30px] sm:rounded-[36px] overflow-hidden flex flex-col transition-all duration-500 ${
+                className={`absolute inset-0 w-full h-full rounded-[30px] sm:rounded-[36px] overflow-hidden flex flex-col ${
                   themeMode === 'obsidian_lavender'
-                    ? 'bg-[#12101b]/95 border backdrop-blur-2xl text-white'
+                    ? isUltra
+                      ? 'bg-[#12101b]/95 border backdrop-blur-2xl text-white'
+                      : 'bg-[#12101b] border border-white/10 text-white'
                     : themeMode === 'tactile_deck'
-                    ? 'bg-[#1b1924]/95 border-t border-l border-white/[0.18] border-r border-black/80 border-b-2 border-b-black/90 shadow-[0_25px_70px_rgba(0,0,0,0.95)] backdrop-blur-2xl text-white'
+                    ? isUltra
+                      ? 'bg-[#1b1924]/95 border-t border-l border-white/[0.18] border-r border-black/80 border-b-2 border-b-black/90 shadow-[0_25px_70px_rgba(0,0,0,0.95)] backdrop-blur-2xl text-white'
+                      : 'bg-[#1b1924] border-t border-l border-white/[0.18] border-r border-black/80 border-b-2 border-b-black/90 shadow-lg text-white'
                     : themeMode === 'glass'
-                    ? 'bg-slate-950/20 border border-white/30 shadow-[0_25px_60px_rgba(0,0,0,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.45),inset_0_-1.5px_2px_rgba(255,255,255,0.15)] backdrop-blur-md backdrop-saturate-150 text-white'
+                    ? isUltra
+                      ? 'bg-slate-950/20 border border-white/30 shadow-[0_25px_60px_rgba(0,0,0,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.45),inset_0_-1.5px_2px_rgba(255,255,255,0.15)] backdrop-blur-md backdrop-saturate-150 text-white'
+                      : 'bg-slate-900 border border-white/20 text-white'
                     : effectiveTheme === 'dark'
-                    ? 'bg-slate-900/90 border border-slate-700/70 shadow-[0_25px_65px_-15px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.06),0_12px_36px_-10px_rgba(249,115,22,0.18)] backdrop-blur-2xl'
-                    : 'bg-white/90 border border-white/80 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.18),0_0_0_1px_rgba(255,255,255,0.9),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-2xl'
+                    ? isUltra
+                      ? 'bg-slate-900/90 border border-slate-700/70 shadow-[0_25px_65px_-15px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.06),0_12px_36px_-10px_rgba(249,115,22,0.18)] backdrop-blur-2xl'
+                      : 'bg-slate-900 border border-slate-700/70 shadow-md'
+                    : isUltra
+                    ? 'bg-white/90 border border-white/80 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.18),0_0_0_1px_rgba(255,255,255,0.9),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-2xl'
+                    : 'bg-white border border-slate-200 shadow-md'
                 }`}
               >
-                {/* Frosted Glass Top Sheen & Curved Bevel Glare */}
-                {(themeMode === 'glass' || themeMode === 'obsidian_lavender' || themeMode === 'tactile_deck') && (
+                {/* Frosted Glass Top Sheen & Curved Bevel Glare (Sadece Ultra Canavar Modunda) */}
+                {isUltra && (themeMode === 'glass' || themeMode === 'obsidian_lavender' || themeMode === 'tactile_deck') && (
                   <div
                     style={
                       themeMode === 'obsidian_lavender'
@@ -1564,12 +1694,12 @@ export default function App() {
                 {/* Floating Window Top Header Bar */}
                 <div className={`px-4 sm:px-6 py-3 border-b flex items-center justify-between shrink-0 relative z-10 ${
                   themeMode === 'obsidian_lavender'
-                    ? 'border-white/[0.08] bg-[#14121e]/85 backdrop-blur-md'
+                    ? isUltra ? 'border-white/[0.08] bg-[#14121e]/85 backdrop-blur-md' : 'border-white/[0.08] bg-[#14121e]'
                     : themeMode === 'tactile_deck'
-                    ? 'border-white/[0.10] bg-[#171520]/90 backdrop-blur-md'
+                    ? isUltra ? 'border-white/[0.10] bg-[#171520]/90 backdrop-blur-md' : 'border-white/[0.10] bg-[#171520]'
                     : themeMode === 'glass'
-                    ? 'border-white/15 bg-white/[0.08] backdrop-blur-md'
-                    : 'border-slate-200/70 dark:border-slate-800/80 bg-white/40 dark:bg-slate-800/40'
+                    ? isUltra ? 'border-white/15 bg-white/[0.08] backdrop-blur-md' : 'border-white/15 bg-slate-900'
+                    : isUltra ? 'border-slate-200/70 dark:border-slate-800/80 bg-white/40 dark:bg-slate-800/40' : 'border-slate-200/70 dark:border-slate-800/80 bg-white dark:bg-slate-800'
                 }`}>
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{tab.icon}</span>
@@ -1659,6 +1789,7 @@ export default function App() {
                       ) : (
                         <div className="flex-1 w-full max-w-[340px] xs:max-w-[380px] sm:max-w-[440px] md:max-w-[480px] h-[220px] xs:h-[250px] sm:h-[300px] md:h-[350px] mx-auto flex items-center justify-center relative my-auto">
                           <ThreeScene
+                            key={`three-scene-${performanceMode}`}
                             theme={effectiveTheme}
                             morphMode={morphMode}
                             targetTemp={targetTemp}
@@ -2010,14 +2141,20 @@ export default function App() {
                 }
               : undefined
           }
-          className={`flex items-center justify-center gap-1.5 xs:gap-2 sm:gap-2.5 p-1.5 sm:p-2.5 rounded-2xl sm:rounded-full backdrop-blur-2xl transition-all touch-pan-x ${
+          className={`flex items-center justify-center gap-1.5 xs:gap-2 sm:gap-2.5 p-1.5 sm:p-2.5 rounded-2xl sm:rounded-full ${
+            performanceMode === 'ultra' ? 'backdrop-blur-2xl' : ''
+          } transition-all touch-pan-x ${
             themeMode === 'obsidian_lavender'
-              ? 'bg-[#12101b]/95 border-t border-l border-white/[0.12] border-r border-black/70 border-b-2 border-b-black/85'
+              ? 'bg-[#12101b] border-t border-l border-white/[0.12] border-r border-black/70 border-b-2 border-b-black/85'
               : themeMode === 'tactile_deck'
-              ? 'bg-[#161422]/98 border border-white/[0.14]'
+              ? 'bg-[#161422] border border-white/[0.14]'
               : themeMode === 'glass'
-              ? 'bg-slate-950/40 border border-white/20 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]'
-              : 'bg-white/85 dark:bg-slate-900/85 border border-slate-200/90 dark:border-slate-700/80 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.25)]'
+              ? performanceMode === 'ultra'
+                ? 'bg-slate-950/40 border border-white/20 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]'
+                : 'bg-slate-900 border border-white/20 shadow-md'
+              : performanceMode === 'ultra'
+              ? 'bg-white/85 dark:bg-slate-900/85 border border-slate-200/90 dark:border-slate-700/80 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.25)]'
+              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-md'
           }`}
         >
           {tabs.map((tab, idx) => {
@@ -2120,7 +2257,7 @@ export default function App() {
         currentTheme={themeMode}
         onSelectTheme={(newTheme) => setThemeMode(newTheme)}
         performanceMode={performanceMode}
-        onSelectPerformanceMode={(perf) => setPerformanceMode(perf)}
+        onSelectPerformanceMode={(perf) => togglePerformanceMode(perf)}
         activeWeatherCondition={effectiveWeatherCondition}
         onSelectWeatherConditionOverride={setWeatherConditionOverride}
         weatherConditionOverride={weatherConditionOverride}

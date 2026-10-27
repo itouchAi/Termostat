@@ -63,6 +63,11 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
     const container = mountRef.current;
     if (!container) return;
 
+    // Clear any leftover canvas before attaching
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
+    }
+
     const isHeadless =
       typeof navigator !== 'undefined' &&
       (navigator.webdriver || /HeadlessChrome/i.test(navigator.userAgent));
@@ -78,18 +83,20 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
     camera.position.set(0, 0, initialZ);
     camera.lookAt(0, 0, 0);
 
+    const isEco = performanceMode;
     const renderer = new THREE.WebGLRenderer({
-      antialias: !isHeadless && !stateRef.current.performanceMode,
+      antialias: !isHeadless && !isEco,
       alpha: true,
-      powerPreference: 'high-performance',
+      powerPreference: isEco ? 'low-power' : 'high-performance',
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(
-      isHeadless || stateRef.current.performanceMode ? 1 : Math.min(window.devicePixelRatio, 2)
-    );
+    // In 60 FPS mode (isEco = false): use sharp high-DPI retina pixel ratio (up to 2.5x)
+    // In Eco mode (isEco = true): use 1x for maximum battery saving
+    const dpr = isHeadless || isEco ? 1 : Math.min(window.devicePixelRatio || 1, 2.5);
+    renderer.setPixelRatio(dpr);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = stateRef.current.theme === 'dark' ? 1.25 : 1.1;
+    renderer.toneMappingExposure = theme === 'dark' ? 1.25 : 1.1;
 
     container.appendChild(renderer.domElement);
 
@@ -732,7 +739,7 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
         renderer.domElement.parentNode.removeChild(renderer.domElement);
       }
     };
-  }, []);
+  }, [performanceMode, theme]);
 
   return (
     <div
