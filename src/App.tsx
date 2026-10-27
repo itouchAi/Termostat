@@ -46,6 +46,7 @@ import { GoogleHomeModal } from './components/GoogleHome/GoogleHomeModal.tsx';
 import { SmartDisplayOverlay } from './components/SmartDisplay/SmartDisplayOverlay.tsx';
 import { TactileTelemetryBar } from './components/Widgets/TactileTelemetryBar.tsx';
 import { TactileDialWidget } from './components/Widgets/TactileDialWidget.tsx';
+import { StartupBootSplash } from './components/Startup/StartupBootSplash.tsx';
 
 
 import {
@@ -283,6 +284,30 @@ export default function App() {
   const [isHapticsEnabled, setIsHapticsEnabled] = useState<boolean>(() => {
     return getHapticsEnabled();
   });
+
+  // ── Startup Boot Sequence & Splash Screen State ──
+  const [isStartupSplashEnabled, setIsStartupSplashEnabled] = useState<boolean>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('app_startup_splash_enabled');
+      return saved !== 'false';
+    }
+    return true;
+  });
+
+  const [showStartupSplash, setShowStartupSplash] = useState<boolean>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('app_startup_splash_enabled');
+      return saved !== 'false';
+    }
+    return true;
+  });
+
+  const [isSplashPreview, setIsSplashPreview] = useState<boolean>(false);
+
+  const handleSplashComplete = useCallback(() => {
+    setShowStartupSplash(false);
+    setIsSplashPreview(false);
+  }, []);
 
   // ── Carousel Infinite Sliding State ──
   // virtualIndex can grow arbitrarily positive or negative for infinite loop
@@ -2154,6 +2179,12 @@ export default function App() {
         obsidianPalette={activeObsidianPalette}
         isHapticsEnabled={isHapticsEnabled}
         onToggleHaptics={setIsHapticsEnabled}
+        isStartupSplashEnabled={isStartupSplashEnabled}
+        onToggleStartupSplash={setIsStartupSplashEnabled}
+        onPreviewStartupSplash={() => {
+          setIsSplashPreview(true);
+          setShowStartupSplash(true);
+        }}
       />
 
       <VaultNotificationsModal
@@ -2214,6 +2245,14 @@ export default function App() {
         onSetTargetTemp={handleSetTarget}
         themeMode={themeMode}
       />
+
+      {/* ── TACTILE HARDWARE STARTUP BOOT SPLASH (Mekanik Teşhis & Alev Kalibrasyonu) ── */}
+      {showStartupSplash && (
+        <StartupBootSplash
+          onComplete={handleSplashComplete}
+          isPreview={isSplashPreview}
+        />
+      )}
     </div>
   );
 }

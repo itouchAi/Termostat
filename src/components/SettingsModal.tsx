@@ -32,6 +32,8 @@ import {
   Activity,
   Maximize,
   Smartphone,
+  Flame,
+  Sparkles,
 } from 'lucide-react';
 import { triggerHaptic, isHapticSupported, getHapticsEnabled, setHapticsEnabled, type HapticFeedbackType } from '../utils/haptics.ts';
 import { translations, type Language } from '../utils/i18n.ts';
@@ -60,6 +62,9 @@ interface SettingsModalProps {
   obsidianPalette?: ObsidianPalette;
   isHapticsEnabled?: boolean;
   onToggleHaptics?: (enabled: boolean) => void;
+  isStartupSplashEnabled?: boolean;
+  onToggleStartupSplash?: (enabled: boolean) => void;
+  onPreviewStartupSplash?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -83,6 +88,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   obsidianPalette,
   isHapticsEnabled: isHapticsEnabledProp,
   onToggleHaptics,
+  isStartupSplashEnabled: isStartupSplashEnabledProp,
+  onToggleStartupSplash,
+  onPreviewStartupSplash,
 }) => {
   const t = translations[lang] || translations.tr;
   const isObsidian = themeMode === 'obsidian_lavender';
@@ -140,6 +148,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     if (enabled) {
       triggerHaptic('medium', true);
     }
+  };
+
+  // Startup boot animation toggle state (persisted in localStorage)
+  const [localStartupSplashEnabled, setLocalStartupSplashEnabled] = useState<boolean>(() => {
+    if (isStartupSplashEnabledProp !== undefined) return isStartupSplashEnabledProp;
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('app_startup_splash_enabled');
+      return saved !== 'false';
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    if (isStartupSplashEnabledProp !== undefined) {
+      setLocalStartupSplashEnabled(isStartupSplashEnabledProp);
+    }
+  }, [isStartupSplashEnabledProp]);
+
+  const handleToggleStartupSplash = (enabled: boolean) => {
+    setLocalStartupSplashEnabled(enabled);
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('app_startup_splash_enabled', String(enabled));
+      } catch {}
+    }
+    onToggleStartupSplash?.(enabled);
+    triggerHaptic('medium');
   };
 
   // Haptic feedback testing state
@@ -1739,6 +1774,109 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <strong>Xiaomi / HyperOS / MIUI:</strong> <em>Ayarlar &gt; Ses & Titreşim &gt; Haptik Düzeyi</em> çubuğunu artırınız.
                 </li>
               </ul>
+            </div>
+          </div>
+
+          {/* ── AÇILIŞ BOOT SEREMONİSİ & ANİMASYONU (Aç/Kapa + Önizleme) ── */}
+          <div
+            className={`p-3.5 rounded-2xl flex flex-col gap-3 shadow-xs ${
+              isObsidian
+                ? 'bg-[#181427] border border-amber-500/25 text-white'
+                : isTactile
+                ? 'bg-[#1c1929] border-t border-l border-white/[0.16] border-r border-black/60 border-b border-black/80 shadow-[0_4px_14px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.08)] text-white'
+                : isGlass
+                ? 'bg-amber-500/10 border border-amber-400/25 backdrop-blur-md text-white'
+                : 'bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-amber-950/40 border border-amber-400/40 dark:border-amber-500/30'
+            }`}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                    isTactile
+                      ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] text-amber-400 border border-amber-500/30 shadow-[0_2px_4px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.2)]'
+                      : 'bg-gradient-to-tr from-orange-500 to-amber-400 text-white shadow-orange-500/30'
+                  }`}
+                >
+                  <Flame className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-xs flex items-center gap-1.5 truncate">
+                    <span>Açılış Seremonisi (Boot Efekti)</span>
+                    <span
+                      className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full ${
+                        isTactile
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                          : 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300'
+                      }`}
+                    >
+                      Tactile Boot
+                    </span>
+                  </div>
+                  <p className={`text-[10px] truncate ${isTactile ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
+                    Uygulama açılırken akıllı termostat donanım teşhisi ve alev kalibrasyonu
+                  </p>
+                </div>
+              </div>
+
+              {/* Master Startup Animation Toggle */}
+              <button
+                type="button"
+                onClick={() => handleToggleStartupSplash(!localStartupSplashEnabled)}
+                style={
+                  localStartupSplashEnabled && isTactile
+                    ? {
+                        background: 'linear-gradient(172deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.06) 40%, transparent 60%), radial-gradient(ellipse 80% 110% at 50% 50%, rgba(255,145,50,0.92) 0%, rgba(210,85,20,0.65) 55%, transparent 85%), #2f2520',
+                        boxShadow: '0 3px 0 #0c0b10, 0 6px 12px rgba(0,0,0,0.8), 0 0 12px rgba(255,145,50,0.5), inset 0 1.5px 2px rgba(255,255,255,0.45)',
+                        border: '1px solid rgba(255, 200, 150, 0.45)',
+                        color: '#fff7ed',
+                      }
+                    : undefined
+                }
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs shrink-0 active:translate-y-0.5 ${
+                  localStartupSplashEnabled
+                    ? isObsidian
+                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-t border-l border-white/25 border-r border-b'
+                      : isTactile
+                      ? ''
+                      : 'bg-emerald-600 text-white shadow-emerald-500/30'
+                    : isTactile
+                    ? 'bg-[#221f2f] text-slate-400 border border-white/10'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                }`}
+                title="Açılış seremonisini aç veya kapat"
+              >
+                <span>{localStartupSplashEnabled ? 'Açık ✓' : 'Kapalı'}</span>
+              </button>
+            </div>
+
+            <p className={`text-[10px] leading-relaxed ${isTactile ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
+              İlk yüklemede dönen kalibrasyon göstergesi, telemetri teşhisi ve haptik titreşim karşılaması sergilenir.
+            </p>
+
+            {/* Önizle (Animasyonu Oynat) Butonu */}
+            <div className="flex items-center justify-between pt-1 border-t border-white/[0.08]">
+              <span className="text-[10px] font-mono text-amber-400 font-semibold flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                Önizleme Testi:
+              </span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('heavy');
+                  onPreviewStartupSplash?.();
+                }}
+                className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 ${
+                  isTactile
+                    ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] hover:from-[#373248] hover:to-[#222030] text-amber-300 border-t border-l border-white/20 border-r border-black/70 border-b border-black/90 shadow-[0_3px_0_#0c0b10,0_4px_8px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.25)]'
+                    : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-xs'
+                }`}
+                title="Açılış animasyonunu canlı önizle"
+              >
+                <Play className="w-3 h-3 fill-current" />
+                <span>Animasyonu Önizle</span>
+              </button>
             </div>
           </div>
 

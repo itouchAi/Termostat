@@ -20,7 +20,6 @@ import type { WeatherCondition } from '../../utils/weather.ts';
 import { translations, type Language } from '../../utils/i18n.ts';
 import { OBSIDIAN_PALETTES, getObsidianPalette } from '../../utils/obsidianPalettes.ts';
 import { triggerHaptic } from '../../utils/haptics.ts';
-import { TactileDeckPreviewCard } from './TactileDeckPreviewCard.tsx';
 
 interface ThemeSelectorModalProps {
   isOpen: boolean;
@@ -55,7 +54,6 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
 }) => {
   const t = translations[lang] || translations.tr;
   const palette = getObsidianPalette(obsidianPaletteIdx ?? 3);
-  const [showTactilePreview, setShowTactilePreview] = useState<boolean>(true);
 
   if (!isOpen) return null;
 
@@ -419,43 +417,6 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                             );
                           })}
                         </div>
-                      </div>
-                    )}
-
-                    {/* Interactive Showcase for Tactile Deck */}
-                    {t.id === 'tactile_deck' && (
-                      <div
-                        className="mt-3 pt-2.5 border-t border-white/10 w-full"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                            Ana Sayfa 3D Donanım Konsol Önizlemesi
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              triggerHaptic('selection');
-                              setShowTactilePreview(!showTactilePreview);
-                            }}
-                            className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/30 transition-all cursor-pointer"
-                          >
-                            {showTactilePreview ? 'Önizlemeyi Gizle ▴' : 'Önizlemeyi Göster ▾'}
-                          </button>
-                        </div>
-
-                        {showTactilePreview && (
-                          <div className="mt-2 animate-in fade-in zoom-in-95 duration-200">
-                            <TactileDeckPreviewCard
-                              isActiveTheme={currentTheme === 'tactile_deck'}
-                              onApplyTheme={() => {
-                                onSelectTheme('tactile_deck');
-                                triggerHaptic('heavy');
-                              }}
-                            />
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
