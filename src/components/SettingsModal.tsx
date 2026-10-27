@@ -31,7 +31,9 @@ import {
   Layers,
   Activity,
   Maximize,
+  Smartphone,
 } from 'lucide-react';
+import { triggerHaptic, isHapticSupported, type HapticFeedbackType } from '../utils/haptics.ts';
 import { translations, type Language } from '../utils/i18n.ts';
 import type { SmartDisplayConfig } from '../types/smartDisplay.ts';
 import type { ThemeMode } from '../types.ts';
@@ -114,6 +116,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   // Reset confirmation state
   const [isConfirmingReset, setIsConfirmingReset] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
+
+  // Haptic feedback testing state
+  const [activeHapticTest, setActiveHapticTest] = useState<string | null>(null);
+
+  const handleTestHapticPulse = (type: HapticFeedbackType, label: string) => {
+    triggerHaptic(type);
+    setActiveHapticTest(label);
+    setTimeout(() => {
+      setActiveHapticTest(null);
+    }, 1200);
+  };
 
   if (!isOpen || typeof document === 'undefined') return null;
 
@@ -1517,6 +1530,140 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <Check className="w-3 h-3" />
                 <span>Basınç & Donma Koruma İzleyicisi Devrede</span>
               </div>
+            </div>
+          </div>
+
+          {/* ── HAPTİK TİTREŞİM & DONANIM GERİ BİLDİRİMİ TESTİ (Android APK & PWA) ── */}
+          <div
+            className={`p-3.5 rounded-2xl flex flex-col gap-3 shadow-xs ${
+              isObsidian
+                ? 'bg-[#181427] border border-amber-500/25 text-white'
+                : isTactile
+                ? 'bg-[#1c1929] border-t border-l border-white/[0.16] border-r border-black/60 border-b border-black/80 shadow-[0_4px_14px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.08)] text-white'
+                : isGlass
+                ? 'bg-amber-500/10 border border-amber-400/25 backdrop-blur-md text-white'
+                : 'bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-amber-950/40 border border-amber-400/40 dark:border-amber-500/30'
+            }`}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                    isTactile
+                      ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] text-amber-400 border border-amber-500/30 shadow-[0_2px_4px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.2)]'
+                      : 'bg-gradient-to-tr from-amber-500 to-orange-500 text-white shadow-amber-500/30'
+                  }`}
+                >
+                  <Smartphone className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-xs flex items-center gap-1.5 truncate">
+                    <span>Haptik Titreşim & Dokunma Testi</span>
+                    <span
+                      className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full ${
+                        isTactile
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                          : 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300'
+                      }`}
+                    >
+                      Android APK & Web
+                    </span>
+                  </div>
+                  <p className={`text-[10px] truncate ${isTactile ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
+                    Buton, kadran ve alt gezinme barı mekanik titreşim motoru
+                  </p>
+                </div>
+              </div>
+
+              {activeHapticTest && (
+                <span className="text-[10px] font-bold text-amber-400 animate-pulse flex items-center gap-1">
+                  <Zap className="w-3 h-3 fill-amber-400" />
+                  {activeHapticTest}
+                </span>
+              )}
+            </div>
+
+            {/* 4 Canlı Titreşim Test Butonu */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <button
+                type="button"
+                onClick={() => handleTestHapticPulse('light', 'Hafif Tık (40ms)')}
+                className={`py-2 px-2 rounded-xl text-center flex flex-col items-center justify-center gap-1 cursor-pointer transition-all active:scale-95 ${
+                  isTactile
+                    ? 'bg-[#221f2f] hover:bg-[#2b273b] border-t border-l border-white/20 border-r border-b border-black/80 text-amber-200 shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
+                    : 'bg-white/80 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+                }`}
+              >
+                <span className="text-xs">⚡</span>
+                <span className="text-[10px] font-black">Hafif Tık</span>
+                <span className="text-[9px] text-slate-400 font-mono">40ms</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleTestHapticPulse('selection', 'Seçim (55ms)')}
+                className={`py-2 px-2 rounded-xl text-center flex flex-col items-center justify-center gap-1 cursor-pointer transition-all active:scale-95 ${
+                  isTactile
+                    ? 'bg-[#221f2f] hover:bg-[#2b273b] border-t border-l border-white/20 border-r border-b border-black/80 text-amber-200 shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
+                    : 'bg-white/80 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+                }`}
+              >
+                <span className="text-xs">🎯</span>
+                <span className="text-[10px] font-black">Seçim Tıkı</span>
+                <span className="text-[9px] text-slate-400 font-mono">55ms</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleTestHapticPulse('medium', 'Orta Adım (80ms)')}
+                className={`py-2 px-2 rounded-xl text-center flex flex-col items-center justify-center gap-1 cursor-pointer transition-all active:scale-95 ${
+                  isTactile
+                    ? 'bg-[#221f2f] hover:bg-[#2b273b] border-t border-l border-white/20 border-r border-b border-black/80 text-amber-200 shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
+                    : 'bg-white/80 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+                }`}
+              >
+                <span className="text-xs">🔥</span>
+                <span className="text-[10px] font-black">Orta Adım</span>
+                <span className="text-[9px] text-slate-400 font-mono">80ms</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleTestHapticPulse('heavy', 'Güçlü Darbe (140ms)')}
+                className={`py-2 px-2 rounded-xl text-center flex flex-col items-center justify-center gap-1 cursor-pointer transition-all active:scale-95 ${
+                  isTactile
+                    ? 'bg-gradient-to-b from-[#2e2a3c] to-[#1c1a26] text-amber-300 border-t border-l border-white/20 border-r border-black/70 border-b border-black/90 shadow-[0_2px_0_#0c0b10,0_4px_8px_rgba(0,0,0,0.7)]'
+                    : 'bg-amber-500 text-white shadow-xs'
+                }`}
+              >
+                <span className="text-xs">💥</span>
+                <span className="text-[10px] font-black">Güçlü Vuruş</span>
+                <span className="text-[9px] font-mono opacity-80">140ms</span>
+              </button>
+            </div>
+
+            {/* Android Ayar Rehberi & Bilgilendirme */}
+            <div
+              className={`p-2.5 rounded-xl flex flex-col gap-1.5 text-[10px] border ${
+                isTactile
+                  ? 'bg-[#151320] border-amber-500/20 text-slate-300'
+                  : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/40 text-amber-900 dark:text-amber-200'
+              }`}
+            >
+              <div className="font-bold flex items-center gap-1.5 text-amber-400">
+                <span>📱 Android'de Titreşim Hissedilmiyorsa:</span>
+              </div>
+              <ul className="list-disc list-inside space-y-0.5 opacity-90 leading-relaxed text-[9.5px]">
+                <li>
+                  <strong>Sistem Titreşimi:</strong> Telefonunuzda <em>Ayarlar &gt; Ses ve Titreşim &gt; Dokunmatik Geri Bildirim / Dokunma Titreşimi</em> açık olmalıdır. Bu ayar kapalıysa Android tüm web/APK titreşimlerini engeller.
+                </li>
+                <li>
+                  <strong>Pil Tasarrufu:</strong> Pil Tasarruf Modu açıkken Android titreşim motorunu durdurur.
+                </li>
+                <li>
+                  <strong>Xiaomi / HyperOS / MIUI:</strong> <em>Ayarlar &gt; Ses & Titreşim &gt; Haptik Düzeyi</em> çubuğunu artırınız.
+                </li>
+              </ul>
             </div>
           </div>
 

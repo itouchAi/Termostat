@@ -175,11 +175,21 @@ export default function App() {
   // ── Theme State: 'glass' | 'dark' | 'light' | 'system' | 'obsidian_lavender' | 'tactile_deck' ──
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     if (typeof window !== 'undefined') {
+      // Automatic migration to 'tactile_deck' as the initial default theme
+      const hasMigrated = localStorage.getItem('theme_migrated_tactile_v2');
+      if (!hasMigrated) {
+        try {
+          localStorage.setItem('theme_migrated_tactile_v2', 'true');
+          localStorage.setItem('theme_preference', 'tactile_deck');
+        } catch {}
+        return 'tactile_deck';
+      }
       const saved = localStorage.getItem('theme_preference') as ThemeMode;
       if (saved === 'glass' || saved === 'light' || saved === 'dark' || saved === 'system' || saved === 'obsidian_lavender' || saved === 'tactile_deck') return saved;
     }
     return 'tactile_deck';
   });
+
 
   // ── Obsidian Palette Sub-color Option (0: Pastel Lavanta, 1: Kül Leylak, 2: Kraliyet İndigo, 3: Derin Obsidyen Dumanı) ──
   const [obsidianPaletteIdx, setObsidianPaletteIdx] = useState<number>(() => {
@@ -258,6 +268,16 @@ export default function App() {
 
   const [reducedMotion] = useState<boolean>(false);
 
+  // ── Startup Entrance Animation State ──
+  const [isAppLoaded, setIsAppLoaded] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Gracefully trigger entrance sequence on mount
+    const animTimer = setTimeout(() => {
+      setIsAppLoaded(true);
+    }, 40);
+    return () => clearTimeout(animTimer);
+  }, []);
 
   // ── Carousel Infinite Sliding State ──
   // virtualIndex can grow arbitrarily positive or negative for infinite loop
@@ -1142,7 +1162,9 @@ export default function App() {
 
       {/* ── TOP NAV HEADER ── */}
       <header
-        className={`relative z-40 h-14 sm:h-16 px-3 sm:px-6 md:px-8 flex items-center justify-between border-b transition-all ${
+        className={`relative z-40 h-14 sm:h-16 px-3 sm:px-6 md:px-8 flex items-center justify-between border-b transition-all duration-600 ease-out ${
+          isAppLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2.5'
+        } ${
           themeMode === 'tactile_deck'
             ? 'border-white/[0.08] bg-[#161422]/95 text-white backdrop-blur-2xl shadow-[0_4px_25px_rgba(0,0,0,0.8)]'
             : themeMode === 'obsidian_lavender'
@@ -1400,7 +1422,11 @@ export default function App() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        className="relative flex-1 w-full flex items-center justify-center overflow-hidden stage-3d select-none pt-1 sm:pt-1.5 pb-[56px] sm:pb-[64px] px-1.5 sm:px-3 cursor-grab active:cursor-grabbing touch-pan-y"
+        className={`relative flex-1 w-full flex items-center justify-center overflow-hidden stage-3d select-none pt-1 sm:pt-1.5 pb-[56px] sm:pb-[64px] px-1.5 sm:px-3 cursor-grab active:cursor-grabbing touch-pan-y transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isAppLoaded
+            ? 'opacity-100 scale-100 translate-y-0 filter-none'
+            : 'opacity-0 scale-[0.96] translate-y-3.5 blur-[2px]'
+        }`}
       >
         {/* Subtle Ambient Glow Behind Floating Windows */}
         <div
@@ -1940,7 +1966,11 @@ export default function App() {
       {/* ── FIXED BOTTOM AESTHETIC FLOATING TAB DOCK (4'lü Bar + Dışında Sağda Sesli Komut Butonu) ── */}
       <nav
         aria-label="Sabit Alt Gezinme Barı"
-        className="fixed bottom-2 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[96vw] select-none flex items-center gap-1.5 sm:gap-2.5"
+        className={`fixed bottom-2 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[96vw] select-none flex items-center gap-1.5 sm:gap-2.5 transition-all duration-600 ease-[cubic-bezier(0.16,1,0.3,1)] delay-100 ${
+          isAppLoaded
+            ? 'opacity-100 translate-y-0 scale-100'
+            : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
+        }`}
       >
         {/* 4'lü Menü Çerçevesi (Termo., Hava, Rapor, Prog. - Mouse Wheel & Swipe Yetkili) */}
         <div
