@@ -47,6 +47,9 @@ import { SmartDisplayOverlay } from './components/SmartDisplay/SmartDisplayOverl
 import { TactileTelemetryBar } from './components/Widgets/TactileTelemetryBar.tsx';
 import { TactileDialWidget } from './components/Widgets/TactileDialWidget.tsx';
 import { StartupBootSplash } from './components/Startup/StartupBootSplash.tsx';
+import type { MascotConfig } from './types/mascot.ts';
+import { DEFAULT_MASCOT_CONFIG } from './types/mascot.ts';
+import { TermoBotMascot } from './components/Mascot/TermoBotMascot.tsx';
 
 
 import {
@@ -330,6 +333,29 @@ export default function App() {
   const handleSplashComplete = useCallback(() => {
     setShowStartupSplash(false);
     setIsSplashPreview(false);
+  }, []);
+
+  // ── Sanal Asistan & TermoBot Maskot State ──
+  const [mascotConfig, setMascotConfig] = useState<MascotConfig>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('mascot_settings_config');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {}
+      }
+    }
+    return DEFAULT_MASCOT_CONFIG;
+  });
+
+  const handleUpdateMascotConfig = useCallback((patch: Partial<MascotConfig>) => {
+    setMascotConfig((prev) => {
+      const updated = { ...prev, ...patch };
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('mascot_settings_config', JSON.stringify(updated));
+      }
+      return updated;
+    });
   }, []);
 
   // ── Carousel Infinite Sliding State ──
@@ -2312,6 +2338,11 @@ export default function App() {
           setIsSplashPreview(true);
           setShowStartupSplash(true);
         }}
+        mascotConfig={mascotConfig}
+        onUpdateMascotConfig={handleUpdateMascotConfig}
+        currentTemp={currentTemp}
+        targetTemp={targetTemp}
+        isKombiActive={isKombiActive}
       />
 
       <VaultNotificationsModal
@@ -2371,7 +2402,22 @@ export default function App() {
         weather={weather}
         onSetTargetTemp={handleSetTarget}
         themeMode={themeMode}
+        mascotConfig={mascotConfig}
       />
+
+      {/* ── Mini TermoBot Companion on Main Screen (if user enabled in settings) ── */}
+      {mascotConfig.enabled && mascotConfig.showOnMainScreen && (
+        <div className="fixed bottom-20 right-3 sm:bottom-24 sm:right-6 z-30 pointer-events-auto">
+          <TermoBotMascot
+            themeMode={themeMode}
+            currentTemp={currentTemp}
+            targetTemp={targetTemp}
+            isKombiActive={isKombiActive}
+            size="sm"
+            interactive={true}
+          />
+        </div>
+      )}
 
       {/* ── TACTILE HARDWARE STARTUP BOOT SPLASH (Mekanik Teşhis & Alev Kalibrasyonu) ── */}
       {showStartupSplash && (
