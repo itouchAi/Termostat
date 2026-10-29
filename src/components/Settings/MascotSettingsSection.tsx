@@ -5,18 +5,20 @@ import {
   BookOpen,
   Moon,
   Heart,
-  Check,
-  Lock,
   ChevronDown,
   Play,
   Clock,
   Image as ImageIcon,
-  Eye,
-  Sliders,
+  Upload,
+  Volume2,
+  VolumeX,
+  Cat,
+  Footprints,
+  Lightbulb,
 } from 'lucide-react';
-import type { MascotConfig, MascotState, MascotScreenSaverBg } from '../../types/mascot.ts';
+import type { MascotConfig, MascotState, MascotScreenSaverBg, MascotType } from '../../types/mascot.ts';
 import { DEFAULT_MASCOT_CONFIG } from '../../types/mascot.ts';
-import { TermoBotMascot } from '../Mascot/TermoBotMascot.tsx';
+import { UniversalMascot } from '../Mascot/UniversalMascot.tsx';
 import type { ThemeMode } from '../../types.ts';
 import { triggerHaptic } from '../../utils/haptics.ts';
 
@@ -47,7 +49,6 @@ export const MascotSettingsSection: React.FC<MascotSettingsSectionProps> = ({
 }) => {
   const isTactile = themeMode === 'tactile_deck';
   const isObsidian = themeMode === 'obsidian_lavender';
-  const isGlass = themeMode === 'glass';
 
   const [localConfig, setLocalConfig] = useState<MascotConfig>(() => {
     if (externalConfig) return externalConfig;
@@ -79,6 +80,83 @@ export const MascotSettingsSection: React.FC<MascotSettingsSectionProps> = ({
   const handleSelectState = (st: MascotState) => {
     triggerHaptic('light');
     setPreviewState(st);
+  };
+
+  // Handle local image file upload from device
+  const handleDeviceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        triggerHaptic('success');
+        updateConfig({
+          backgroundMode: 'custom',
+          customWallpaperUrl: result,
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Live Playground background preview renderer (mirrors MascotScreenSaverOverlay)
+  const renderPlaygroundBackground = () => {
+    const { backgroundMode, customWallpaperUrl, isBackgroundBlurred } = activeConfig;
+    const blurClass = isBackgroundBlurred ? 'blur-md scale-110' : '';
+
+    if (backgroundMode === 'custom' && customWallpaperUrl) {
+      return (
+        <div
+          className={`absolute inset-0 bg-cover bg-center transition-all duration-500 ${blurClass}`}
+          style={{
+            backgroundImage: `url(${customWallpaperUrl})`,
+            filter: isBackgroundBlurred ? 'blur(6px) brightness(0.55)' : 'brightness(0.75)',
+          }}
+        />
+      );
+    }
+    if (backgroundMode === 'cyber_station') {
+      return (
+        <div className={`absolute inset-0 overflow-hidden transition-all duration-500 ${blurClass}`}>
+          <div className="absolute inset-0 bg-gradient-to-b from-[#090b14] via-[#0d162e] to-[#05070e]" />
+          <div
+            className="absolute inset-0 opacity-30"
+            style={{
+              backgroundImage:
+                'radial-gradient(circle at 50% 50%, rgba(56,189,248,0.3) 0%, transparent 60%), linear-gradient(rgba(56,189,248,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.15) 1px, transparent 1px)',
+              backgroundSize: '100% 100%, 26px 26px, 26px 26px',
+            }}
+          />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full bg-cyan-500/20 blur-2xl pointer-events-none" />
+        </div>
+      );
+    }
+    if (backgroundMode === 'warm_hearth') {
+      return (
+        <div className={`absolute inset-0 overflow-hidden transition-all duration-500 ${blurClass}`}>
+          <div className="absolute inset-0 bg-gradient-to-b from-[#1d0b05] via-[#2c1308] to-[#0c0402]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_60%,rgba(249,115,22,0.3)_0%,transparent_65%)]" />
+          <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-orange-600/30 to-transparent blur-md" />
+        </div>
+      );
+    }
+    if (backgroundMode === 'midnight_purple') {
+      return (
+        <div className={`absolute inset-0 overflow-hidden transition-all duration-500 ${blurClass}`}>
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0414] via-[#1a0f30] to-[#06020c]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.3)_0%,transparent_60%)]" />
+          <div className="absolute bottom-4 left-1/4 w-32 h-32 rounded-full bg-indigo-500/20 blur-2xl pointer-events-none" />
+        </div>
+      );
+    }
+    // Saf OLED Siyah
+    return (
+      <div className="absolute inset-0 bg-black">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.04)_0%,transparent_70%)]" />
+      </div>
+    );
   };
 
   return (
@@ -123,11 +201,19 @@ export const MascotSettingsSection: React.FC<MascotSettingsSectionProps> = ({
                     : 'bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300'
                 }`}
               >
-                TermoBot
+                {activeConfig.type === 'cat'
+                  ? 'Mırnav'
+                  : activeConfig.type === 'rabbit'
+                  ? 'Puki'
+                  : activeConfig.type === 'human_male'
+                  ? 'Mert'
+                  : activeConfig.type === 'human_female'
+                  ? 'Ela'
+                  : 'TermoBot'}
               </span>
             </div>
             <p className="text-[10px] text-white/60 truncate max-w-[220px] sm:max-w-md">
-              Ekran boşta kaldığında devreye giren, dokununca 3 sn tepki verip uyanan robot ekran koruyucu
+              Boşta kalınca yürüyen, düşünen, tık tık vuran, 3 döngü sonra derin uyuyan maskot
             </p>
           </div>
         </div>
@@ -199,8 +285,46 @@ export const MascotSettingsSection: React.FC<MascotSettingsSectionProps> = ({
             <span>Ekran Koruyucuyu Şimdi Başlat (Önizle)</span>
           </button>
 
-          {/* ── BEKLEME SÜRESİ AYARI ── */}
+          {/* ── 1. MASKOT KARAKTERİ SEÇİMİ (5 KARAKTER) ── */}
           <div className="space-y-1.5">
+            <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 px-1">
+              <Bot className="w-3.5 h-3.5 text-amber-400" />
+              <span>Maskot Karakteri Seçimi:</span>
+            </span>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+              {[
+                { id: 'termobot' as MascotType, icon: '🤖', name: 'TermoBot', desc: 'Retro Robot' },
+                { id: 'cat' as MascotType, icon: '🐱', name: 'Mırnav', desc: 'Petek Kedisi' },
+                { id: 'rabbit' as MascotType, icon: '🐰', name: 'Puki', desc: 'Tavşan' },
+                { id: 'human_male' as MascotType, icon: '🧑', name: 'Mert', desc: 'Erkek Asistan' },
+                { id: 'human_female' as MascotType, icon: '👩', name: 'Ela', desc: 'Kadın Asistan' },
+              ].map((m) => {
+                const isSelected = activeConfig.type === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => updateConfig({ type: m.id })}
+                    className={`p-2 rounded-xl text-center border cursor-pointer transition-all flex flex-col items-center justify-between ${
+                      isSelected
+                        ? isTactile
+                          ? 'bg-amber-500/25 border-amber-500 text-white shadow-sm ring-1 ring-amber-400'
+                          : 'bg-purple-600/30 border-purple-400 text-white shadow-sm ring-1 ring-purple-400'
+                        : 'bg-white/5 border-white/10 hover:border-white/20 text-slate-300'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">{m.icon}</div>
+                    <div className="font-bold text-[11px]">{m.name}</div>
+                    <div className="text-[8.5px] text-white/50">{m.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── 2. BEKLEME SÜRESİ AYARI ── */}
+          <div className="space-y-1.5 pt-2 border-t border-white/[0.08]">
             <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 px-1">
               <Clock className="w-3.5 h-3.5 text-amber-400" />
               <span>Otomatik Devreye Girme Süresi (Boşta Kalma):</span>
@@ -229,24 +353,26 @@ export const MascotSettingsSection: React.FC<MascotSettingsSectionProps> = ({
                 </button>
               ))}
             </div>
-            <p className="text-[9.5px] text-white/50 px-1">
-              Uygulamada herhangi bir tuşa basılmadığında ekran koruyucu devreye girer.
-            </p>
           </div>
 
-          {/* ── ARKA PLAN SEÇİMİ (3 ÖZEL TEMA + SAF SİYAH + CUSTOM) ── */}
-          <div className="space-y-1.5 pt-2 border-t border-white/[0.08]">
+          {/* ── 3. ARKA PLAN SEÇİMİ & CİHAZDAN GÖRSEL YÜKLEME ── */}
+          <div className="space-y-2 pt-2 border-t border-white/[0.08]">
             <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 px-1">
               <ImageIcon className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Ekran Koruyucu Arka Planı:</span>
+              <span>Ekran Koruyucu Arka Planı (Önizlemeli):</span>
             </span>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
               {[
-                { id: 'black' as MascotScreenSaverBg, label: '⬛ Saf OLED Siyah', desc: 'Sıfır güç, tam karanlık' },
-                { id: 'cyber_station' as MascotScreenSaverBg, label: '🧪 Termo Lab', desc: 'Fütüristik mavi grid' },
-                { id: 'warm_hearth' as MascotScreenSaverBg, label: '🔥 Sıcak Köşe', desc: 'Köz ve şömine ambiyansı' },
-                { id: 'midnight_purple' as MascotScreenSaverBg, label: '🌌 Gece Nebula', desc: 'Derin obsidyen gökyüzü' },
+                { id: 'black' as MascotScreenSaverBg, label: '⬛ Saf OLED Siyah', desc: 'Tam karanlık' },
+                { id: 'cyber_station' as MascotScreenSaverBg, label: '🧪 Termo Lab', desc: 'Siber mavi grid' },
+                { id: 'warm_hearth' as MascotScreenSaverBg, label: '🔥 Sıcak Köşe', desc: 'Köz ve şömine' },
+                { id: 'midnight_purple' as MascotScreenSaverBg, label: '🌌 Gece Nebula', desc: 'Derin obsidyen' },
+                {
+                  id: 'custom' as MascotScreenSaverBg,
+                  label: '🖼️ Özel / Cihaz',
+                  desc: activeConfig.customWallpaperUrl ? 'Yüklendi ✓' : 'Resim seçin',
+                },
               ].map((bg) => (
                 <button
                   key={bg.id}
@@ -255,8 +381,8 @@ export const MascotSettingsSection: React.FC<MascotSettingsSectionProps> = ({
                   className={`p-2 rounded-xl text-left border cursor-pointer transition-all flex flex-col justify-between ${
                     activeConfig.backgroundMode === bg.id
                       ? isTactile
-                        ? 'bg-amber-500/20 border-amber-500 text-white shadow-sm ring-1 ring-amber-400/40'
-                        : 'bg-purple-600/30 border-purple-400 text-white shadow-sm ring-1 ring-purple-400/40'
+                        ? 'bg-amber-500/25 border-amber-500 text-white shadow-sm ring-2 ring-amber-400'
+                        : 'bg-purple-600/35 border-purple-400 text-white shadow-sm ring-2 ring-purple-400'
                       : 'bg-white/5 border-white/10 hover:border-white/20 text-slate-300'
                   }`}
                 >
@@ -266,118 +392,236 @@ export const MascotSettingsSection: React.FC<MascotSettingsSectionProps> = ({
               ))}
             </div>
 
-            {/* Arka Planı Blur Göster Seçeneği */}
-            <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/10 mt-1">
-              <div className="text-left">
-                <span className="text-[11px] font-bold text-white block">Arka Planı Blur Göster</span>
-                <span className="text-[9px] text-white/60">Görsele hafif buzlu cam bulanıklığı uygular</span>
+            {/* Arka Planı Blur Göster & Ses Efektleri Ayarı */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+              {/* Blur Göster */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/10">
+                <div className="text-left">
+                  <span className="text-[11px] font-bold text-white block">Arka Planı Blur Göster</span>
+                  <span className="text-[9px] text-white/60">Buzlu cam bulanıklığı uygular</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateConfig({ isBackgroundBlurred: !activeConfig.isBackgroundBlurred })}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
+                    activeConfig.isBackgroundBlurred
+                      ? 'bg-amber-500 text-slate-950 shadow-sm'
+                      : 'bg-white/10 text-white/60 hover:text-white'
+                  }`}
+                >
+                  {activeConfig.isBackgroundBlurred ? 'Aktif ✓' : 'Kapalı'}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => updateConfig({ isBackgroundBlurred: !activeConfig.isBackgroundBlurred })}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
-                  activeConfig.isBackgroundBlurred
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'bg-white/10 text-white/60 hover:text-white'
-                }`}
-              >
-                {activeConfig.isBackgroundBlurred ? 'Aktif ✓' : 'Kapalı'}
-              </button>
+
+              {/* Ses Efektleri (Mute/Unmute) */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/10">
+                <div className="text-left flex items-center gap-1.5">
+                  {activeConfig.soundEffectsEnabled ? (
+                    <Volume2 className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <VolumeX className="w-4 h-4 text-slate-400" />
+                  )}
+                  <div>
+                    <span className="text-[11px] font-bold text-white block">Maskot Sesleri</span>
+                    <span className="text-[9px] text-white/60">Tık tık, adım, uyanma sesleri</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateConfig({ soundEffectsEnabled: !activeConfig.soundEffectsEnabled })}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
+                    activeConfig.soundEffectsEnabled
+                      ? 'bg-emerald-500 text-white shadow-sm'
+                      : 'bg-white/10 text-white/60 hover:text-white'
+                  }`}
+                >
+                  {activeConfig.soundEffectsEnabled ? 'Açık 🔊' : 'Sessiz 🔇'}
+                </button>
+              </div>
             </div>
 
-            {/* Özel Duvar Kağıdı Girişi */}
-            <div className="flex gap-1.5 mt-1">
-              <input
-                type="text"
-                placeholder="Özel Duvar Kağıdı Görsel URL (https://...jpg)..."
-                value={customUrlInput}
-                onChange={(e) => setCustomUrlInput(e.target.value)}
-                className="flex-1 px-2.5 py-1.5 rounded-xl bg-black/40 border border-white/10 text-[11px] text-white focus:outline-none focus:border-amber-400"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (customUrlInput.trim()) {
-                    triggerHaptic('selection');
-                    updateConfig({
-                      backgroundMode: 'custom',
-                      customWallpaperUrl: customUrlInput.trim(),
-                    });
-                  }
-                }}
-                className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shrink-0 cursor-pointer"
-              >
-                Uygula
-              </button>
+            {/* Cihazdan Görsel Seç Butonu, URL Girişi & Görseli Kaldır / Sıfırla */}
+            <div className="flex flex-col gap-2 mt-1">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <label className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-98 transition-all">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Cihazdan Resim / Duvar Kağıdı Seç</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleDeviceImageUpload}
+                  />
+                </label>
+
+                <div className="flex-1 flex gap-1.5">
+                  <input
+                    type="text"
+                    placeholder="Veya Görsel URL (https://...jpg)..."
+                    value={customUrlInput}
+                    onChange={(e) => setCustomUrlInput(e.target.value)}
+                    className="flex-1 px-2.5 py-1.5 rounded-xl bg-black/40 border border-white/10 text-[11px] text-white focus:outline-none focus:border-amber-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (customUrlInput.trim()) {
+                        triggerHaptic('selection');
+                        updateConfig({
+                          backgroundMode: 'custom',
+                          customWallpaperUrl: customUrlInput.trim(),
+                        });
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shrink-0 cursor-pointer"
+                  >
+                    Uygula
+                  </button>
+                </div>
+              </div>
+
+              {/* Özel Görsel Yüklendiyse Kaldır / Varsayılana Dön Butonu */}
+              {activeConfig.customWallpaperUrl && (
+                <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-red-950/40 border border-red-500/30 text-red-200 text-xs">
+                  <span className="truncate max-w-[200px] sm:max-w-xs text-[10.5px]">
+                    🖼️ Yüklü Görsel: {activeConfig.customWallpaperUrl.startsWith('data:') ? 'Cihazdan seçildi' : activeConfig.customWallpaperUrl}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic('warning');
+                      setCustomUrlInput('');
+                      updateConfig({
+                        backgroundMode: 'black',
+                        customWallpaperUrl: '',
+                      });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] cursor-pointer shadow-sm transition-all"
+                  >
+                    Görseli Kaldır & Sıfırla ✕
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* ── CANLI MASKOT DAVRANIŞ TESTİ (PLAYGROUND) ── */}
-          <div
-            className={`p-3 sm:p-4 rounded-xl border flex flex-col items-center gap-3 relative overflow-hidden ${
-              isTactile ? 'bg-[#13111c] border-amber-500/20 shadow-inner' : 'bg-black/40 border-white/10 shadow-inner'
-            }`}
-          >
-            <div className="w-full flex items-center justify-between text-[11px] font-bold">
+          {/* ── 4. CANLI MASKOT & ARKA PLAN ÖNİZLEME ALANI (CANLI PREVIEW) ── */}
+          <div className="space-y-1.5 pt-2 border-t border-white/[0.08]">
+            <div className="flex items-center justify-between text-[11px] font-bold px-1">
               <span className="text-white/80 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Canlı Maskot Davranış Testi</span>
+                <span>Canlı Önizleme & Davranış Testi</span>
               </span>
-              <span className="text-[10px] text-white/50">Robota dokunup tepkisini dinleyin!</span>
+              <span className="text-[10px] text-white/50">Dokununca 1.5 sn'de uyanır</span>
             </div>
 
-            <div className="py-2 flex items-center justify-center min-h-[160px]">
-              <TermoBotMascot
-                state={previewState}
-                themeMode={themeMode}
-                currentTemp={currentTemp}
-                targetTemp={targetTemp}
-                isKombiActive={isKombiActive}
-                size="md"
-                interactive={true}
-              />
+            {/* Arka planı birebir simüle eden canlı kutu */}
+            <div className="relative rounded-2xl border border-white/15 overflow-hidden flex flex-col items-center justify-center min-h-[220px] shadow-inner transition-all duration-500">
+              {/* Arka Plan Katmanı (Buzlama ve Tema) */}
+              {renderPlaygroundBackground()}
+
+              {/* Bilgi Rozetleri (Arka Plan ve Maskot Tipi) */}
+              <div className="absolute top-2.5 inset-x-3 flex items-center justify-between z-20 pointer-events-none text-[9px] font-mono font-bold">
+                <span className="px-2 py-0.5 rounded-full bg-black/60 text-white/90 border border-white/10 backdrop-blur-sm">
+                  {activeConfig.type === 'cat'
+                    ? '🐱 Mırnav'
+                    : activeConfig.type === 'rabbit'
+                    ? '🐰 Puki'
+                    : activeConfig.type === 'human_male'
+                    ? '🧑 Mert'
+                    : activeConfig.type === 'human_female'
+                    ? '👩 Ela'
+                    : '🤖 TermoBot'}
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-black/60 text-amber-300 border border-white/10 backdrop-blur-sm">
+                  {activeConfig.backgroundMode === 'cyber_station'
+                    ? '🧪 Termo Lab'
+                    : activeConfig.backgroundMode === 'warm_hearth'
+                    ? '🔥 Sıcak Köşe'
+                    : activeConfig.backgroundMode === 'midnight_purple'
+                    ? '🌌 Gece Nebula'
+                    : activeConfig.backgroundMode === 'custom'
+                    ? '🖼️ Özel Duvar Kağıdı'
+                    : '⬛ Saf OLED Siyah'}
+                  {activeConfig.isBackgroundBlurred ? ' (Blur)' : ''}
+                </span>
+              </div>
+
+              {/* Maskot Karakteri */}
+              <div className="relative z-10 py-6">
+                <UniversalMascot
+                  type={activeConfig.type}
+                  state={previewState}
+                  themeMode={themeMode}
+                  currentTemp={currentTemp}
+                  targetTemp={targetTemp}
+                  isKombiActive={isKombiActive}
+                  size="md"
+                  interactive={true}
+                  soundEnabled={activeConfig.soundEffectsEnabled}
+                />
+              </div>
             </div>
 
-            {/* State Switcher Buttons */}
-            <div className="flex items-center justify-center gap-1.5 flex-wrap w-full pt-2 border-t border-white/10">
+            {/* Hareket / Davranış Butonları */}
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 pt-1">
               <button
                 type="button"
                 onClick={() => handleSelectState('idle')}
-                className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95 ${
-                  previewState === 'idle' ? 'bg-emerald-500 text-white shadow-xs' : 'bg-white/10 hover:bg-white/15 text-slate-300'
+                className={`py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                  previewState === 'idle' ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-300'
                 }`}
               >
-                <span>🟢 Boşta</span>
+                🟢 Boşta
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectState('walking')}
+                className={`py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  previewState === 'walking' ? 'bg-sky-500 text-white' : 'bg-white/10 text-slate-300'
+                }`}
+              >
+                <Footprints className="w-2.5 h-2.5" />
+                <span>Gezinme</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectState('knocking')}
+                className={`py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                  previewState === 'knocking' ? 'bg-cyan-500 text-slate-950 font-black' : 'bg-white/10 text-slate-300'
+                }`}
+              >
+                🤔 Tık Tık
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectState('thinking')}
+                className={`py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  previewState === 'thinking' ? 'bg-yellow-500 text-slate-950 font-black' : 'bg-white/10 text-slate-300'
+                }`}
+              >
+                <Lightbulb className="w-2.5 h-2.5" />
+                <span>Düşünme</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleSelectState('reading')}
-                className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95 ${
-                  previewState === 'reading' ? 'bg-blue-500 text-white shadow-xs' : 'bg-white/10 hover:bg-white/15 text-slate-300'
+                className={`py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  previewState === 'reading' ? 'bg-blue-600 text-white' : 'bg-white/10 text-slate-300'
                 }`}
               >
-                <BookOpen className="w-3 h-3" />
-                <span>Kitap Okuma</span>
+                <BookOpen className="w-2.5 h-2.5" />
+                <span>Kitap</span>
               </button>
               <button
                 type="button"
-                onClick={() => handleSelectState('sleeping')}
-                className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95 ${
-                  previewState === 'sleeping' ? 'bg-indigo-500 text-white shadow-xs' : 'bg-white/10 hover:bg-white/15 text-slate-300'
+                onClick={() => handleSelectState('deep_sleep')}
+                className={`py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  previewState === 'deep_sleep' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-slate-300'
                 }`}
               >
-                <Moon className="w-3 h-3" />
-                <span>Uykuda (Zzz)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectState('happy')}
-                className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95 ${
-                  previewState === 'happy' ? 'bg-amber-500 text-white shadow-xs' : 'bg-white/10 hover:bg-white/15 text-slate-300'
-                }`}
-              >
-                <Heart className="w-3 h-3 fill-current text-rose-300" />
-                <span>Dokun & Sev!</span>
+                <Moon className="w-2.5 h-2.5" />
+                <span>Derin Uyku</span>
               </button>
             </div>
           </div>

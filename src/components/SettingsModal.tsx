@@ -48,6 +48,9 @@ import type { MascotConfig } from '../types/mascot.ts';
 import { MascotSettingsSection } from './Settings/MascotSettingsSection.tsx';
 import { EspDiagnosticsSection } from './Settings/EspDiagnosticsSection.tsx';
 import { SmartDisplaySettingsSection } from './Settings/SmartDisplaySettingsSection.tsx';
+import type { VoiceCallConfig } from '../types/voiceCall.ts';
+import { DEFAULT_VOICE_CALL_CONFIG } from '../types/voiceCall.ts';
+import { VoiceCallSettingsSection } from './Settings/VoiceCallSettingsSection.tsx';
 
 export const DEFAULT_SETTINGS_MENU_ORDER: string[] = [
   'vault',          // 1. Şifreli Kasa & Bildirimler (Image 1 top)
@@ -57,9 +60,10 @@ export const DEFAULT_SETTINGS_MENU_ORDER: string[] = [
   'haptics',        // 5. Haptik Titreşim & Dokunma (Image 8)
   'boot_splash',    // 6. Açılış Seremonisi (Boot Efekti) (Image 9)
   'mascot',         // 7. Sanal Asistan & Sevimli Maskot (Images 10, 11)
-  'esp_hardware',   // 8. ESP Donanım Güvenlik & Günlüğü (Images 12, 13)
-  'cloud',          // 9. Bulut Ayarları (Image 14)
-  'reset',          // 10. Geçmiş Veri Resetleme (Image 15)
+  'voice_call',     // 8. AI Sesli Telefon Araması (10 sn Çalma, Android Arama Ekranı)
+  'esp_hardware',   // 9. ESP Donanım Güvenlik & Günlüğü (Images 12, 13)
+  'cloud',          // 10. Bulut Ayarları (Image 14)
+  'reset',          // 11. Geçmiş Veri Resetleme (Image 15)
 ];
 
 interface SettingsModalProps {
@@ -89,6 +93,9 @@ interface SettingsModalProps {
   mascotConfig?: MascotConfig;
   onUpdateMascotConfig?: (cfg: Partial<MascotConfig>) => void;
   onLaunchScreenSaver?: () => void;
+  voiceCallConfig?: VoiceCallConfig;
+  onUpdateVoiceCallConfig?: (cfg: Partial<VoiceCallConfig>) => void;
+  onLaunchCallTest?: (reason: 'manual_test' | 'ignition' | 'low_temp') => void;
   currentTemp?: number;
   targetTemp?: number;
   isKombiActive?: boolean;
@@ -121,6 +128,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   mascotConfig,
   onUpdateMascotConfig,
   onLaunchScreenSaver,
+  voiceCallConfig,
+  onUpdateVoiceCallConfig,
+  onLaunchCallTest,
   currentTemp = 21.8,
   targetTemp = 22.5,
   isKombiActive = false,
@@ -1093,7 +1103,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     </div>
   );
 
-  // 8. ESP DONANIM GÜVENLİK & GÜNLÜĞÜ (Images 12, 13)
+  // 8. AI SESLİ TELEFON ARAMASI & ASİSTAN (10 sn Çalma, Android Arama Ekranı)
+  const renderVoiceCallSection = (index: number) => (
+    <div
+      key="voice_call"
+      onDragOver={(e) => handleDragOver(e, index)}
+      onDrop={(e) => handleDrop(e, index)}
+      onDragEnd={handleDragEnd}
+      className={`transition-opacity ${draggedIndex === index ? 'opacity-40' : ''} ${
+        dragOverIndex === index ? 'ring-2 ring-amber-400/70 rounded-2xl' : ''
+      }`}
+    >
+      <VoiceCallSettingsSection
+        themeMode={themeMode}
+        config={voiceCallConfig || DEFAULT_VOICE_CALL_CONFIG}
+        onUpdateConfig={onUpdateVoiceCallConfig || (() => {})}
+        onLaunchCallTest={(reason) => onLaunchCallTest?.(reason)}
+        isOpen={openSectionId === 'voice_call'}
+        onToggleOpen={() => toggleSection('voice_call')}
+        headerPrefix={renderHeaderPrefix(index)}
+      />
+    </div>
+  );
+
+  // 9. ESP DONANIM GÜVENLİK & GÜNLÜĞÜ (Images 12, 13)
   const renderEspHardwareSection = (index: number) => (
     <div
       key="esp_hardware"
@@ -1364,6 +1397,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         return renderBootSplashSection(index);
       case 'mascot':
         return renderMascotSection(index);
+      case 'voice_call':
+        return renderVoiceCallSection(index);
       case 'esp_hardware':
         return renderEspHardwareSection(index);
       case 'cloud':

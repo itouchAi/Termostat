@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, Flame, Sun, Cloud, Moon, X, Clock } from 'lucide-react';
+import { Sparkles, Flame, Sun, X, Clock } from 'lucide-react';
 import type { MascotConfig, MascotState } from '../../types/mascot.ts';
-import { TermoBotMascot } from './TermoBotMascot.tsx';
+import { UniversalMascot } from './UniversalMascot.tsx';
 import { triggerHaptic } from '../../utils/haptics.ts';
 
 interface MascotScreenSaverOverlayProps {
@@ -29,10 +29,8 @@ export const MascotScreenSaverOverlay: React.FC<MascotScreenSaverOverlayProps> =
   cityName = 'İstanbul',
 }) => {
   const [wakingUp, setWakingUp] = useState(false);
-  const [countdown, setCountdown] = useState(3);
+  const [isDeepSleep, setIsDeepSleep] = useState(false);
   const [clockStr, setClockStr] = useState('');
-  const [mascotState, setMascotState] = useState<MascotState>('idle');
-  const tickIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Live Clock
@@ -51,12 +49,8 @@ export const MascotScreenSaverOverlay: React.FC<MascotScreenSaverOverlayProps> =
     return () => clearInterval(interval);
   }, []);
 
-  // Clean up all timers on unmount or when closed
+  // Clean up timer on unmount or when closed
   const clearTimers = () => {
-    if (tickIntervalRef.current) {
-      clearInterval(tickIntervalRef.current);
-      tickIntervalRef.current = null;
-    }
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
@@ -71,33 +65,26 @@ export const MascotScreenSaverOverlay: React.FC<MascotScreenSaverOverlayProps> =
   useEffect(() => {
     if (isOpen) {
       setWakingUp(false);
-      setCountdown(3);
-      setMascotState('idle');
+      setIsDeepSleep(false);
     } else {
       clearTimers();
     }
   }, [isOpen]);
 
-  // Handle tap / wake interaction
+  // Handle tap / wake interaction (1.5 seconds wake-up time as requested)
   const handleInteraction = () => {
     if (wakingUp) return;
     triggerHaptic('success');
+    setIsDeepSleep(false);
     setWakingUp(true);
-    setMascotState('happy');
-    setCountdown(3);
 
     clearTimers();
 
-    // 1-second countdown tick for UI badge only
-    tickIntervalRef.current = setInterval(() => {
-      setCountdown((prev) => Math.max(0, prev - 1));
-    }, 1000);
-
-    // Call onClose in dedicated setTimeout outside of any React render/state updater
+    // Exactly 1.5 seconds later, smoothly return to main screen
     closeTimeoutRef.current = setTimeout(() => {
       clearTimers();
       onClose();
-    }, 3000);
+    }, 1500);
   };
 
   // Keyboard dismiss (Escape or Space)
@@ -137,7 +124,6 @@ export const MascotScreenSaverOverlay: React.FC<MascotScreenSaverOverlayProps> =
     if (backgroundMode === 'cyber_station') {
       return (
         <div className={`absolute inset-0 overflow-hidden transition-all duration-700 ${blurClass}`}>
-          {/* Cyber Lab Theme */}
           <div className="absolute inset-0 bg-gradient-to-b from-[#090b14] via-[#0d1224] to-[#05070e]" />
           <div
             className="absolute inset-0 opacity-20"
@@ -155,7 +141,6 @@ export const MascotScreenSaverOverlay: React.FC<MascotScreenSaverOverlayProps> =
     if (backgroundMode === 'warm_hearth') {
       return (
         <div className={`absolute inset-0 overflow-hidden transition-all duration-700 ${blurClass}`}>
-          {/* Warm Cozy Hearth Theme */}
           <div className="absolute inset-0 bg-gradient-to-b from-[#180e0a] via-[#120804] to-[#080402]" />
           <div className="absolute bottom-0 inset-x-0 h-1/2 bg-gradient-to-t from-orange-600/20 via-amber-600/10 to-transparent blur-2xl" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
@@ -166,7 +151,6 @@ export const MascotScreenSaverOverlay: React.FC<MascotScreenSaverOverlayProps> =
     if (backgroundMode === 'midnight_purple') {
       return (
         <div className={`absolute inset-0 overflow-hidden transition-all duration-700 ${blurClass}`}>
-          {/* Midnight Nebula Theme */}
           <div className="absolute inset-0 bg-gradient-to-b from-[#0e0a1a] via-[#090613] to-[#040208]" />
           <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] rounded-full bg-purple-600/15 blur-3xl pointer-events-none" />
           <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-indigo-600/15 blur-3xl pointer-events-none" />
@@ -181,18 +165,26 @@ export const MascotScreenSaverOverlay: React.FC<MascotScreenSaverOverlayProps> =
   return createPortal(
     <div
       onClick={handleInteraction}
-      className="fixed inset-0 z-[9999] flex flex-col justify-between items-center select-none cursor-pointer overflow-hidden animate-in fade-in duration-500"
+      className={`fixed inset-0 z-[99999] flex flex-col justify-between items-center select-none cursor-pointer overflow-hidden animate-in fade-in transition-all duration-1000 ${
+        isDeepSleep ? 'brightness-50' : 'brightness-100'
+      }`}
     >
       {/* ── BACKGROUND ── */}
       {renderBackground()}
 
+      {/* Dimming overlay when in deep sleep for extra clarity on 50% screen reduction */}
+      {isDeepSleep && (
+        <div className="absolute inset-0 bg-black/40 pointer-events-none z-10 transition-opacity duration-1000" />
+      )}
+
       {/* ── TOP BAR (FIXED TELEMETRY AT TOP RIGHT) ── */}
-      <div className="relative z-10 w-full px-5 py-4 flex items-start justify-between">
+      <div className="relative z-20 w-full px-5 py-4 flex items-start justify-between">
         {/* Subtle Wake Hint or Close Button */}
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
+            clearTimers();
             onClose();
           }}
           className="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-[11px] font-semibold flex items-center gap-1 backdrop-blur-md border border-white/10 transition-all cursor-pointer active:scale-95"
@@ -203,7 +195,7 @@ export const MascotScreenSaverOverlay: React.FC<MascotScreenSaverOverlayProps> =
         </button>
 
         {/* ── FIXED TOP-RIGHT TELEMETRY PANEL ── */}
-        <div className="flex flex-col items-end gap-1.5 p-3 rounded-2xl bg-black/50 backdrop-blur-md border border-white/10 shadow-2xl text-right">
+        <div className="flex flex-col items-end gap-1.5 p-3 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 shadow-2xl text-right">
           {/* Saat */}
           <div className="flex items-center gap-1.5 text-white font-mono font-bold text-sm">
             <Clock className="w-3.5 h-3.5 text-amber-400" />
@@ -234,29 +226,36 @@ export const MascotScreenSaverOverlay: React.FC<MascotScreenSaverOverlayProps> =
         </div>
       </div>
 
-      {/* ── CENTER: THE MASCOT (TERMOBOT) ── */}
-      <div className="relative z-10 flex flex-col items-center justify-center my-auto px-4">
-        <TermoBotMascot
-          state={mascotState}
+      {/* ── CENTER: THE MASCOT ── */}
+      <div className="relative z-20 flex flex-col items-center justify-center my-auto px-4">
+        <UniversalMascot
+          type={config.type}
+          state={wakingUp ? 'happy' : undefined}
           themeMode="tactile_deck"
           currentTemp={currentTemp}
           targetTemp={targetTemp}
           isKombiActive={isKombiActive}
           size="lg"
           interactive={true}
+          soundEnabled={config.soundEffectsEnabled}
           onWakeScreen={handleInteraction}
+          onStateChange={(st) => setIsDeepSleep(st === 'deep_sleep')}
         />
 
-        {/* Interactive Tap Hint or Countdown */}
+        {/* Interactive Tap Hint or Fast Wake Indicator */}
         <div className="mt-6 flex flex-col items-center gap-2">
           {wakingUp ? (
-            <div className="px-4 py-2 rounded-2xl bg-amber-500/25 border border-amber-400/50 backdrop-blur-md text-amber-300 text-xs font-bold flex items-center gap-2 shadow-xl animate-bounce">
+            <div className="px-4 py-2 rounded-2xl bg-amber-500/30 border border-amber-400/60 backdrop-blur-md text-amber-300 text-xs font-bold flex items-center gap-2 shadow-2xl animate-bounce">
               <Sparkles className="w-4 h-4 text-amber-300 animate-spin" />
-              <span>TermoBot uyandı! {countdown} sn içinde ana ekrana dönülüyor...</span>
+              <span>Maskot uyandı! 1.5 sn içinde ana ekrana dönülüyor...</span>
+            </div>
+          ) : isDeepSleep ? (
+            <div className="px-3.5 py-1.5 rounded-full bg-indigo-950/70 backdrop-blur-md border border-indigo-400/30 text-indigo-200 text-[11px] font-medium flex items-center gap-1.5 animate-pulse">
+              <span>🌙 Derin uykuda · Ekran parlaklığı %50 kısıldı · Dokununca uyanır</span>
             </div>
           ) : (
             <div className="px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white/70 text-[11px] font-medium flex items-center gap-1.5 animate-pulse">
-              <span>Ekrana dokunun, robotunuz sevinsin ve uyansın ✨</span>
+              <span>Ekrana dokunun, maskotunuz sevinsin ve uyansın ✨</span>
             </div>
           )}
         </div>
@@ -264,7 +263,7 @@ export const MascotScreenSaverOverlay: React.FC<MascotScreenSaverOverlayProps> =
 
       {/* ── BOTTOM BRAND / FOOTER ── */}
       <div className="relative z-10 pb-5 text-center text-white/40 text-[10px] font-mono">
-        TermoBot Akıllı Termostat Ekran Koruyucu · Dokununca 3 sn içinde kapanır
+        Akıllı Termostat Ekran Koruyucu · Dokununca 1.5 sn içinde kapanır
       </div>
     </div>,
     document.body

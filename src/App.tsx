@@ -51,6 +51,9 @@ import type { MascotConfig } from './types/mascot.ts';
 import { DEFAULT_MASCOT_CONFIG } from './types/mascot.ts';
 import { TermoBotMascot } from './components/Mascot/TermoBotMascot.tsx';
 import { MascotScreenSaverOverlay } from './components/Mascot/MascotScreenSaverOverlay.tsx';
+import type { VoiceCallConfig } from './types/voiceCall.ts';
+import { DEFAULT_VOICE_CALL_CONFIG } from './types/voiceCall.ts';
+import { AndroidCallOverlay } from './components/VoiceCall/AndroidCallOverlay.tsx';
 
 
 import {
@@ -359,6 +362,50 @@ export default function App() {
     });
   }, []);
 
+  // ── AI Sesli Telefon Araması & Asistan (10 sn Çalma, Android Arama Ekranı) ──
+  const [voiceCallConfig, setVoiceCallConfig] = useState<VoiceCallConfig>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('app_voice_call_config');
+      if (saved) {
+        try {
+          return { ...DEFAULT_VOICE_CALL_CONFIG, ...JSON.parse(saved) };
+        } catch {}
+      }
+    }
+    return DEFAULT_VOICE_CALL_CONFIG;
+  });
+
+  const handleUpdateVoiceCallConfig = useCallback((patch: Partial<VoiceCallConfig>) => {
+    setVoiceCallConfig((prev) => {
+      const updated = { ...prev, ...patch };
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('app_voice_call_config', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, []);
+
+  const [isCallOverlayOpen, setIsCallOverlayOpen] = useState(false);
+  const [callReason, setCallReason] = useState<'manual_test' | 'ignition' | 'low_temp' | 'target_reached'>('manual_test');
+
+  const handleTriggerVoiceCall = useCallback((reason: 'manual_test' | 'ignition' | 'low_temp' | 'target_reached' = 'manual_test') => {
+    setCallReason(reason);
+    setIsCallOverlayOpen(true);
+  }, []);
+
+  // Listen for Service Worker message if answered from lock screen
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleMsg = (e: MessageEvent) => {
+      if (e.data && e.data.type === 'TRIGGER_CALL_ANSWER') {
+        setCallReason('ignition');
+        setIsCallOverlayOpen(true);
+      }
+    };
+    navigator.serviceWorker?.addEventListener('message', handleMsg);
+    return () => navigator.serviceWorker?.removeEventListener('message', handleMsg);
+  }, []);
+
   // ── Sanal Asistan Ekran Koruyucu (Idle Screensaver) State ──
   const [isMascotScreenSaverActive, setIsMascotScreenSaverActive] = useState<boolean>(false);
   const lastUserInteractionTsRef = useRef<number>(Date.now());
@@ -582,6 +629,9 @@ export default function App() {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('kombi_last_ignition_ts', String(now));
       }
+      if (voiceCallConfig.enabled && voiceCallConfig.autoCallOnIgnition) {
+        handleTriggerVoiceCall('ignition');
+      }
     } else if (!isKombiActive && prevKombiActiveRef.current) {
       setLastExtinguishTime(now);
       if (typeof localStorage !== 'undefined') {
@@ -589,7 +639,7 @@ export default function App() {
       }
     }
     prevKombiActiveRef.current = isKombiActive;
-  }, [isKombiActive]);
+  }, [isKombiActive, voiceCallConfig.enabled, voiceCallConfig.autoCallOnIgnition, handleTriggerVoiceCall]);
 
   // Sıfırlama işleyicisi (Ayarlar modalından çağrıldığında canlı tüm sayaçları 0'lar)
   const handleResetHistoricalData = useCallback(() => {
@@ -2378,6 +2428,9 @@ export default function App() {
         mascotConfig={mascotConfig}
         onUpdateMascotConfig={handleUpdateMascotConfig}
         onLaunchScreenSaver={() => setIsMascotScreenSaverActive(true)}
+        voiceCallConfig={voiceCallConfig}
+        onUpdateVoiceCallConfig={handleUpdateVoiceCallConfig}
+        onLaunchCallTest={(reason) => handleTriggerVoiceCall(reason)}
         currentTemp={currentTemp}
         targetTemp={targetTemp}
         isKombiActive={isKombiActive}
@@ -2456,6 +2509,18 @@ export default function App() {
         weatherTemp={weather.temp}
         weatherConditionText={weather.conditionText}
         cityName={activeLocation.name || activeLocation.cityName}
+      />
+
+      {/* ── ANDROID SESLİ TELEFON ARAMASI (10 sn Çalma, Android Arama Ekranı & Konuşma) ── */}
+      <AndroidCallOverlay
+        isOpen={isCallOverlayOpen}
+        onClose={() => setIsCallOverlayOpen(false)}
+        config={voiceCallConfig}
+        currentTemp={currentTemp}
+        targetTemp={targetTemp}
+        isKombiActive={isKombiActive}
+        onSetTargetTemp={handleSetTarget}
+        reason={callReason}
       />
 
       {/* ── TACTILE HARDWARE STARTUP BOOT SPLASH (Mekanik Teşhis & Alev Kalibrasyonu) ── */}
