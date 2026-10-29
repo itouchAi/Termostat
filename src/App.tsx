@@ -393,9 +393,21 @@ export default function App() {
     setIsCallOverlayOpen(true);
   }, []);
 
-  // Listen for Service Worker message if answered from lock screen
+  // Listen for Service Worker message if answered from lock screen (or cold-started via URL)
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    // 1. Soğuk açılış kontrolü (Uygulama tamamen kapalıyken kilit ekranındaki bildirime tıklandığında)
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('open_call') === 'true') {
+        setCallReason('ignition');
+        setIsCallOverlayOpen(true);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    } catch {}
+
+    // 2. Sıcak açılış kontrolü (Uygulama arka plandayken postMessage ile anında tetikleme)
     const handleMsg = (e: MessageEvent) => {
       if (e.data && e.data.type === 'TRIGGER_CALL_ANSWER') {
         setCallReason('ignition');
