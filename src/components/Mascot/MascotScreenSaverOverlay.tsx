@@ -32,7 +32,8 @@ export const MascotScreenSaverOverlay: React.FC<MascotScreenSaverOverlayProps> =
   const [countdown, setCountdown] = useState(3);
   const [clockStr, setClockStr] = useState('');
   const [mascotState, setMascotState] = useState<MascotState>('idle');
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const tickIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Live Clock
   useEffect(() => {
@@ -50,12 +51,30 @@ export const MascotScreenSaverOverlay: React.FC<MascotScreenSaverOverlayProps> =
     return () => clearInterval(interval);
   }, []);
 
+  // Clean up all timers on unmount or when closed
+  const clearTimers = () => {
+    if (tickIntervalRef.current) {
+      clearInterval(tickIntervalRef.current);
+      tickIntervalRef.current = null;
+    }
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => clearTimers();
+  }, []);
+
   // Reset state when opening
   useEffect(() => {
     if (isOpen) {
       setWakingUp(false);
       setCountdown(3);
       setMascotState('idle');
+    } else {
+      clearTimers();
     }
   }, [isOpen]);
 
@@ -67,16 +86,18 @@ export const MascotScreenSaverOverlay: React.FC<MascotScreenSaverOverlayProps> =
     setMascotState('happy');
     setCountdown(3);
 
-    const interval = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) {
-          clearInterval(interval);
-          onClose();
-          return 0;
-        }
-        return c - 1;
-      });
+    clearTimers();
+
+    // 1-second countdown tick for UI badge only
+    tickIntervalRef.current = setInterval(() => {
+      setCountdown((prev) => Math.max(0, prev - 1));
     }, 1000);
+
+    // Call onClose in dedicated setTimeout outside of any React render/state updater
+    closeTimeoutRef.current = setTimeout(() => {
+      clearTimers();
+      onClose();
+    }, 3000);
   };
 
   // Keyboard dismiss (Escape or Space)
@@ -84,6 +105,7 @@ export const MascotScreenSaverOverlay: React.FC<MascotScreenSaverOverlayProps> =
     if (!isOpen) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        clearTimers();
         onClose();
       } else {
         handleInteraction();

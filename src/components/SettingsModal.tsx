@@ -1107,6 +1107,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       <EspDiagnosticsSection
         themeMode={themeMode}
         isConnected={isConnected}
+        firebaseUrl={dbUrl}
         isOpen={openSectionId === 'esp_hardware'}
         onToggleOpen={() => toggleSection('esp_hardware')}
         headerPrefix={renderHeaderPrefix(index)}

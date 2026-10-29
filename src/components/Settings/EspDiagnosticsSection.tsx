@@ -23,6 +23,7 @@ import { triggerHaptic } from '../../utils/haptics.ts';
 interface EspDiagnosticsSectionProps {
   themeMode?: ThemeMode;
   isConnected?: boolean;
+  firebaseUrl?: string;
   isOpen?: boolean;
   onToggleOpen?: () => void;
   headerPrefix?: React.ReactNode;
@@ -30,7 +31,8 @@ interface EspDiagnosticsSectionProps {
 
 export const EspDiagnosticsSection: React.FC<EspDiagnosticsSectionProps> = ({
   themeMode = 'glass',
-  isConnected = true,
+  isConnected = false,
+  firebaseUrl,
   isOpen = false,
   onToggleOpen,
   headerPrefix,
@@ -64,64 +66,98 @@ export const EspDiagnosticsSection: React.FC<EspDiagnosticsSectionProps> = ({
   });
 
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncFeedback, setSyncFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [syncFeedback, setSyncFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
   // Restart modal state
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
   const [restartCountdown, setRestartCountdown] = useState(3);
 
-  // Sync logs from ESP Flash memory
-  const handleSyncLogs = () => {
+  // Sync logs from ESP: Real check
+  const handleSyncLogs = async () => {
     triggerHaptic('medium');
     setIsSyncing(true);
     setSyncFeedback(null);
 
-    setTimeout(() => {
-      setIsSyncing(false);
-
-      if (!isConnected) {
-        // ESP is offline: cannot fetch data!
+    try {
+      if (!isConnected || !firebaseUrl) {
+        setIsSyncing(false);
         setSyncFeedback({
           type: 'error',
-          message: '⚠️ ESP Çevrimdışı: Donanıma ulaşılamadığı için yeni log çekilemedi. Son yerel kayıtlar gösteriliyor.',
+          message: '❌ ESP Çevrimdışı: Ağ veya bulut bağlantısı yok. ESP cihazı açık olmadan bilgi alınamaz!',
         });
         triggerHaptic('heavy');
-        setTimeout(() => setSyncFeedback(null), 4500);
         return;
       }
 
-      // Simulated fresh offline events fetched from ESP LittleFS
-      const newEvent: EspEventLog = {
-        id: `log-${Date.now()}`,
-        timestamp: Date.now() - 12000,
-        type: 'offline_sync',
-        title: 'ESP LittleFS Bellek Senkronizasyonu',
-        details: 'ESP flaş belleğindeki çevrimdışı telemetri başarıyla uygulamaya aktarıldı.',
-        wdtStatus: 'ok',
-      };
+      const cleanUrl = firebaseUrl.replace(/\/+$/, '');
+      const endpoint = cleanUrl.endsWith('.json') ? cleanUrl : `${cleanUrl}/kombi.json`;
 
-      setLogs((prev) => {
-        const updated = [newEvent, ...prev];
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem('esp_event_logs', JSON.stringify(updated));
+      // Ping endpoint
+      const res = await fetch(endpoint, { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = await res.json();
+
+      // Check if real ESP has actually updated within 60 seconds
+      let isEspActuallyAlive = false;
+      if (data && typeof data.timestamp === 'number') {
+        const ageSec = (Date.now() - data.timestamp) / 1000;
+        if (ageSec <= 60) {
+          isEspActuallyAlive = true;
         }
-        return updated;
-      });
+      } else if (data && data.esp_online === true) {
+        isEspActuallyAlive = true;
+      }
 
-      setEspStatus((prev) => ({
-        ...prev,
-        lastHeartbeat: Date.now(),
-        offlineRecordedEventsCount: 0,
-      }));
+      if (!isEspActuallyAlive) {
+        setIsSyncing(false);
+        setSyncFeedback({
+          type: 'error',
+          message: '❌ ESP Çevrimdışı: Gerçek ESP donanımı API üzerinde aktif değil (Heartbeat yok). Cihaz kapalıyken yeni log alınamaz!',
+        });
+        triggerHaptic('heavy');
+        return;
+      }
 
+      // If online, attempt to fetch /esp_logs.json
+      const logEndpoint = cleanUrl.endsWith('.json')
+        ? cleanUrl.replace(/kombi\.json$/, 'esp_logs.json')
+        : `${cleanUrl}/esp_logs.json`;
+
+      const logRes = await fetch(logEndpoint, { cache: 'no-store' });
+      if (logRes.ok) {
+        const liveLogs = await logRes.json();
+        if (liveLogs && Array.isArray(liveLogs) && liveLogs.length > 0) {
+          setLogs(liveLogs);
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('esp_event_logs', JSON.stringify(liveLogs));
+          }
+          setIsSyncing(false);
+          setSyncFeedback({
+            type: 'success',
+            message: `ESP'den ${liveLogs.length} yeni log başarıyla çekildi ✓`,
+          });
+          triggerHaptic('success');
+          return;
+        }
+      }
+
+      setIsSyncing(false);
       setSyncFeedback({
-        type: 'success',
-        message: 'ESP flaş belleğindeki veriler başarıyla eşitlendi ✓',
+        type: 'info',
+        message: 'ℹ️ ESP çevrimiçi, ancak yeni kaydedilmiş çevrimdışı log bulunamadı.',
       });
-      setTimeout(() => setSyncFeedback(null), 3500);
-      triggerHaptic('success');
-    }, 1000);
+      triggerHaptic('light');
+    } catch (err) {
+      setIsSyncing(false);
+      setSyncFeedback({
+        type: 'error',
+        message: '❌ ESP İletişim Hatası: Cihazdan yanıt alınamadı. ESP32 açık ve ağa bağlı olmalıdır!',
+      });
+      triggerHaptic('heavy');
+    }
   };
 
   // Trigger remote ESP restart
@@ -472,10 +508,10 @@ export const EspDiagnosticsSection: React.FC<EspDiagnosticsSectionProps> = ({
                   if (log.type === 'reboot') {
                     badgeColor = 'bg-rose-500/20 text-rose-300 border-rose-500/30';
                     icon = <RotateCcw className="w-3 h-3 text-rose-400" />;
-                  } else if (log.type === 'wdt_timeout') {
+                  } else if (log.type === 'wdt_check') {
                     badgeColor = 'bg-amber-500/20 text-amber-300 border-amber-500/30';
                     icon = <AlertTriangle className="w-3 h-3 text-amber-400" />;
-                  } else if (log.type === 'ignition_on' || log.type === 'ignition_off') {
+                  } else if (log.type === 'combustion_start' || log.type === 'combustion_end') {
                     badgeColor = 'bg-orange-500/20 text-orange-300 border-orange-500/30';
                     icon = <Flame className="w-3 h-3 text-orange-400" />;
                   }

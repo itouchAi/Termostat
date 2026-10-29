@@ -50,6 +50,7 @@ import { StartupBootSplash } from './components/Startup/StartupBootSplash.tsx';
 import type { MascotConfig } from './types/mascot.ts';
 import { DEFAULT_MASCOT_CONFIG } from './types/mascot.ts';
 import { TermoBotMascot } from './components/Mascot/TermoBotMascot.tsx';
+import { MascotScreenSaverOverlay } from './components/Mascot/MascotScreenSaverOverlay.tsx';
 
 
 import {
@@ -358,6 +359,10 @@ export default function App() {
     });
   }, []);
 
+  // ── Sanal Asistan Ekran Koruyucu (Idle Screensaver) State ──
+  const [isMascotScreenSaverActive, setIsMascotScreenSaverActive] = useState<boolean>(false);
+  const lastUserInteractionTsRef = useRef<number>(Date.now());
+
   // ── Carousel Infinite Sliding State ──
   // virtualIndex can grow arbitrarily positive or negative for infinite loop
   const [virtualIndex, setVirtualIndex] = useState<number>(0);
@@ -434,6 +439,38 @@ export default function App() {
   const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
   const [isGoogleHomeOpen, setIsGoogleHomeOpen] = useState(false);
   const [isSmartDisplayOpen, setIsSmartDisplayOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mascotConfig.enabled || !mascotConfig.screensaverTimeoutSec || mascotConfig.screensaverTimeoutSec <= 0) {
+      return;
+    }
+
+    const onUserActivity = () => {
+      lastUserInteractionTsRef.current = Date.now();
+    };
+
+    window.addEventListener('mousemove', onUserActivity, { passive: true });
+    window.addEventListener('mousedown', onUserActivity, { passive: true });
+    window.addEventListener('touchstart', onUserActivity, { passive: true });
+    window.addEventListener('keydown', onUserActivity, { passive: true });
+
+    const idleChecker = setInterval(() => {
+      if (isMascotScreenSaverActive || isSmartDisplayOpen || isSettingsOpen) return;
+
+      const idleSeconds = (Date.now() - lastUserInteractionTsRef.current) / 1000;
+      if (idleSeconds >= mascotConfig.screensaverTimeoutSec) {
+        setIsMascotScreenSaverActive(true);
+      }
+    }, 1500);
+
+    return () => {
+      window.removeEventListener('mousemove', onUserActivity);
+      window.removeEventListener('mousedown', onUserActivity);
+      window.removeEventListener('touchstart', onUserActivity);
+      window.removeEventListener('keydown', onUserActivity);
+      clearInterval(idleChecker);
+    };
+  }, [mascotConfig.enabled, mascotConfig.screensaverTimeoutSec, isMascotScreenSaverActive, isSmartDisplayOpen, isSettingsOpen]);
 
   // Smart Display & Ambient Mode Config
   const [smartDisplayConfig, setSmartDisplayConfig] = useState<SmartDisplayConfig>(() => {
@@ -2340,6 +2377,7 @@ export default function App() {
         }}
         mascotConfig={mascotConfig}
         onUpdateMascotConfig={handleUpdateMascotConfig}
+        onLaunchScreenSaver={() => setIsMascotScreenSaverActive(true)}
         currentTemp={currentTemp}
         targetTemp={targetTemp}
         isKombiActive={isKombiActive}
@@ -2402,22 +2440,23 @@ export default function App() {
         weather={weather}
         onSetTargetTemp={handleSetTarget}
         themeMode={themeMode}
-        mascotConfig={mascotConfig}
       />
 
-      {/* ── Mini TermoBot Companion on Main Screen (if user enabled in settings) ── */}
-      {mascotConfig.enabled && mascotConfig.showOnMainScreen && (
-        <div className="fixed bottom-20 right-3 sm:bottom-24 sm:right-6 z-30 pointer-events-auto">
-          <TermoBotMascot
-            themeMode={themeMode}
-            currentTemp={currentTemp}
-            targetTemp={targetTemp}
-            isKombiActive={isKombiActive}
-            size="sm"
-            interactive={true}
-          />
-        </div>
-      )}
+      {/* ── SANAL ASİSTAN EKRAN KORUYUCU (IDLE SCREENSAVER - TERMOBOT) ── */}
+      <MascotScreenSaverOverlay
+        isOpen={isMascotScreenSaverActive}
+        onClose={() => {
+          setIsMascotScreenSaverActive(false);
+          lastUserInteractionTsRef.current = Date.now();
+        }}
+        config={mascotConfig}
+        currentTemp={currentTemp}
+        targetTemp={targetTemp}
+        isKombiActive={isKombiActive}
+        weatherTemp={weather.temp}
+        weatherConditionText={weather.conditionText}
+        cityName={activeLocation.name || activeLocation.cityName}
+      />
 
       {/* ── TACTILE HARDWARE STARTUP BOOT SPLASH (Mekanik Teşhis & Alev Kalibrasyonu) ── */}
       {showStartupSplash && (
