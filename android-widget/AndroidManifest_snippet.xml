@@ -1,0 +1,15 @@
+<!-- 
+  Bu kod bloğu, Android'in yerel "Widget Ekle" menüsünde 
+  TermoBot widget'ının listelenmesini sağlayan sistem kaydıdır.
+-->
+<receiver
+    android:name="com.termobot.app.ThermostatWidget"
+    android:label="TermoBot Akıllı Termostat"
+    android:exported="true">
+    <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+    </intent-filter>
+    <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/thermostat_widget_info" />
+</receiver>
