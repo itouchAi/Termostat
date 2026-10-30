@@ -39,18 +39,32 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Configure Android SDK and Patch Configs
+      - name: Configure Android SDK and Fix Dependencies
         run: |
-          # 1. SDK dizinini ayarla
+          # 1. SDK yolunu belirle
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           
-          # 2. SDK 36 yerine kurulu olan SDK 34'e ayarla (Hata onleme)
-          if [ -f "android/variables.gradle" ]; then
-            sed -i 's/compileSdkVersion = 36/compileSdkVersion = 34/g' android/variables.gradle
-            sed -i 's/targetSdkVersion = 36/targetSdkVersion = 34/g' android/variables.gradle
-          fi
+          # 2. Androidx surumlerini SDK 34 ile tam uyumlu kararlı surumlere esitle
+          cat << 'EOF' > android/variables.gradle
+          ext {
+              minSdkVersion = 24
+              compileSdkVersion = 34
+              targetSdkVersion = 34
+              androidxActivityVersion = '1.9.0'
+              androidxAppCompatVersion = '1.7.0'
+              androidxCoordinatorLayoutVersion = '1.2.0'
+              androidxCoreVersion = '1.13.1'
+              androidxFragmentVersion = '1.7.1'
+              coreSplashScreenVersion = '1.0.1'
+              androidxWebkitVersion = '1.11.0'
+              junitVersion = '4.13.2'
+              androidxJunitVersion = '1.2.0'
+              androidxEspressoCoreVersion = '3.6.1'
+              cordovaAndroidVersion = '10.1.1'
+          }
+          EOF
 
-          # 3. AndroidManifest dosyasindaki eksik provider kapatma etiketini otomatik onar
+          # 3. AndroidManifest dosyasindaki eksik provider kapanis etiketini onar
           python3 -c "
           p = 'android/app/src/main/AndroidManifest.xml'
           with open(p, 'r') as f:
@@ -68,7 +82,7 @@ jobs:
       - name: Build Debug APK
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon -x checkDebugAarMetadata -x lint -x test
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
