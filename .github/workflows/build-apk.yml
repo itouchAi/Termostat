@@ -39,17 +39,36 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK Path
+      - name: Configure Android SDK and Patch Configs
         run: |
-          if [ -d "android" ]; then
-            echo "sdk.dir=$ANDROID_HOME" > android/local.properties
-            chmod +x android/gradlew
+          # 1. SDK dizinini ayarla
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          
+          # 2. SDK 36 yerine kurulu olan SDK 34'e ayarla (Hata onleme)
+          if [ -f "android/variables.gradle" ]; then
+            sed -i 's/compileSdkVersion = 36/compileSdkVersion = 34/g' android/variables.gradle
+            sed -i 's/targetSdkVersion = 36/targetSdkVersion = 34/g' android/variables.gradle
           fi
+
+          # 3. AndroidManifest dosyasindaki eksik provider kapatma etiketini otomatik onar
+          python3 -c "
+          p = 'android/app/src/main/AndroidManifest.xml'
+          with open(p, 'r') as f:
+              content = f.read()
+          if '<provider' in content and '</provider>' not in content:
+              content = content.replace('<receiver', '</provider>\n        <receiver')
+              with open(p, 'w') as f:
+                  f.write(content)
+              print('AndroidManifest provider tag repaired!')
+          "
+
+          # 4. Gradlew calistirma yetkisi ver
+          chmod +x android/gradlew
 
       - name: Build Debug APK
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
