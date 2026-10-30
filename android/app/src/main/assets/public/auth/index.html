@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Google Home ile Eşleştir - Kombi3D</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1.25rem;
+    }
+    .card {
+      background: rgba(30, 41, 59, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(16px);
+      border-radius: 1.75rem;
+      padding: 2rem 1.5rem;
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+    .icon-badge {
+      width: 68px;
+      height: 68px;
+      margin: 0 auto 1.25rem;
+      border-radius: 1.25rem;
+      background: linear-gradient(135deg, #3b82f6, #f59e0b, #10b981);
+      padding: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-inner {
+      background: #0f172a;
+      width: 100%;
+      height: 100%;
+      border-radius: 1.15rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      color: #ffffff;
+    }
+    .subtitle {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.45;
+      margin-bottom: 1.5rem;
+    }
+    .device-badge {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 1rem;
+      padding: 0.85rem;
+      margin-bottom: 1.75rem;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .device-info h4 {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #60a5fa;
+    }
+    .device-info p {
+      font-size: 0.75rem;
+      color: #cbd5e1;
+      margin-top: 0.15rem;
+    }
+    .btn-primary {
+      display: block;
+      width: 100%;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      padding: 1rem;
+      border-radius: 1rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
+      transition: all 0.2s;
+    }
+    .btn-primary:active {
+      transform: scale(0.97);
+    }
+    .note {
+      font-size: 0.72rem;
+      color: #64748b;
+      margin-top: 1rem;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-badge">
+      <div class="icon-inner">🏠</div>
+    </div>
+    <h1>Google Home ile Bağla</h1>
+    <p class="subtitle">
+      Google Asistan ve Google Home uygulamasının <strong>Kombi Termostatınızı</strong> yönetmesine izin vermek üzeresiniz.
+    </p>
+
+    <div class="device-badge">
+      <span style="font-size: 1.5rem;">🔥</span>
+      <div class="device-info">
+        <h4>Kombi Termostatı</h4>
+        <p>Oturma Odası • Canlı Sıcaklık & Hedef Kontrolü</p>
+      </div>
+    </div>
+
+    <button type="button" class="btn-primary" id="confirmBtn" onclick="handleAuthorize()">
+      ✓ Bağlantıyı Onayla ve Eşleştir
+    </button>
+
+    <p class="note" id="statusNote">
+      Onayladığınızda Google Home uygulaması kombiyi otomatik algılayacaktır.
+    </p>
+  </div>
+
+  <script>
+    function handleAuthorize() {
+      const params = new URLSearchParams(window.location.search);
+      const redirectUri = params.get('redirect_uri');
+      const state = params.get('state') || '';
+
+      if (!redirectUri) {
+        document.getElementById('statusNote').innerText = 'Test sayfası açıldı. Google Home üzerinden gelindiğinde otomatik eşleşecektir.';
+        return;
+      }
+
+      document.getElementById('confirmBtn').innerText = 'Eşleştiriliyor...';
+      const targetUrl = new URL(redirectUri);
+      targetUrl.searchParams.set('code', 'kombi-auth-code-' + Date.now());
+      if (state) {
+        targetUrl.searchParams.set('state', state);
+      }
+
+      window.location.href = targetUrl.toString();
+    }
+  </script>
+</body>
+</html>

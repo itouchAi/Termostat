@@ -1,0 +1,8 @@
+{
+	"appId": "com.termobot.app",
+	"appName": "TermoBot Akıllı Termostat",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	}
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TermoBot Akıllı Termostat</string>
+    <string name="title_activity_main">TermoBot Akıllı Termostat</string>
+    <string name="package_name">com.termobot.app</string>
+    <string name="custom_url_scheme">com.termobot.app</string>
+</resources>
