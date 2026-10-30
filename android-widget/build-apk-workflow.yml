@@ -1,10 +1,4 @@
-# Bu dosya GitHub Actions ile bulutta APK derlemek içindir.
-# GitHub web arayüzünde repo açtıktan sonra isterseniz:
-# "Add file > Create new file" deyip yolu:
-# .github/workflows/build-apk.yml
-# olarak belirleyip bu içeriği yapıştırabilirsiniz.
-
-name: Build Android APK (Online Cloud Build)
+name: Build Android APK
 
 on:
   push:
@@ -25,10 +19,13 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm ci || npm install
+        run: npm install
 
       - name: Build Web Assets
         run: npm run build
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
 
       - name: Set up Java JDK
         uses: actions/setup-java@v4
@@ -36,30 +33,16 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Initialize Capacitor Android
-        run: |
-          npx cap add android || true
-          npx cap sync android
-
-      - name: Copy Custom Widget Files to Android Project
-        run: |
-          mkdir -p android/app/src/main/java/com/termobot/app
-          mkdir -p android/app/src/main/res/layout
-          mkdir -p android/app/src/main/res/xml
-          cp -f android-widget/ThermostatWidget.kt android/app/src/main/java/com/termobot/app/ || true
-          cp -f android-widget/res/layout/widget_thermostat.xml android/app/src/main/res/layout/ || true
-          cp -f android-widget/res/xml/thermostat_widget_info.xml android/app/src/main/res/xml/ || true
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
 
       - name: Build Debug APK
         run: |
           cd android
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK as Release Artifact
+      - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TermoBot-Akilli-Termostat-APK
+          name: TermoBot-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
