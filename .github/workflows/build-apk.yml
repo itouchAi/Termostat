@@ -48,11 +48,11 @@ jobs:
           # 1. SDK yolunu belirle
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           
-          # 2. Androidx surumlerini SDK 34 ile tam uyumlu kararlı surumlere esitle
+          # 2. Androidx surumlerini SDK 34/35 uyumlu kararlı surumlere esitle
           cat << 'EOF' > android/variables.gradle
           ext {
               minSdkVersion = 24
-              compileSdkVersion = 34
+              compileSdkVersion = 35
               targetSdkVersion = 34
               androidxActivityVersion = '1.9.0'
               androidxAppCompatVersion = '1.7.0'
@@ -97,13 +97,17 @@ jobs:
               print('Kotlin duplicate check fixed in build.gradle!')
           "
 
-          # 5. Gradlew calistirma yetkisi ver
+          # 5. Eksik metadata dizinlerini olustur (AAR hatasini onler)
+          mkdir -p node_modules/@capacitor/android/capacitor/build/intermediates/aar_metadata_check/debug/checkDebugAarMetadata 2>/dev/null || true
+          mkdir -p android/capacitor-android/build/intermediates/aar_metadata_check/debug/checkDebugAarMetadata 2>/dev/null || true
+
+          # 6. Gradlew calistirma yetkisi ver
           chmod +x android/gradlew
 
       - name: Build Debug APK
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon -x checkDebugAarMetadata -x checkDebugDuplicateClasses -x lint -x test
+          ./gradlew :app:assembleDebug --no-daemon -x lint -x test
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
