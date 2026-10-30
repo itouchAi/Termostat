@@ -18,6 +18,10 @@ jobs:
         with:
           node-version: 22
 
+      - name: Clean Unused Dependencies
+        run: |
+          npm pkg delete dependencies.framer-motion dependencies.motion 2>/dev/null || true
+
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
