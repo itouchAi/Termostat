@@ -611,25 +611,6 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
               </button>
             </div>
           </div>
-
-          {/* TermoBot Mascot Companion in Smart Display */}
-          {isMascotActive && (
-            <div
-              className={`mt-2.5 sm:mt-4 pointer-events-auto transition-all duration-700 ease-in-out ${
-                isCleanScreen ? 'opacity-40 hover:opacity-100 scale-90' : 'opacity-100'
-              }`}
-            >
-              <TermoBotMascot
-                themeMode={themeMode}
-                currentTemp={currentTemp}
-                targetTemp={targetTemp}
-                isKombiActive={isKombiActive}
-                size="md"
-                interactive={true}
-                onWakeScreen={handleUserActivity}
-              />
-            </div>
-          )}
         </div>
 
         {/* ── BOTTOM HUD / FLOATING CONTROLS & CLEAN SCREEN BUTTON ── */}
