@@ -76,13 +76,30 @@ jobs:
               print('AndroidManifest provider tag repaired!')
           "
 
-          # 4. Gradlew calistirma yetkisi ver
+          # 4. Kotlin duplicate class çakışmasını gider
+          python3 -c "
+          p = 'android/app/build.gradle'
+          with open(p, 'r') as f:
+              c = f.read()
+          if 'kotlin-stdlib-jdk7' not in c:
+              c += '''
+          configurations.all {
+              exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+              exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+          }
+          '''
+              with open(p, 'w') as f:
+                  f.write(c)
+              print('Kotlin duplicate check fixed in build.gradle!')
+          "
+
+          # 5. Gradlew calistirma yetkisi ver
           chmod +x android/gradlew
 
       - name: Build Debug APK
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon -x checkDebugAarMetadata -x lint -x test
+          ./gradlew assembleDebug --no-daemon -x checkDebugAarMetadata -x checkDebugDuplicateClasses -x lint -x test
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
