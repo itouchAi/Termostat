@@ -172,13 +172,32 @@ export const SmartDisplayOverlay: React.FC<SmartDisplayOverlayProps> = ({
     };
   }, [isOpen, config.sleepTimeoutMin]);
 
-  // Fullscreen toggle
+  // Automatically enter Fullscreen when Smart Display opens
+  useEffect(() => {
+    if (isOpen) {
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+        setIsFullscreen(true);
+      }
+    } else {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+        setIsFullscreen(false);
+      }
+    }
+  }, [isOpen]);
+
+  // Fullscreen toggle helper
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
       setIsFullscreen(true);
     } else {
-      document.exitFullscreen().catch(() => {});
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
       setIsFullscreen(false);
     }
   };

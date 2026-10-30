@@ -87,24 +87,6 @@ export const SmartDisplayControlsPill: React.FC<SmartDisplayControlsPillProps> =
             <Sun className="w-3.5 h-3.5" />
           </button>
 
-          {/* 2. Tam ekran simgesi (Kiosk toggle) */}
-          <button
-            type="button"
-            onPointerDown={() => triggerHaptic('medium')}
-            onClick={(e) => {
-              e.stopPropagation();
-              triggerHaptic('medium');
-              onToggleFullscreen();
-            }}
-            className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 flex items-center justify-center text-white transition-all cursor-pointer shrink-0"
-            title={isFullscreen ? 'Tam Ekrandan Çık' : 'Tam Ekran Yap (Kiosk)'}
-          >
-            {isFullscreen ? (
-              <Minimize2 className="w-3.5 h-3.5" />
-            ) : (
-              <Maximize2 className="w-3.5 h-3.5" />
-            )}
-          </button>
 
           {/* 3. Kırmızı arka planlı beyaz çarpı kapatma butonu */}
           <button
@@ -160,25 +142,6 @@ export const SmartDisplayControlsPill: React.FC<SmartDisplayControlsPillProps> =
             </span>
           </div>
 
-          {/* Fullscreen Toggle */}
-          <button
-            type="button"
-            onPointerDown={() => triggerHaptic('medium')}
-            onClick={(e) => {
-              e.stopPropagation();
-              scheduleAutoCollapse();
-              triggerHaptic('medium');
-              onToggleFullscreen();
-            }}
-            className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 active:scale-90 flex items-center justify-center text-white transition-all cursor-pointer shrink-0"
-            title={isFullscreen ? 'Tam Ekrandan Çık' : 'Tam Ekran Yap (Kiosk)'}
-          >
-            {isFullscreen ? (
-              <Minimize2 className="w-3.5 h-3.5" />
-            ) : (
-              <Maximize2 className="w-3.5 h-3.5" />
-            )}
-          </button>
 
           {/* Red Exit Button (Circular matching collapsed icon - no text truncation) */}
           <button
