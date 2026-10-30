@@ -407,16 +407,23 @@ export default function App() {
       }
     } catch {}
 
-    // 2. Sıcak açılış kontrolü (Uygulama arka plandayken postMessage ile anında tetikleme)
+    // 2. Sıcak açılış ve Hızlı Buton kontrolü (Service Worker postMessage ile anında tetikleme)
     const handleMsg = (e: MessageEvent) => {
       if (e.data && e.data.type === 'TRIGGER_CALL_ANSWER') {
         setCallReason('ignition');
         setIsCallOverlayOpen(true);
+      } else if (e.data && e.data.type === 'ADJUST_TARGET_TEMP') {
+        if (typeof e.data.delta === 'number') {
+          setTargetTemp((prev) => Math.round((prev + e.data.delta) * 10) / 10);
+        } else if (typeof e.data.newTargetTemp === 'number') {
+          setTargetTemp(e.data.newTargetTemp);
+        }
       }
     };
     navigator.serviceWorker?.addEventListener('message', handleMsg);
     return () => navigator.serviceWorker?.removeEventListener('message', handleMsg);
   }, []);
+
 
   // ── Sanal Asistan Ekran Koruyucu (Idle Screensaver) State ──
   const [isMascotScreenSaverActive, setIsMascotScreenSaverActive] = useState<boolean>(false);
@@ -652,6 +659,39 @@ export default function App() {
     }
     prevKombiActiveRef.current = isKombiActive;
   }, [isKombiActive, voiceCallConfig.enabled, voiceCallConfig.autoCallOnIgnition, handleTriggerVoiceCall]);
+
+  // ── Android Canlı Kumanda Bildirimi (Üst Perde Widget'ı) Otomatik Senkronizasyon ──
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    if (!voiceCallConfig.androidLiveNotificationWidget) {
+      navigator.serviceWorker.ready.then((reg) => {
+        reg.active?.postMessage({ type: 'CLEAR_LIVE_NOTIFICATION_WIDGET' });
+      });
+      return;
+    }
+
+    if ('Notification' in window && Notification.permission === 'granted') {
+      navigator.serviceWorker.ready.then((reg) => {
+        reg.active?.postMessage({
+          type: 'UPDATE_LIVE_NOTIFICATION_WIDGET',
+          payload: {
+            currentTemp,
+            targetTemp,
+            isKombiActive,
+            humidity,
+          },
+        });
+      });
+    }
+  }, [
+    currentTemp,
+    targetTemp,
+    isKombiActive,
+    humidity,
+    voiceCallConfig.androidLiveNotificationWidget,
+  ]);
+
 
   // Sıfırlama işleyicisi (Ayarlar modalından çağrıldığında canlı tüm sayaçları 0'lar)
   const handleResetHistoricalData = useCallback(() => {

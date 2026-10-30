@@ -254,7 +254,96 @@ export const VoiceCallSettingsSection: React.FC<VoiceCallSettingsSectionProps> =
             </div>
           </div>
 
-          {/* ── 4. ARKA PLAN VE KİLİT EKRANI BİLGİLENDİRME & İZİN KARTI ── */}
+          {/* ── 4. ANDROİD ÜST PERDE CANLI KUMANDASI (BİLDİRİM WİDGET'I - YÖNTEM 2) ── */}
+          <div className="space-y-2 pt-2 border-t border-white/[0.08]">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 px-1">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Android Üst Perde Canlı Kumandası (Yöntem 2):</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('selection');
+                  onUpdateConfig({ androidLiveNotificationWidget: !config.androidLiveNotificationWidget });
+                }}
+                className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                  config.androidLiveNotificationWidget
+                    ? 'bg-cyan-500 text-slate-950 shadow-sm shadow-cyan-500/20'
+                    : 'bg-white/10 text-white/50'
+                }`}
+              >
+                {config.androidLiveNotificationWidget ? 'Açık (Kalıcı)' : 'Kapalı'}
+              </button>
+            </div>
+
+            <p className="text-[10px] text-white/60 px-1">
+              Telefonun üst bildirim perdesine kalıcı bir kumanda kartı sabitler. Uygulamayı açmadan perdeden <b>[ +0.5°C ]</b>, <b>[ -0.5°C ]</b> yapabilir ve tek dokunuşla Asistanı arayabilirsiniz.
+            </p>
+
+            {/* Android Bildirim Kartı Canlı Önizleme Simülatörü */}
+            <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 shadow-inner flex flex-col gap-2">
+              <div className="flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-800 pb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="font-bold text-white/90">Android Bildirim Önizlemesi</span>
+                </div>
+                <span className="text-[9px] font-mono text-cyan-400">Canlı Kumanda</span>
+              </div>
+
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 text-sm">
+                  🔥
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-bold text-white flex items-center gap-1 truncate">
+                    <span>🔥 Kombi Devrede: 21.8°C (Hedef: 22.5°C)</span>
+                  </div>
+                  <div className="text-[10px] text-slate-300 truncate">
+                    Oda: 21.8°C • Hedef: 22.5°C • Nem: %48 • Hızlı Kumanda 👇
+                  </div>
+                </div>
+              </div>
+
+              {/* Bildirim Perdesi Aksiyon Butonları */}
+              <div className="grid grid-cols-3 gap-1.5 pt-1">
+                <div className="py-1 px-1.5 rounded-lg bg-slate-800 border border-slate-700 text-center text-[10px] font-bold text-cyan-300">
+                  ➖ 0.5°C
+                </div>
+                <div className="py-1 px-1.5 rounded-lg bg-slate-800 border border-slate-700 text-center text-[10px] font-bold text-cyan-300">
+                  ➕ 0.5°C
+                </div>
+                <div className="py-1 px-1.5 rounded-lg bg-emerald-600/30 border border-emerald-500/40 text-center text-[10px] font-bold text-emerald-300">
+                  📞 Asistan
+                </div>
+              </div>
+            </div>
+
+            {/* Bildirim Çubuğuna Sabitleme Butonu */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('success');
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                  navigator.serviceWorker.controller.postMessage({
+                    type: 'UPDATE_LIVE_NOTIFICATION_WIDGET',
+                    payload: {
+                      currentTemp: 21.8,
+                      targetTemp: 22.5,
+                      isKombiActive: true,
+                      humidity: 48,
+                    },
+                  });
+                }
+              }}
+              className="w-full py-1.5 px-3 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/30 text-cyan-300 text-[10.5px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Bildirim Perdesi Kumandasını Şimdi Güncelle / Test Et</span>
+            </button>
+          </div>
+
+          {/* ── 5. ARKA PLAN VE KİLİT EKRANI BİLGİLENDİRME & İZİN KARTI ── */}
           <div className="p-3 rounded-xl bg-blue-950/40 border border-blue-500/30 text-blue-200 text-xs flex flex-col gap-2">
             <div className="flex items-start gap-2">
               <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
@@ -263,9 +352,8 @@ export const VoiceCallSettingsSection: React.FC<VoiceCallSettingsSectionProps> =
                   Kilit Ekranı & Arka Planda Nasıl Çalışır?
                 </span>
                 <p className="text-[10.5px] text-blue-200/80 leading-relaxed mt-0.5">
-                  Uygulama kapalıyken veya telefon kilitliyken sesli çağrının düşmesi için Android tarayıcısında (Chrome vb.)
+                  Uygulama kapalıyken veya telefon kilitliyken sesli çağrının düşmesi ve üst perde kumandasının görünmesi için Android tarayıcısında (Chrome vb.)
                   <b>"Bildirim İzni"</b> verilmesi ve uygulamanın <b>"Ana Ekrana Ekle"</b> (PWA) yapılması gerekir.
-                  Cevap vermezseniz 10 sn sonra kilit ekranınıza titreşimli cevapsız arama bildirimi düşer.
                 </p>
               </div>
             </div>
@@ -286,6 +374,21 @@ export const VoiceCallSettingsSection: React.FC<VoiceCallSettingsSectionProps> =
                   Bildirim İznini Aç
                 </button>
               )}
+            </div>
+          </div>
+
+          {/* ── 6. YÖNTEM 3: BİLGİSAYARA BİR ŞEY KURMADAN ONLINE MASAÜSTÜ WİDGET'I ── */}
+          <div className="p-3 rounded-xl bg-purple-950/30 border border-purple-500/30 text-purple-200 text-xs flex flex-col gap-2">
+            <div className="flex items-start gap-2">
+              <span className="text-base">🚀</span>
+              <div>
+                <span className="font-bold text-white block text-[11.5px]">
+                  Yöntem 3: PC'ye Bir Şey Kurmadan Online Android Widget'ı
+                </span>
+                <p className="text-[10.5px] text-purple-200/80 leading-relaxed mt-0.5">
+                  Bilgisayarınıza Android Studio veya Java kurmanıza <b>hiç gerek yoktur!</b> Microsoft'un ücretsiz bulut aracı <b>PWABuilder.com</b> ile sadece link yapıştırarak doğrudan bulutta APK üretebilir veya Play Store'daki hazır Web Widget uygulamalarıyla 1 dakikada masaüstüne canlı kutucuk ekleyebilirsiniz.
+                </p>
+              </div>
             </div>
           </div>
         </div>
